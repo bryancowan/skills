@@ -1,0 +1,23 @@
+{
+  "skill_name": "prompt-creation",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I need a prompt for generating product photography descriptions for an e-commerce site. The descriptions should be SEO-friendly, around 150 words each, and highlight the key features and benefits. We're using Claude for this. Here's an example product: a handmade ceramic coffee mug with a speckled blue glaze.",
+      "expected_output": "A well-structured system prompt for Claude that includes: a clear role, output format with length constraints, SEO optimization instructions, few-shot examples, and Claude-specific formatting (XML tags or markdown sections). Should include personality guidance (likely Professional or Efficient) and a sample output demonstrating the desired style.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Here's my prompt for a coding assistant, but it keeps going off on tangents and adding features I didn't ask for:\n\n\"You are a helpful coding assistant. Help the user write code. Be thorough and explain your reasoning. When you see an opportunity to improve the code, do so. Use best practices.\"\n\nCan you improve this?",
+      "expected_output": "An improved prompt with: tightened scope (do what's asked, nothing more), Efficient personality traits, explicit constraints against scope expansion, positive framing replacing vague instructions, clear output format guidance. Should include Revision Notes explaining what was wrong and why each change helps.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "I want to build a 3-agent pipeline that takes a research topic and produces a polished blog post. Agent 1 should research the topic, Agent 2 should write a draft, and Agent 3 should edit and polish it. The final blog posts will be published on our company's tech blog and need to be around 1500 words. We're running this through Claude Code with subagents.",
+      "expected_output": "Three separate agent prompts presented in execution order, each with: clear role, defined inputs and outputs, state passing format between agents, appropriate techniques (Agent 1: web search + structured note-taking; Agent 2: skeleton-of-thought + writing style; Agent 3: RCI for editing). Should apply context engineering principles (minimal context per agent, structured handoffs) and include Claude-specific optimizations.",
+      "files": []
+    }
+  ]
+}
