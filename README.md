@@ -1,4 +1,4 @@
-> **Note:** This repository contains Anthropic's implementation of skills for Claude. For information about the Agent Skills standard, see [agentskills.io](http://agentskills.io).
+> **Note:** This is a personal fork of [anthropics/skills](https://github.com/anthropics/skills). Custom skills are added in [`skills/bryan/`](./skills/bryan) — see below. The upstream repo contains Anthropic's implementation of skills for Claude. For information about the Agent Skills standard, see [agentskills.io](http://agentskills.io).
 
 # Skills
 Skills are folders of instructions, scripts, and resources that Claude loads dynamically to improve performance on specialized tasks. Skills teach Claude how to complete specific tasks in a repeatable way, whether that's creating documents with your company's brand guidelines, analyzing data using your organization's specific workflows, or automating personal tasks.
@@ -23,8 +23,16 @@ Many skills in this repo are open source (Apache 2.0). We've also included the d
 
 # Skill Sets
 - [./skills](./skills): Skill examples for Creative & Design, Development & Technical, Enterprise & Communication, and Document Skills
+- [./skills/bryan](./skills/bryan): Custom skills added in this fork (see below)
 - [./spec](./spec): The Agent Skills specification
 - [./template](./template): Skill template
+
+## Bryan's Custom Skills
+
+Skills added to this fork, located in [`skills/bryan/`](./skills/bryan):
+
+- **[good-documentation](./skills/bryan/good-documentation)** — Writing and reviewing documentation: user guides, READMEs, tutorials, onboarding materials, and any content explaining how something works to an audience.
+- **[prompt-creation](./skills/bryan/prompt-creation)** — Creating, reviewing, and refining prompts for LLMs and AI agents. Covers system prompts, multi-agent pipelines, image/video/audio prompts, and adapting prompts across models.
 
 # Try in Claude Code, Claude.ai, and the API
 
