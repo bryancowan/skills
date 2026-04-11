@@ -17,7 +17,7 @@ Modify **only** these fields. Any other field — `title`, `source`, `author`, `
 |-------|--------|
 | `description` | Generate if null, empty, or value exactly matches `title` |
 | `note` | Generate if null or empty |
-| `tags` | Generate if list contains only `clippings` |
+| `tags` | Generate if list has **4 or fewer tags** |
 | `status` | **Always change to `Read`** — this is not conditional |
 
 ## Red Flags — Stop and Reconsider
@@ -28,6 +28,7 @@ Modify **only** these fields. Any other field — `title`, `source`, `author`, `
 | "published is empty, I found the date in the body" | Leave it empty. published is out of scope. |
 | "status is already set to Unread, I'll leave it" | Change it to Read. status always changes. |
 | "description looks okay to me" | Check: does it exactly equal the title? If yes, regenerate it. |
+| "there are already some tags, I'll skip tag generation" | Count them. 4 or fewer = generate more. Existing tags are kept; only append new ones. |
 
 ## Workflow
 
@@ -113,7 +114,11 @@ Incorrect formatting is the most common failure. Follow these rules exactly.
 
 The tags prompt outputs `#tag1 #tag2 #tag3` format. You MUST strip the `#` prefix before writing to YAML.
 
-**Keep `clippings` as the first tag**, then add generated tags after it.
+**Preserve existing tags.** When the note already has tags (e.g. `clippings`, `stratechery`), keep them all and append only the new ones. Do not remove or replace existing tags.
+
+When passing the article to the tags prompt, note which tags already exist so the prompt avoids duplicating them. The goal is to reach 5–8 total tags.
+
+**Keep `clippings` as the first tag**, then existing tags, then new generated tags.
 
 **Correct:**
 ```yaml
