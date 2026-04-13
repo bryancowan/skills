@@ -1,0 +1,23 @@
+{
+  "skill_name": "obsidian-wiki-compiler",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "I have a bunch of clipped articles about AI agents in /Users/bryan/Documents/repos/skills-workspace/obsidian-wiki/test-vault/Reading List/. The AI-related ones are: 'Agent Design Is Still Hard.md', 'Agents Over Bubbles.md', 'Anthropic's New Product Aims to Handle the Hard Part of Building AI Agents', 'Build AI agents with the Mistral Agents API', and 'Claude 4, Anthropic Agents, Human-AI Agents'. Compile them into a wiki about AI agents with a concept map. Put the output in /Users/bryan/Documents/repos/skills-workspace/obsidian-wiki/test-vault/30-39 Knowledge Management & Reading/31 Technology/31.12 AI Agents Wiki/",
+      "expected_output": "A compiled wiki with: context/ folder containing the source articles, _index.md with article listing and mermaid concept map, multiple interconnected wiki articles covering key concepts (agent architecture, frameworks, challenges), each with proper frontmatter, summaries, sources, and cross-references.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "Run a health check on the wiki at /Users/bryan/Documents/repos/skills-workspace/obsidian-wiki/test-vault/30-39 Knowledge Management & Reading/31 Technology/31.12 AI Agents Wiki/ — anything broken or missing?",
+      "expected_output": "A health report table checking for broken wikilinks, missing backlinks, orphaned articles, source coverage gaps, and missing visualizations. Should identify specific issues and suggest fixes.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "What gaps does the AI agents wiki at /Users/bryan/Documents/repos/skills-workspace/obsidian-wiki/test-vault/30-39 Knowledge Management & Reading/31 Technology/31.12 AI Agents Wiki/ have? Suggest some questions that would make it more comprehensive, then research and add the best 2-3 as new articles.",
+      "expected_output": "Should identify conceptual gaps in the wiki, propose 3-5 research questions, then write 2-3 new articles that fill those gaps. Should update _index.md with new articles and update the concept map.",
+      "files": []
+    }
+  ]
+}

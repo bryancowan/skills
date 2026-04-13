@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Repo Is
 
-A personal fork of [anthropics/skills](https://github.com/anthropics/skills). Upstream Anthropic skills live in `skills/` (most are Apache 2.0; docx/pdf/pptx/xlsx are source-available). Custom skills added in this fork live in `skills/bryan/`.
+A personal fork of [anthropics/skills](https://github.com/anthropics/skills). Upstream Anthropic skills live in `skills/` (most are Apache 2.0; docx/pdf/pptx/xlsx are source-available). Custom skills added in this fork live in `skills/bryan/`. The `spec/` directory contains `agent-skills-spec.md`, which redirects to the Agent Skills specification at https://agentskills.io/specification.
 
 ## Skill Structure
 
@@ -33,7 +33,12 @@ my-skill/
 
 ## Adding or Editing Skills
 
-- Custom skills go in `skills/bryan/<skill-name>/SKILL.md`
+- Custom skills go in `skills/bryan/<skill-name>/SKILL.md`. Existing custom skills:
+  - `description-and-tags/` — skill name `obsidian-reading-list-enrichment`; enriches Obsidian web-clipping notes with description, note summary, and tags in YAML frontmatter
+  - `good-documentation/` — writing and reviewing documentation
+  - `obsidian-jd-organizer/` — maintains Johnny Decimal vault structure; audits, files notes, updates indexes, expands categories
+  - `obsidian-wiki-compiler/` — compiles raw sources into interconnected Obsidian wikis with diagrams and visualizations
+  - `prompt-creation/` — creating and refining prompts for LLMs and AI agents
 - Use `template/SKILL.md` as a starting point
 - If the SKILL.md body approaches 500 lines, split content into `references/` files and add clear pointers from SKILL.md
 - For multi-domain skills, organize reference files by variant (e.g., `references/aws.md`, `references/gcp.md`) so only the relevant file is loaded
@@ -44,9 +49,9 @@ The `skills/skill-creator/` skill has an eval loop for testing and improving ski
 
 - Test cases stored in `evals/evals.json` within the skill directory
 - Eval runs go into `<skill-name>-workspace/iteration-N/` as a sibling to the skill directory
-- Aggregation script: `python -m scripts.aggregate_benchmark <workspace>/iteration-N --skill-name <name>` (run from `skills/skill-creator/`)
+- Aggregation script: `python -m scripts.aggregate_benchmark <workspace>/iteration-N --skill-name <name>` (run from `<repo-root>/skills/skill-creator/`)
 - Eval viewer: `python skills/skill-creator/eval-viewer/generate_review.py <workspace>/iteration-N --skill-name "name" --benchmark <workspace>/iteration-N/benchmark.json`
-- Description optimizer: `python -m scripts.run_loop --eval-set <path> --skill-path <path> --model <model-id> --max-iterations 5` (run from `skills/skill-creator/`)
+- Description optimizer: `python -m scripts.run_loop --eval-set <path> --skill-path <path> --model <model-id> --max-iterations 5` (run from `<repo-root>/skills/skill-creator/`)
 - Package a skill: `python -m scripts.package_skill <path/to/skill-folder>` (produces a `.skill` file)
 
 ## Installing Skills in Claude Code

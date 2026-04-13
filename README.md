@@ -33,6 +33,9 @@ Skills added to this fork, located in [`skills/bryan/`](./skills/bryan):
 
 - **[good-documentation](./skills/bryan/good-documentation)** — Writing and reviewing documentation: user guides, READMEs, tutorials, onboarding materials, and any content explaining how something works to an audience.
 - **[prompt-creation](./skills/bryan/prompt-creation)** — Creating, reviewing, and refining prompts for LLMs and AI agents. Covers system prompts, multi-agent pipelines, image/video/audio prompts, and adapting prompts across models.
+- **[description-and-tags](./skills/bryan/description-and-tags)** — Enriches Obsidian web-clipping notes by generating description, note summary, and tags for YAML frontmatter. Skill name: `obsidian-reading-list-enrichment`.
+- **[obsidian-jd-organizer](./skills/bryan/obsidian-jd-organizer)** — Maintains a Johnny Decimal organizational system in Obsidian: audits structure, files loose notes into correct JD locations, updates indexes, and expands the system with new categories. Depends on `obsidian-cli` and `obsidian-markdown` skills.
+- **[obsidian-wiki-compiler](./skills/bryan/obsidian-wiki-compiler)** — Transforms raw source documents (articles, PDFs, web pages) into a structured, interconnected Obsidian wiki with concept maps and visualizations. Depends on `obsidian-cli`, `obsidian-markdown`, `obsidian-jd-organizer`, and `defuddle` skills.
 
 # Try in Claude Code, Claude.ai, and the API
 

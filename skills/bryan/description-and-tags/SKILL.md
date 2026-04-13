@@ -1,17 +1,19 @@
 ---
 name: obsidian-reading-list-enrichment
-description: Use when working with Obsidian Reading List notes clipped from the web that need description, note summary, or tags added to their YAML frontmatter. Triggers when user mentions Obsidian notes, clipped articles, web clippings, or wants to enrich or update the description, note, or tags fields in a reading list item.
+description: Use when working with Obsidian Reading List notes clipped from the web that need description, note summary, tags, or a better headline filename. Triggers when user mentions Obsidian notes, clipped articles, web clippings, or wants to enrich, update, or rename reading list items.
 ---
 
 # Obsidian Reading List Enrichment
 
 ## Overview
 
-Enrich Obsidian web-clipping notes by generating description, note summary, and tags using the prompts below, then writing the results back into the note's YAML frontmatter.
+Enrich Obsidian web-clipping notes by generating description, note summary, tags, and a descriptive headline filename using the prompts below.
 
 ## Strict Scope
 
-Modify **only** these fields. Any other field — `title`, `source`, `author`, `published`, `created`, `related` — must not be changed, even if empty or null.
+**Frontmatter:** modify only `description`, `note`, `tags`, `status`. Any other field — `title`, `source`, `author`, `published`, `created`, `related` — must not be changed, even if empty or null.
+
+**Filename:** rename the file with a rewritten headline. The `title` field in frontmatter is never changed.
 
 | Field | Action |
 |-------|--------|
@@ -19,6 +21,8 @@ Modify **only** these fields. Any other field — `title`, `source`, `author`, `
 | `note` | Generate if null or empty |
 | `tags` | Generate if list has **4 or fewer tags** |
 | `status` | **Always change to `Read`** — this is not conditional |
+| `title` | **Never modify.** Original headline stays in frontmatter. |
+| filename | Rename file with rewritten headline, preserving timestamp suffix |
 
 ## Red Flags — Stop and Reconsider
 
@@ -29,6 +33,8 @@ Modify **only** these fields. Any other field — `title`, `source`, `author`, `
 | "status is already set to Unread, I'll leave it" | Change it to Read. status always changes. |
 | "description looks okay to me" | Check: does it exactly equal the title? If yes, regenerate it. |
 | "there are already some tags, I'll skip tag generation" | Count them. 4 or fewer = generate more. Existing tags are kept; only append new ones. |
+| "I'll update the title field to the rewritten headline" | Never. `title` stays as-is. Only the **filename** changes. |
+| "the headline is fine, I'll skip the rename" | Still apply the prompt. Only skip rename if the prompt returns the exact same text. |
 
 ## Workflow
 
@@ -37,7 +43,9 @@ Modify **only** these fields. Any other field — `title`, `source`, `author`, `
 3. For each field that needs generation, apply the prompt below using the full article body as input
 4. For `note`: treat text wrapped in `==double equals==` as highlighted passages — weight them heavily as the reader's key takeaways
 5. Write all generated content back to the frontmatter (see **Output Formatting** below)
-6. Write `status: Read` — this is the final step and is always required
+6. Write `status: Read`
+7. Generate a rewritten headline using the **Headline Rewrite Prompt** below
+8. If the rewritten headline differs from the original `title`, **rename the file** (see **Filename** under Output Formatting)
 
 ## Prompts
 
@@ -106,6 +114,27 @@ Modify **only** these fields. Any other field — `title`, `source`, `author`, `
 > ## Output
 > Tags on a single line, space-separated. No explanation, no preamble.
 
+### Headline Rewrite Prompt
+
+> You are an editorial headline rewriter. Your job is to rewrite article headlines so they are informative, specific, and scannable — modeled on the editorial standards of Techmeme's headline editors.
+>
+> Apply these five rewriting principles, in order of priority:
+>
+> 1. **Clickbait withholding** — If the headline deliberately omits key details to force a click, pack those details back in.
+> 2. **Buried lede** — If the most newsworthy part of the story isn't in the headline, pull it forward. Read the full article to find the real news.
+> 3. **Corporate euphemism** — If a company is obscuring bad news behind vague language, rewrite to be explicit about what happened.
+> 4. **Too generic** — If the headline omits specifics about companies, people, technologies, or numbers, add those specifics.
+> 5. **Fit for scanning** — The headline should function as an abstract. Favor active verbs, specific names, numbers, and concrete details.
+>
+> **When NOT to rewrite:** If the original headline is already specific, informative, and scannable, return it unchanged.
+>
+> **Constraints:**
+> - Output ONLY the rewritten headline — no explanation, no commentary, no quotation marks around it.
+> - Aim for under 120 characters when possible, but prioritize clarity over brevity.
+> - Avoid these characters (they break filenames): `: / \ * ? " < > |`
+> - Use a dash or comma instead of a colon. Use single quotes instead of double quotes if quoting is necessary.
+> - Use sentence case, not title case.
+
 ## Output Formatting — CRITICAL
 
 Incorrect formatting is the most common failure. Follow these rules exactly.
@@ -166,6 +195,28 @@ description: The central claim stated as a first-person declarative sentence.
 Always set after enrichment:
 ```yaml
 status: Read
+```
+
+### Filename
+
+After frontmatter edits, rename the file with the rewritten headline.
+
+**Filename format:** `{{title}} - {{timestamp}}.md`
+- Timestamp pattern: ` - YYYY-MM-DDTHHMMSS-ZZZZ` (e.g. ` - 2026-04-08T213438-0500`)
+- Some files have no timestamp — just `{{title}}.md`
+
+**To rename:**
+1. Extract the timestamp suffix by matching ` - \d{4}-\d{2}-\d{2}T\d{6}-\d{4}` at the end of the filename (before `.md`)
+2. Replace the title portion with the rewritten headline
+3. Construct: `{{rewritten_headline}} - {{timestamp}}.md` (or `{{rewritten_headline}}.md` if no timestamp)
+4. Rename the file using `mv` (same directory)
+
+**If the rewritten headline is identical to the original title, skip the rename.**
+
+**Example:**
+```
+Before: "Can AI be a 'child of God' - 2026-04-08T213438-0500.md"
+After:  "Sources - Anthropic met with Christian leaders in March to seek input on Claude's moral development - 2026-04-08T213438-0500.md"
 ```
 
 ## Complete Example
