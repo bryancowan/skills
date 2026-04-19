@@ -15,17 +15,17 @@ Before doing any vault operations, invoke the **obsidian-cli** skill for reading
 
 ### 1. Ingest
 
-Index source documents into a `context/` directory within a target location.
+Index source documents into a date-stamped sources directory within a target location.
 
 **Steps:**
 
 1. Identify the target directory — either user-specified or determined via `obsidian-jd-organizer` for JD placement
-2. Create a `context/` subdirectory in the target location
+2. Create a `YYYY-MM-DD sources/` subdirectory in the target location, using today's date (e.g., `2026-04-18 sources/`). This date-stamped format is the only subfolder form permitted by JD rules.
 3. For each source file:
-   - **Web URLs**: Use the `defuddle` skill to extract clean markdown, save as `.md` in `context/`
-   - **Local files** (PDFs, text, markdown, images): Copy to `context/`
-   - **Clipped articles** (from Reading List / Watch List): Move to `context/`, preserving frontmatter
-4. Create `context/_manifest.md` listing all ingested sources with metadata:
+   - **Web URLs**: Use the `defuddle` skill to extract clean markdown, save as `.md` in the sources folder
+   - **Local files** (PDFs, text, markdown, images): Copy to the sources folder
+   - **Clipped articles** (from Reading List / Watch List): Move to the sources folder, preserving frontmatter
+4. Create `YYYY-MM-DD sources/_manifest.md` listing all ingested sources with metadata:
 
 ```markdown
 ---
@@ -51,7 +51,7 @@ Analyze all raw sources and generate interconnected wiki articles.
 2. **Extract concepts** — identify key entities, claims, themes, relationships, and data points across all sources
 3. **Cluster by topic** — group related concepts into coherent article topics. Aim for 5-15 articles depending on source volume. Each article should cover a distinct concept, not just summarize one source.
 4. **Generate wiki articles** — one `.md` file per topic, following the article template in `references/wiki-article-template.md`
-5. **Generate `_index.md`** — the master index for this wiki, listing all articles with one-line summaries and cross-references
+5. **Generate `XX.YY Wiki Index.md`** — the master index for this wiki, using the JD ID of the target folder (e.g., `31.13 Wiki Index.md`). List all articles with one-line summaries and cross-references.
 
 **Article structure** (each wiki article):
 
@@ -61,11 +61,12 @@ tags:
   - wiki
   - topicTag
 created: yyyy-mm-dd
+location: obsidian
 keywords: relevant, search, terms
 related:
   - "[[other-article]]"
 sources:
-  - "[[context/source-file.md]]"
+  - "[[YYYY-MM-DD sources/source-file.md]]"
 ---
 # Article Title
 
@@ -85,22 +86,27 @@ The main content. Use subheadings as needed. Include:
 
 ## Sources
 
-- [[context/source-1.md]] — what this source contributed
-- [[context/source-2.md]] — what this source contributed
+- [[YYYY-MM-DD sources/source-1.md]] — what this source contributed
+- [[YYYY-MM-DD sources/source-2.md]] — what this source contributed
 
 ## Related
 
 - [[other-wiki-article]] — how it connects
 ```
 
-**Index structure** (`_index.md`):
+**Index structure** (`XX.YY Wiki Index.md`, where XX.YY is the JD ID of the target folder):
 
 ```markdown
 ---
 tags:
   - wiki
   - index
+  - jdex
 created: yyyy-mm-dd
+location: obsidian
+keywords: topic, wiki, index
+related:
+  - "[[XX.00 JDex for Category XX]]"
 ---
 # Wiki: [Topic Name]
 
@@ -125,7 +131,7 @@ graph LR
 
 ## Sources
 
-N source documents in [[context/]]. See [[context/_manifest.md]] for full list.
+N source documents. See [[YYYY-MM-DD sources/_manifest]] for full list.
 
 ## Compilation Log
 
@@ -175,7 +181,7 @@ Research questions against the compiled wiki to deepen it over time.
 **Manual mode** (default):
 
 1. User asks a question about the wiki topic
-2. Read `_index.md` to understand scope and find relevant articles
+2. Read `XX.YY Wiki Index.md` to understand scope and find relevant articles
 3. Navigate to relevant articles for detail
 4. Research the answer — actively use web search to find current, authoritative information. Searching for new sources is encouraged and makes the wiki stronger. Only fall back on existing wiki content or general knowledge when web search doesn't yield results.
 5. Write the answer as either:
@@ -211,11 +217,11 @@ This transparency helps the user understand the provenance and reliability of ea
 
 When the user requests continuous enhancement (e.g., "keep improving this wiki"):
 
-1. Read the full wiki via `_index.md`
+1. Read the full wiki via `XX.YY Wiki Index.md`
 2. Identify gaps: concepts mentioned but not explained, claims without evidence, topics that could be explored deeper
 3. Generate 3-5 suggested research questions
 4. Present to user for approval
-5. Research answers — use web search to find fresh, authoritative sources. File new sources into `context/` and update `_manifest.md`.
+5. Research answers — use web search to find fresh, authoritative sources. File new sources into the existing date-stamped sources folder and update `_manifest.md`. If ingesting a new batch on a different date, create a new `YYYY-MM-DD sources/` folder for that batch.
 6. Write answers as new articles or appendices, with source attribution callouts
 7. Update the concept map and compilation log
 8. Schedule next check using `/loop` — suggest questions again after a delay
@@ -249,19 +255,20 @@ When placing a wiki compilation in the vault's JD structure:
 
 ```
 XX.YY Topic Name/
-  context/                     # Original source files
+  YYYY-MM-DD sources/      # Original source files (date-stamped — required by JD)
     _manifest.md           # Source inventory
     source-1.md            # Raw sources
     source-2.pdf
-  _index.md                # Wiki master index with concept map
+  XX.YY Wiki Index.md      # Wiki master index with concept map
   concept-one.md           # Compiled wiki articles
   concept-two.md
-  visualizations/          # Generated chart images (if not using central attachments)
 ```
 
-The `context/` subdirectory is acceptable under JD rules as structured content within an ID folder. Use the `obsidian-jd-organizer` skill to determine the correct AC.ID for placement.
+**JD subfolder rules:** Only date-stamped subfolders are permitted within a JD ID folder. Always name the sources folder `YYYY-MM-DD sources/` using the ingest date. Never use generic names like `context/`, `sources/`, or `visualizations/` — these are JD violations.
 
-For chart images, prefer saving to the vault's central attachments folder (`00.05 Attachments`) and embedding with `![[image.png]]`. Only use a local `visualizations/` folder if the images are tightly coupled to this specific wiki and shouldn't live in the global attachments.
+Use the `obsidian-jd-organizer` skill to determine the correct AC.ID for placement.
+
+For chart images, always save to the vault's central attachments folder (`00.05 Attachments`) and embed with `![[image.png]]`. Do not create a local `visualizations/` subfolder.
 
 ## Change Log
 

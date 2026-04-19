@@ -8,11 +8,12 @@ tags:
   - wiki
   - topicTag
 created: yyyy-mm-dd
+location: obsidian
 keywords: relevant, search, terms
 related:
   - "[[other-article]]"
 sources:
-  - "[[context/source-file.md]]"
+  - "[[YYYY-MM-DD sources/source-file.md]]"
 ---
 # Article Title
 
@@ -28,7 +29,7 @@ summarizing each source separately.
 
 ### Subheading A
 
-Content with citations: "According to [[context/source-1.md]], the approach involves..."
+Content with citations: "According to [[YYYY-MM-DD sources/source-1.md]], the approach involves..."
 
 ### Subheading B
 
@@ -42,9 +43,9 @@ Content with cross-references: "This relates to [[other-wiki-article]], which co
 
 ## Sources
 
-- [[context/source-1.md]] — Provided foundational data on X
-- [[context/source-2.md]] — Offered alternative perspective on Y
-- [[context/source-3.pdf]] — Quantitative data for charts
+- [[YYYY-MM-DD sources/source-1.md]] — Provided foundational data on X
+- [[YYYY-MM-DD sources/source-2.md]] — Offered alternative perspective on Y
+- [[YYYY-MM-DD sources/source-3.pdf]] — Quantitative data for charts
 
 ## Related
 
@@ -65,7 +66,7 @@ Content with cross-references: "This relates to [[other-wiki-article]], which co
 - `created`: Date of article creation in `yyyy-mm-dd`
 - `keywords`: Comma-separated search terms
 - `related`: Wikilinks to other wiki articles (not raw sources)
-- `sources`: Wikilinks to raw source files
+- `sources`: Wikilinks to raw source files in the `YYYY-MM-DD sources/` folder
 
 ## Callout Usage
 

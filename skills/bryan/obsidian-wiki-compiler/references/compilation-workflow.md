@@ -4,7 +4,7 @@ Step-by-step details for the wiki compilation pipeline.
 
 ## Phase 1: Source Analysis
 
-For each file in `context/`:
+For each file in the `YYYY-MM-DD sources/` folder:
 
 1. Read the full content
 2. Extract structured data:
@@ -54,7 +54,7 @@ Cross-reference rules:
 
 After all articles are written:
 
-1. Create `_index.md` with:
+1. Create `XX.YY Wiki Index.md` (using the JD ID of the target folder, e.g., `31.13 Wiki Index.md`) with:
    - Article listing table (name + one-line summary)
    - Mermaid concept map showing article relationships
    - Source count and compilation date
@@ -62,7 +62,7 @@ After all articles are written:
 
 2. Verify completeness:
    - Every raw source is cited by at least one article
-   - Every article is listed in `_index.md`
+   - Every article is listed in the wiki index
    - Every cross-reference in articles matches a link in the concept map
 
 ## Phase 5: Visualization
@@ -81,9 +81,9 @@ After articles and index exist:
 
 When new sources are added to an existing wiki:
 
-1. Ingest new sources into `context/`, update `_manifest.md`
+1. If ingesting on a new date, create a new `YYYY-MM-DD sources/` folder. If same date as existing folder, add to that folder. Update `_manifest.md` in whichever sources folder applies.
 2. Re-analyze: which existing articles need updates? What new articles are needed?
-3. Update existing articles with new information (add to Details, add new Sources entries)
+3. Update existing articles with new information (add to Details, add new Sources entries). Update source wikilinks to point to the correct dated folder.
 4. Create new articles for new concepts
-5. Update `_index.md`: table, concept map, compilation log
+5. Update `XX.YY Wiki Index.md`: table, concept map, compilation log
 6. Run a health check to catch any broken links or inconsistencies
