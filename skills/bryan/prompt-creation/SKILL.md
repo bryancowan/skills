@@ -7,6 +7,16 @@ description: "Create, review, and refine prompts for LLMs and AI agents. Use thi
 
 This skill helps create effective prompts for any LLM task — from simple one-shot instructions to complex multi-agent workflows. It applies prompt engineering best practices, adapts to specific models and output types, and guides users through iterative improvement.
 
+## Hard rules — never violate
+
+These rules apply across every mode. Violating any of them produces worse output than no prompt at all.
+
+- **Never add Chain-of-Thought to reasoning-native models.** o3, o4-mini, DeepSeek-R1, and Qwen3 in thinking mode reason internally across thousands of tokens. Adding "think step by step" or any reasoning scaffolding actively degrades their output. For these models, give short clean instructions stating only the goal and desired output format.
+- **Never embed fabrication-prone techniques in a single prompt.** Mixture of Experts, Tree of Thought, Graph of Thought, Universal Self-Consistency, and deep prompt chaining all require multi-pass orchestration or external infrastructure. When forced into a single forward pass, the model role-plays the structure and fabricates the content. Use these only when the user has real orchestration (e.g., agent SDK, LangChain, multi-call pipeline).
+- **Add an over-engineering guard to any Claude Opus 4.x prompt.** Opus 4.x adds features, refactors, and abstractions that were not requested. Always include: "Only make changes directly requested. Do not add features, refactor, or introduce abstractions beyond what was asked."
+- **Cap clarifying questions at 3.** Lead with the 1–2 most important based on context; fold the rest in later. Endless clarification frustrates users and pushes the prompt off-topic.
+- **Never output a prompt without confirming the target tool/model when ambiguous.** Different tools and models need different syntax — guessing produces a worse first-shot result than asking.
+
 ## Detect what the user needs
 
 Before writing anything, figure out which mode applies:
@@ -17,6 +27,9 @@ Before writing anything, figure out which mode applies:
 | **Create agent series** | User needs multiple coordinated prompts for a workflow |
 | **Review & improve** | User shares an existing prompt and wants it better |
 | **Iterate from results** | User has a prompt that's producing unsatisfactory outputs |
+| **Quick paste** | User wants a single ready-to-paste prompt with no commentary |
+
+Signals for **Quick paste mode**: "just give me the prompt", "no explanation", "ready to paste", "just the prompt", "don't explain", or the user is clearly mid-flow and needs output, not lessons. When in doubt and the request is concrete (clear tool, clear task), default to Quick paste; switch to Mode 1 only if pedagogy is requested.
 
 Then gather the key details. Ask targeted follow-up questions for anything missing — don't guess at critical parameters.
 
@@ -109,8 +122,17 @@ If the prompt will run in a specific tool, load the relevant guide:
 | ElevenLabs | `context/tools-and-services/eleven-labs/` |
 | Figma | `context/tools-and-services/figma/` |
 | OpenClaw | `context/tools-and-services/openclaw/` |
+| Cursor / Windsurf | `context/tools-and-services/cursor-windsurf/` |
+| Cline | `context/tools-and-services/cline/` |
+| GitHub Copilot | `context/tools-and-services/github-copilot/` |
+| Devin / SWE-agent | `context/tools-and-services/devin/` |
+| Antigravity | `context/tools-and-services/antigravity/` |
+| Comet / Atlas (browser agents) | `context/tools-and-services/comet-atlas/` |
+| Bolt / v0 / Figma Make / Stitch | `context/tools-and-services/bolt-v0/` |
+| ComfyUI | `context/tools-and-services/comfyui/` |
+| Meshy / Tripo / Rodin (3D) | `context/tools-and-services/meshy-tripo-rodin/` |
 
-These guides contain tool-specific prompt patterns, constraints, and best practices that differ from general prompting.
+These guides contain tool-specific prompt patterns, constraints, and best practices that differ from general prompting. Each contains explicit anti-patterns (e.g., scope locks for IDE agents, stop conditions for autonomous agents) that prevent common first-shot failures.
 
 ### Set the personality
 
@@ -122,6 +144,20 @@ Help the user choose a personality when it would improve output consistency. The
 - **Exploratory** — Enthusiastic, clear explanations. Best for documentation, onboarding, training. Makes learning enjoyable with analogies and structured explanations.
 
 Personality is an operational lever, not aesthetic polish. It shapes verbosity, structure, and decision-making style. Personality instructions should not override task-specific output formats — if the user asks for an email, the email's tone follows the task, not the personality.
+
+### Memory Block — when prior session context matters
+
+When the user references prior decisions, prior failures, or established stack/architecture choices ("continue where we left off", "you already know my project", "now add the other thing"), prepend a Memory Block to the generated prompt. Place it in the first 30% of the prompt so it survives attention decay in the target model.
+
+```
+## Context (carry forward)
+- Stack and tool decisions: [list]
+- Architecture choices locked: [list]
+- Constraints from prior turns: [list]
+- What was tried and failed: [list, with reason]
+```
+
+Always re-provide this block in every new session — LLMs have no inter-session memory. If the user does not supply prior decisions, ask once for the minimum needed (counts toward the 3-question cap).
 
 ---
 
@@ -244,6 +280,57 @@ If the user is optimizing a prompt for production use (high volume, consistent q
 - Run the same inputs through both versions
 - Compare outputs on the specific dimension that matters (accuracy, tone, format, etc.)
 - Test on edge cases, not just typical inputs
+
+---
+
+## Mode 5: Quick paste — single ready-to-paste prompt, no commentary
+
+Use this mode when the user wants a single copyable prompt and nothing else. Trigger phrases: "just give me the prompt", "no explanation", "ready to paste", "just the prompt", "don't explain". Also default here when the request is concrete (clear tool + clear task) and the user is clearly mid-flow.
+
+### Process
+
+1. Silently extract the 9 dimensions: task, target tool, output format, constraints, input, context, audience, success criteria, examples needed.
+2. If a critical dimension is missing, ask up to 3 questions. If still ambiguous on the target tool, ask one more.
+3. Apply all hard rules. Apply tool-specific routing if applicable.
+4. Run the diagnostic checklist (see below) silently — fix issues without explaining unless a fix changes user intent.
+5. Output exactly:
+
+```
+[the prompt — single fenced block, ready to paste]
+```
+
+🎯 Target: [tool/model name]  
+💡 [one sentence — what was optimized and why]
+
+If setup steps are needed before pasting (e.g., "attach reference image first", "set temperature to 0.1"), add a 1–2 line note below. Otherwise omit.
+
+### Diagnostic checklist (silent fix)
+
+Scan the user's request for these failure patterns. Fix without commentary unless the fix changes intent.
+
+**Task:** vague verb → precise operation; two tasks in one prompt → split into Prompt 1/2; no success criteria → derive binary pass/fail; emotional description → extract specific fault.
+
+**Context:** assumes prior knowledge → add Memory Block; invites hallucination → add grounding constraint ("State only what you can verify. If uncertain, say so.").
+
+**Format:** no output format → derive from task type; implicit length → add word/sentence count; vague aesthetic ("professional") → translate to measurable specs.
+
+**Scope:** no file/function boundaries for IDE AI → add scope lock; no stop conditions for agents → add checkpoint and human-review triggers.
+
+**Reasoning:** logic task with no step-by-step (on standard models) → add CoT; CoT on reasoning-native model → REMOVE IT; new prompt contradicts prior session decisions → flag and resolve.
+
+**Agentic:** no starting state → add current state; no target state → add deliverable; silent agent → add "After each step output: ✅ [what was completed]"; unrestricted filesystem → add scope lock; no human-review trigger → add stop conditions for destructive actions.
+
+### Quick-paste verification
+
+Before delivering, confirm:
+1. Target tool/model correctly identified, syntax matches.
+2. Critical constraints in the first 30% of the prompt.
+3. Strongest signal words used (MUST over should, NEVER over avoid).
+4. No fabrication-prone single-prompt techniques embedded.
+5. No CoT instructions on reasoning-native models.
+6. Every sentence load-bearing — no padding.
+
+Success metric: user pastes, it works first try.
 
 ---
 

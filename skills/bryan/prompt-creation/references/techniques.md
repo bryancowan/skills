@@ -4,6 +4,27 @@ Quick-lookup guide for selecting the right prompting technique based on task typ
 
 ---
 
+## ⚠️ Single-prompt vs. multi-pass techniques
+
+Some techniques in this reference require **multiple model calls or external orchestration** to actually work. Embedding them in a single prompt makes the model role-play the structure and fabricate the content — output looks sophisticated but is unreliable.
+
+**Multi-pass only — do NOT embed in a single prompt:**
+
+| Technique | Why it fails in a single prompt |
+|---|---|
+| **Self-Consistency** | Requires N independent samples followed by aggregation. In one pass, later "samples" contaminate earlier ones — they are not independent. |
+| **Tree-of-Thoughts (ToT)** | The model generates linear text and *describes* branching, but no real parallel evaluation happens. Output simulates the structure without the substance. |
+| **Graph-of-Thoughts (GoT)** | Requires an external graph engine to track nodes and edges across calls. Single-prompt = pure fabrication. |
+| **Mixture of Experts (MoE) prompting** | Asks the model to role-play multiple experts in one forward pass. No real routing — the model produces consensus-flavored text from a single distribution. |
+| **Universal Self-Consistency** | Requires independent sampling + post-hoc agreement scoring. Single-pass collapses both. |
+| **Deep prompt chaining as a single technique** | Long chains compound hallucination per step. If the user has no real orchestration (agent SDK, LangChain, manual chaining), do not pretend to chain inside one prompt — split into Prompt 1, Prompt 2, etc. and have the user run them sequentially. |
+
+**Use these only when the user has real orchestration** (multiple API calls, agent framework, scripted pipeline). If they just want a single prompt to paste somewhere, pick a single-pass alternative: Few-Shot, Skeleton-of-Thought, RCI within one response, or Decomposed Prompting delivered as labeled sub-prompts.
+
+**Reasoning-native models (o3, o4-mini, DeepSeek-R1, Qwen3-thinking):** never add Chain-of-Thought, "think step by step", or any reasoning scaffolding. These models reason internally; CoT instructions actively degrade output. State the goal and desired format. Nothing more.
+
+---
+
 ## Technique Selection Matrix
 
 | Task Type | Simple | Moderate | Complex |
