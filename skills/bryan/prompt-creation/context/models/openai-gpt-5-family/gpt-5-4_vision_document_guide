@@ -1,0 +1,99 @@
+# GPT-5.4 Vision & Document Understanding Guide
+
+## Overview
+
+GPT-5.4 has strong multimodal capabilities for extracting, transcribing, and reasoning over documents, images, forms, charts, and complex layouts. Four API parameters have the most impact on output quality for these tasks. Start with the simplest configuration and adjust based on failure modes — don't reach for high settings unless you're seeing problems.
+
+## Key Parameters
+
+### `image_detail`
+Controls how much visual resolution the model receives.
+
+| Value | When to use |
+|---|---|
+| `"auto"` | Standard typed documents, clean scans, digital PDFs |
+| `"original"` | Handwriting, dense text, small labels, low-quality scans, screenshots with fine detail |
+
+Default to `"auto"`. Switch to `"original"` whenever the document has handwriting, very small text, or is a photograph/scan rather than a native digital file.
+
+### `verbosity`
+Controls how faithfully the model preserves original formatting versus summarizing.
+
+Higher verbosity → faithful transcription with preserved structure (column layout, tables, bullet spacing).
+Lower verbosity → compressed summaries that lose formatting detail.
+
+For extraction and transcription tasks, use higher verbosity. For tasks where you want a summary or synthesis, lower verbosity is fine.
+
+### `reasoning_effort`
+Controls how much the model thinks before responding.
+
+Raise `reasoning_effort` when the answer requires:
+- Combining information from multiple regions of the document
+- Interpreting charts or diagrams alongside surrounding text
+- Cross-referencing tables with prose
+- Spatial reasoning (e.g., floorplan analysis, bounding box localization)
+
+For simple single-field extraction from a clean document, default effort is sufficient.
+
+### Code Interpreter (tool use)
+When available, Code Interpreter enables multi-pass inspection: the model can crop sub-regions, zoom into areas of interest, and re-run extraction on smaller segments. This is the most reliable approach for complex layouts (dense floorplans, tables with merged cells, multi-column newspapers).
+
+**Crop-and-rerun fallback** (when Code Interpreter is unavailable):
+1. Identify the region of interest in the document
+2. Crop the image locally to that region
+3. Run a focused extraction prompt on the cropped sub-image
+
+This replicates much of Code Interpreter's benefit without requiring tool access.
+
+---
+
+## Document Type Reference
+
+| Document Type | `image_detail` | `verbosity` | `reasoning_effort` | Notes |
+|---|---|---|---|---|
+| Handwritten form extraction | `original` | high | default | Handwriting requires full resolution; high verbosity preserves field structure |
+| Newspaper / multi-column transcription | `original` | high | default | Dense layout with small type; preserve column order in output |
+| Floorplan analysis | `auto` | default | high | Spatial reasoning across regions; Code Interpreter strongly recommended |
+| Chart / graph interpretation | `auto` | default | high | Combining visual data with axis labels requires more reasoning |
+| Bounding-box localization | `original` | default | high | Precise coordinate extraction; Code Interpreter recommended for accuracy |
+
+---
+
+## Workflow Pattern
+
+1. Start with `image_detail: "auto"`, default verbosity, default reasoning effort
+2. If extraction is missing detail or mangling layout → raise verbosity
+3. If small text, handwriting, or fine labels are misread → switch to `image_detail: "original"`
+4. If the task requires cross-region synthesis or spatial reasoning → raise reasoning effort
+5. If layout is highly complex (dense tables, floorplans) → add Code Interpreter or use crop-and-rerun
+
+Avoid raising all parameters at once — it makes it harder to know which change fixed the problem.
+
+---
+
+## Example Prompts by Document Type
+
+**Handwritten form:**
+```
+Extract all field labels and their handwritten values from this form. Preserve the original field order. If a value is illegible, write [ILLEGIBLE] rather than guessing.
+```
+
+**Newspaper transcription:**
+```
+Transcribe this newspaper page column by column, left to right. Preserve paragraph breaks and headlines. Do not summarize — reproduce the full text.
+```
+
+**Chart interpretation:**
+```
+Describe this chart: identify the chart type, axis labels and units, data series, and the key trend or finding the chart communicates. Quote specific values where readable.
+```
+
+**Floorplan analysis:**
+```
+Identify all labeled rooms on this floorplan. For each room, provide its label, approximate location (e.g., northwest corner), and any dimensions shown. Then describe the overall layout.
+```
+
+**Bounding-box localization:**
+```
+For each object in the image, provide its label and bounding box as [x_min, y_min, x_max, y_max] in pixel coordinates, where (0,0) is the top-left corner.
+```

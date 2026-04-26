@@ -1,0 +1,423 @@
+# gpt-realtime Prompting Guide (Speech-to-Speech)
+
+## Overview
+
+`gpt-realtime` is OpenAI's most capable speech-to-speech model for the Realtime API. It delivers stronger instruction following, more reliable tool calling, better voice quality, and more natural expressiveness than the older `gpt-4o-realtime-preview` snapshots. Speech-to-speech systems require different prompting strategies than text models — this guide covers all the key patterns.
+
+---
+
+## General Tips
+
+- **Iterate relentlessly on wording.** Small changes make or break behavior. Example: swapping "inaudible" → "unintelligible" significantly improved noisy input handling.
+- **Prefer bullets over paragraphs.** Short, clear bullets outperform dense prose.
+- **Guide with examples.** The model closely follows sample phrases — use them to anchor style and brevity.
+- **Be precise.** Ambiguous or conflicting instructions degrade performance (same failure mode as GPT-5).
+- **Pin output language.** If you see unwanted language switching, explicitly lock the language.
+- **Reduce repetition.** Add a Variety rule to prevent robotic phrasing across turns.
+- **Use capitalization for emphasis.** Capitalizing key rules helps the model notice them (e.g., `ESCALATE`, `MANDATORY`).
+- **Convert logic to prose.** Instead of `IF x > 3 THEN ESCALATE`, write `IF MORE THAN THREE FAILURES THEN ESCALATE`.
+
+---
+
+## Recommended Prompt Structure
+
+Use clear labeled sections. Each section stays focused on one concern, making it easier to iterate on specific problems.
+
+```
+# Role & Objective       — who the agent is and what "done" means
+# Personality & Tone     — voice, brevity, pacing, language rules
+# Context                — retrieved context, relevant info passed in
+# Reference Pronunciations — phonetic guides for tricky words
+# Tools                  — names, usage rules, preambles, error handling
+# Instructions / Rules   — do's, don'ts, and approach
+# Conversation Flow      — phases, goals, transitions
+# Safety & Escalation    — fallback and handoff logic
+```
+
+Add domain-specific sections as needed (e.g., `# Compliance`, `# Brand Policy`). Remove sections you don't need.
+
+---
+
+## Section: Role & Objective
+
+Defines agent identity and what "done" means. When explicit, the model tightly adheres to persona, accent, and task scope.
+
+```
+# Role & Objective
+You are a friendly, knowledgeable customer service assistant for NorthLoop Internet.
+Your task is to identify and resolve the caller's issue, then close the conversation cleanly.
+```
+
+Character example:
+```
+# Role & Objective
+You are a high-energy game-show host guiding the caller to guess a secret number from 1 to 100 to win $1,000,000.
+```
+
+---
+
+## Section: Personality & Tone
+
+Controls voice quality, brevity, pacing, and consistency across turns.
+
+### Base structure
+```
+# Personality & Tone
+## Personality
+- Friendly, calm, and approachable expert.
+## Tone
+- Warm, concise, confident, never fawning.
+## Length
+- 2–3 sentences per turn.
+```
+
+### Pacing / speed
+The Realtime API `speed` parameter changes playback rate, not speaking style. To actually sound faster, add explicit pacing instructions:
+
+```
+## Pacing
+- Deliver your audio response fast, but do not sound rushed.
+- Do not modify the content of your response, only increase speaking speed for the same response.
+```
+
+### Language constraint
+To prevent unwanted language switching (especially in noisy or multilingual environments):
+
+```
+## Language
+- The conversation will be only in English.
+- Do not respond in any other language even if the user asks.
+- If the user speaks another language, politely explain that support is limited to English.
+```
+
+For code-switching use cases (e.g., a French tutor), you can instruct the model to switch based on context:
+```
+## Language
+### Explanations
+Use English when explaining grammar, vocabulary, or cultural context.
+### Conversation
+Speak in French when conducting practice, giving examples, or engaging in dialogue.
+```
+
+### Variety (reduce repetition)
+```
+## Variety
+- Do not repeat the same sentence twice.
+- Vary your responses so it doesn't sound robotic.
+```
+
+### Multi-emotion
+The model can shift emotional tone within a single response:
+```
+## Personality
+- Start your response very happy.
+- Midway, change to sad.
+- At the end, change your mood to very angry.
+```
+
+---
+
+## Section: Reference Pronunciations
+
+Phonetic hints for brand names, technical terms, and proper nouns. Keep to a short list; update as you hear errors.
+
+```
+# Reference Pronunciations
+When voicing these words, use the respective pronunciations:
+- Pronounce "SQL" as "sequel."
+- Pronounce "PostgreSQL" as "post-gress."
+- Pronounce "Kyiv" as "KEE-iv."
+- Pronounce "Huawei" as "HWAH-way."
+```
+
+### Alphanumeric strings
+For phone numbers, card numbers, codes, and order IDs — the model can blur or merge digits. Force character-by-character delivery:
+
+```
+# Instructions/Rules
+- When reading numbers or codes, speak each character separately, separated by hyphens (e.g., 4-1-5).
+- Repeat EXACTLY the provided number; do not omit any character.
+```
+
+You can optionally use phonetic disambiguators for letters (e.g., "A as in Alpha") and scope this rule to specific conversation states in a state-machine flow.
+
+---
+
+## Section: Tools
+
+### Align prompt and tool list
+Never mention a tool in your prompt that isn't in the actual tools list — it causes bad responses. Review for consistency before shipping.
+
+### Tool call preambles
+To mask tool call latency, have the model speak a short line simultaneously:
+
+```
+# Tools
+- Before any tool call, say one short line like "I'm checking that now." Then call the tool immediately.
+```
+
+For per-tool preamble control, add sample phrases directly to tool descriptions:
+
+```json
+{
+  "name": "lookup_account",
+  "description": "Retrieve a customer account using email or phone. Preamble sample phrases:\n- For security, I'll pull up your account using the email on file.\n- Let me look up your account by {email} now.\n- I'm fetching the account linked to {phone} to verify access.",
+  "parameters": { ... }
+}
+```
+
+### Remove unnecessary confirmations
+```
+# Tools
+- When calling a tool, do not ask for any user confirmation. Be proactive.
+```
+Tip: If the model jumps too eagerly, soften "proactive" to something gentler.
+
+### Tool-level behavior (per-tool rules)
+```
+# Tools
+- For tools marked PROACTIVE: call immediately, no preamble, no confirmation.
+- For tools marked PREAMBLE: say one short line before calling.
+- For tools marked CONFIRMATION FIRST: always ask the user to confirm before calling.
+
+## lookup_account(email_or_phone) — PROACTIVE
+Use when: verifying identity or accessing billing.
+Do NOT use when: caller refuses to identify after second request.
+
+## check_outage(address) — PREAMBLE
+Use when: caller reports connectivity issues.
+Do NOT use when: purely billing.
+
+## refund_credit(account_id, minutes) — CONFIRMATION FIRST
+Use when: confirmed outage > 240 minutes in the past 7 days.
+Confirmation phrase: "I can issue a credit for this outage—would you like me to go ahead?"
+```
+
+### Tool output formatting
+When a tool returns long or structured text that must be spoken verbatim, wrap it in a JSON envelope rather than a raw string — the model handles structured tool output more reliably:
+
+```json
+{
+  "response_text": "I just sent you an email with the verification link. Please open it and click \"Confirm\".",
+  "require_repeat_verbatim": true
+}
+```
+Document this expected shape in both your Tools section and next to the tool definition.
+
+### Rephrase Supervisor (Responder-Thinker Architecture)
+When a stronger text model (the "thinker") handles planning and lookups while gpt-realtime (the "responder") speaks to the user, add explicit rephrasing instructions so the responder converts thinker output into speech-friendly replies:
+
+```
+## Supervisor Tool: getNextResponseFromSupervisor(relevantContextFromLastUserMessage)
+When to call: Any factual, policy, account, or process question. Any action requiring internal lookups.
+When NOT to call: Simple greetings, requests to repeat/clarify.
+
+### Rephrase Supervisor
+- Start with a brief conversational opener: "Thanks for waiting—", "Just finished checking that."
+- Keep it short: no more than 2 sentences.
+- Read numbers for speech: "$45.20" → "forty-five dollars and twenty cents", phone numbers 3-3-4.
+- Template: opener + one-sentence gist + up to 3 key details + confirmation ("Does that match what you expected?")
+```
+
+### Common pre-trained tools
+Keep names and signatures close to these for maximum reliability:
+
+```
+# answer(question: string)
+Call when the customer asks something you don't have an answer to, or asks to perform an unhandled action.
+
+# escalate_to_human()
+Call when a customer asks for escalation, wants to talk to a person, or expresses dissatisfaction.
+
+# finish_session()
+Call when a customer says they're done or doesn't want to continue. If ambiguous, confirm first.
+```
+
+---
+
+## Section: Instructions / Rules
+
+Use the same precision standards as GPT-5 text prompts — ambiguous or conflicting instructions degrade performance.
+
+### Instruction quality check (meta-prompt for GPT-5)
+Run this before shipping to surface ambiguities, conflicts, and missing definitions:
+
+```
+## Role & Objective
+You are a Prompt-Critique Expert. Examine the supplied prompt and surface weaknesses.
+
+## Instructions
+Identify:
+- Ambiguity: Could any wording be interpreted in more than one way?
+- Lacking definitions: Are there terms or labels not defined that an LLM might misinterpret?
+- Conflicting, missing, or vague instructions: Are directions incomplete or contradictory?
+- Unstated assumptions: Does the prompt assume the model can do something not explicitly stated?
+
+Do NOT invent new instructions, tools, or external information. Only flag issues you're certain about.
+
+## Output Format
+# Issues — numbered list with brief quote snippets
+# Improvements — revised lines and how you'd change them
+# Revised Prompt — surgically edited version
+```
+
+### Optimization meta-prompt (for specific failure modes)
+```
+Here's my current prompt: [BEGIN PROMPT] {CURRENT_PROMPT} [END PROMPT]
+But I see this issue: [BEGIN ISSUE] {ISSUE} [END ISSUE]
+Provide variants of the prompt that tighten constraints to reduce this issue.
+```
+
+### Unclear or noisy audio
+```
+## Unclear audio
+- Only respond to clear audio or text.
+- If the user's audio is unclear (background noise, silence, unintelligible) or you didn't fully hear them, ask for clarification.
+- Always respond in the same language the user is speaking in, if unintelligible.
+```
+
+### Background sounds
+```
+## Audio artifacts
+- Do not include any sound effects or onomatopoeic expressions in your responses.
+```
+
+---
+
+## Section: Conversation Flow
+
+Break dialogue into phases with clear goals, instructions, and exit criteria. This prevents the model from stalling, skipping steps, or jumping ahead.
+
+### Linear phase example
+```
+# Conversation Flow
+
+## 1) Greeting
+Goal: Set tone and invite the reason for calling.
+How to respond:
+- Identify as NorthLoop Internet Support.
+- Keep the opener brief.
+Exit when: Caller states an initial goal or symptom.
+
+## 2) Discover
+Goal: Classify the issue and capture minimal details.
+How to respond:
+- Determine billing vs. connectivity with one targeted question.
+Exit when: Intent and address (connectivity) or email/phone (billing) are known.
+
+## 3) Verify
+Goal: Confirm identity and retrieve the account.
+How to respond:
+- Call lookup_account(email_or_phone).
+- If lookup fails, try alternate identifier once; otherwise offer escalation.
+Exit when: Account ID is returned.
+
+## 4) Diagnose / 5) Resolve / 6) Confirm & Close
+[...continue pattern...]
+```
+
+### Sample phrases in each state
+Sample phrases act as anchor examples — they show style and brevity without locking the model to one rigid response. Always include a variety reminder:
+
+```
+## 1) Greeting
+Sample phrases (vary — do not always repeat the same):
+- "Thanks for calling NorthLoop Internet—how can I help today?"
+- "You've reached NorthLoop Support. What's going on with your service?"
+- "Hi there—tell me what you'd like help with."
+Exit when: Caller states an initial goal.
+```
+
+### State machine (JSON) — for complex flows
+For flows that need versioning, diffing, and precise state control:
+
+```json
+[
+  {
+    "id": "1_greeting",
+    "description": "Warm welcome, identify the service.",
+    "instructions": [
+      "Use the company name 'NorthLoop' and provide a warm welcome.",
+      "Invite the caller's goal."
+    ],
+    "examples": [
+      "Thanks for calling NorthLoop Internet—how can I help today?"
+    ],
+    "transitions": [
+      { "next_step": "2_discover", "condition": "Caller states an initial goal." }
+    ]
+  },
+  {
+    "id": "2_discover",
+    "description": "Classify issue; collect address or contact info.",
+    "instructions": [
+      "Ask one targeted question to determine billing vs. connectivity.",
+      "For connectivity: collect service address. For billing: collect email or phone."
+    ],
+    "examples": [
+      "Is this about your bill or your internet speed?",
+      "What address are you calling about?"
+    ],
+    "transitions": [
+      { "next_step": "3_verify", "condition": "Intent and key detail are known." }
+    ]
+  }
+]
+```
+
+### Dynamic flow via `session.update` — for reducing cognitive load
+Instead of loading all rules at once, update the system prompt and tool list as the conversation transitions between states. Only expose the tools and instructions relevant to the current phase.
+
+```python
+def build_session_update(state: str) -> dict:
+    return {
+        "type": "session.update",
+        "session": {
+            "instructions": INSTRUCTIONS_BY_STATE[state],
+            "tools": TOOLS_BY_STATE[state] + [build_state_change_tool(state)]
+        }
+    }
+```
+
+This reduces the model's perceived complexity and improves focus — particularly useful when the total toolset or ruleset is large.
+
+---
+
+## Section: Safety & Escalation
+
+Define when to escalate (no extra troubleshooting) and exactly what to say when doing so.
+
+```
+# Safety & Escalation
+
+When to escalate immediately:
+- Safety risk (self-harm, threats, harassment)
+- User explicitly asks for a human
+- Severe dissatisfaction (repeated complaints, profanity, "I'm extremely frustrated")
+- 2 failed tool attempts on the same task OR 3 consecutive no-match/no-input events
+- Out-of-scope requests (real-time news, financial/legal/medical advice)
+
+What to say when escalating (MANDATORY — say this while calling the tool):
+- "Thanks for your patience—I'm connecting you with a specialist now."
+
+Then immediately call: escalate_to_human(account_id, reason)
+```
+
+---
+
+## Sample Phrases (standalone section)
+
+If you want a global phrase library the model can draw from across all states:
+
+```
+# Sample Phrases
+Below are examples for inspiration. DO NOT ALWAYS USE THESE — vary your responses.
+
+Acknowledgements: "On it." / "One moment." / "Good question."
+Clarifiers: "Do you want A or B?" / "What's the deadline?"
+Bridges: "Here's the quick plan." / "Let's keep it simple."
+Empathy (brief): "That's frustrating—let's fix it."
+Closers: "Anything else before we wrap?" / "Happy to help next time."
+```
+
+Note: If the model over-uses these phrases and sounds robotic, add the Variety constraint.

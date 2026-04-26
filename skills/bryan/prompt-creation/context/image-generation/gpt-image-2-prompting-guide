@@ -1,0 +1,126 @@
+# gpt-image-2 Prompting Guide
+
+## Overview
+
+`gpt-image-2` is OpenAI's most capable image generation model (as of April 2026). It supports generation from text prompts and editing of existing images. This guide covers quality settings, prompt structure, and patterns for common use cases.
+
+---
+
+## Model Settings
+
+### Quality levels
+| Level | When to use |
+|---|---|
+| `low` | Latency-sensitive applications, rapid iteration, thumbnails |
+| `medium` | General use, balanced quality and speed |
+| `high` | Detail-intensive outputs — text-heavy images, fine textures, print-quality work |
+
+Use `high` quality whenever the image must render legible text or show fine material detail.
+
+### Resolution
+- Supports up to 3840×2160
+- Treat output larger than 2560×1440 as experimental — variability increases at higher resolutions
+- For reliable results, stay at or below 2560×1440
+
+---
+
+## Prompt Structure
+
+Organize prompts in this order: **background → subject → details → constraints**
+
+This mirrors how a photographer or art director would brief a shoot: establish the scene first, then place the subject, add specifics, then state what to avoid or preserve.
+
+**Example:**
+> A sun-drenched Tuscan hillside in late afternoon, golden hour light. A woman in her 40s wearing a linen blazer sits at a wrought-iron café table, looking off-camera with a relaxed expression. Soft bokeh background. Shot on medium format film, warm color grading, slight grain. No text, no logos.
+
+**Avoid:**
+- Tag-soup lists of keywords
+- Vague aesthetic terms like "beautiful," "professional," or "high quality" without concrete descriptors
+- Stacking too many competing subjects in a single prompt
+
+**Prefer:**
+- Material descriptions ("matte ceramic," "brushed aluminum," "hand-stitched leather")
+- Visual medium references ("shot on 35mm," "oil painting on linen," "vector illustration")
+- Composition specifics ("rule of thirds," "bird's-eye view," "Dutch angle")
+
+---
+
+## Text Rendering
+
+When the image must contain readable text (UI mockups, infographics, signage, slides):
+
+1. Place the exact copy inside quotation marks in your prompt
+2. Specify typography explicitly — font style, weight, size relationship
+
+**Example:**
+> A product card with the headline "Your data, your terms" in a bold geometric sans-serif, and a subhead "Privacy-first storage for teams" in a lighter weight below it. Dark navy background, white text.
+
+Use `quality: "high"` for any image with text — lower quality levels produce blurry or misspelled lettering.
+
+---
+
+## Iterative Editing
+
+gpt-image-2 supports multi-turn editing. The key discipline: **one change per follow-up**.
+
+- State explicitly what should change
+- State explicitly what must stay the same — and repeat preservation requirements, because the model does not automatically hold everything constant
+- Small, focused follow-ups outperform large rewrites
+
+**Example sequence:**
+1. Generate: full scene
+2. Edit 1: "Change the background from a park to a modern office. Keep the subject's pose, expression, and outfit identical."
+3. Edit 2: "Shift the lighting to late afternoon window light. Keep everything else the same."
+
+---
+
+## Identity-Sensitive Edits (e.g., Virtual Try-On)
+
+When the task involves placing clothing or accessories on a person while preserving their appearance:
+
+- Explicitly lock what must not change: facial features, skin tone, body geometry, hair
+- Describe only the garment change
+- Avoid prompts that describe the person's full appearance — they invite re-generation of identity
+
+**Example:**
+> Replace the jacket with a double-breasted navy wool blazer with gold buttons. Preserve the subject's face, skin tone, hair, and body proportions exactly. Keep the background and lighting unchanged.
+
+---
+
+## Generation Use Cases
+
+| Use Case | Key Prompt Elements |
+|---|---|
+| Infographic | Layout type (vertical/horizontal), sections, data to visualize, color palette, font style |
+| Photorealistic portrait | Lighting setup, lens/film style, background, expression, clothing description |
+| Logo | Style (wordmark/icon/combination), color scheme, industry feel, what to avoid |
+| Advertising / hero image | Product placement, brand mood, setting, target emotion |
+| UI mockup | Screen type (mobile/desktop), component list, color system, interaction state |
+| Scientific diagram | Subject, labeling requirements, style (technical illustration vs. realistic), background |
+| Presentation slide | Slide type (title/content/comparison), headline text in quotes, visual metaphor |
+
+---
+
+## Editing Use Cases
+
+| Use Case | Key Discipline |
+|---|---|
+| Style transfer | Name the target style/medium; specify what structural elements to preserve |
+| Virtual clothing try-on | Lock face + body; describe only the garment |
+| Sketch-to-render | Reference the sketch as base; describe desired material and lighting |
+| Product extraction / background removal | Describe the desired new background; confirm product edges should be sharp |
+| Lighting transformation | Name the target lighting; confirm shadows and highlights should shift accordingly |
+| Object removal | Name the object; describe what should fill the gap (background continuation, etc.) |
+| Multi-image compositing | Describe spatial relationship between source elements; specify lighting consistency |
+
+---
+
+## Common Failure Modes
+
+| Problem | Fix |
+|---|---|
+| Text in image is blurry or misspelled | Switch to `quality: "high"`; put text in quotes in the prompt |
+| Identity drifts across edits | Explicitly state "Preserve [specific features] exactly" in every follow-up |
+| Composition changes unexpectedly | Name what must stay the same before describing what should change |
+| Fine textures look flat | Add material descriptor ("hand-stitched," "brushed," "matte") and consider `quality: "high"` |
+| Result looks generic | Replace vague terms ("professional," "modern") with concrete references (medium, era, lighting setup) |
