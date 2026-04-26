@@ -82,12 +82,12 @@ If the user specifies a model (or you can infer one), load the relevant model-sp
 
 | Model Family | Reference Path |
 |---|---|
-| Anthropic Claude | `context/models/anthropic-claude/` |
+| Anthropic Claude (Opus 4.7 / 4.6 / Sonnet 4.6 / Haiku 4.5) | `context/models/anthropic-claude/` — Opus 4.7 behavior changes: `claude-opus-4-7-guide.md`; full best practices: `claude-prompting-guide.md` |
 | OpenAI GPT-5 / GPT-5.4 | `context/models/openai-gpt-5-family/` — vision/document tasks: see `gpt-5-4_vision_document_guide` in that directory |
 | Google Gemini | `context/models/google-gemini/` |
 | Google Nano Banana | `context/models/google-nano-banana/` |
 | Z.ai GLM | `context/models/zai-glm/` |
-| OpenAI Codex | `context/models/openai-codex/` |
+| OpenAI Codex (`gpt-5.3-codex`) | `context/models/openai-codex/codex-prompting-guide` — covers starter prompt, AGENTS.md, compaction, tools (apply_patch, shell, update_plan), preambles, phase parameter, and metaprompting |
 | Mistral | `context/models/mistral/` |
 | Alibaba Qwen | `context/models/alibaba-qwen/` |
 | MiniMax M2 | `context/models/minimax-m2/` |

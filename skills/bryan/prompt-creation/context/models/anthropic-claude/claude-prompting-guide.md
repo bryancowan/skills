@@ -11,7 +11,9 @@ Comprehensive guide to prompt engineering techniques for Claude's latest models,
 
 ---
 
-This is the single reference for prompt engineering with Claude's latest models, including Claude Opus 4.6, Claude Sonnet 4.6, and Claude Haiku 4.5. It covers foundational techniques, output control, tool use, thinking, and agentic systems. Jump to the section that matches your situation.
+This is the single reference for prompt engineering with Claude's latest models, including Claude Opus 4.7, Claude Opus 4.6, Claude Sonnet 4.6, and Claude Haiku 4.5. It covers foundational techniques, output control, tool use, thinking, and agentic systems. Jump to the section that matches your situation.
+
+> **Claude Opus 4.7 users:** For behavior changes specific to Opus 4.7 (new `xhigh` effort level, literal instruction following, design defaults, code review harness tuning, and more), see `claude-opus-4-7-guide.md` in this directory.
 
 <Tip>
   For an overview of model capabilities, see the [models overview](/docs/en/about-claude/models/overview). For details on what's new in Claude 4.6, see [What's new in Claude 4.6](/docs/en/about-claude/models/whats-new-claude-4-6). For migration guidance, see the [Migration guide](/docs/en/about-claude/models/migration-guide).
