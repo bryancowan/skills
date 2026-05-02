@@ -4,13 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Repo Is
 
-A personal fork of [anthropics/skills](https://github.com/anthropics/skills). Upstream Anthropic skills live in `skills/` (most are Apache 2.0; docx/pdf/pptx/xlsx are source-available). Custom skills added in this fork live in `skills/bryan/`. The `spec/` directory contains `agent-skills-spec.md`, which redirects to the Agent Skills specification at https://agentskills.io/specification.
+A personal collection of Claude Code skills. Skills live in `skills/`. The `spec/` directory contains `agent-skills-spec.md`, which redirects to the Agent Skills specification at <https://agentskills.io/specification>.
 
 ## Skill Structure
 
 Every skill is a folder containing a `SKILL.md` with YAML frontmatter and markdown instructions:
 
-```
+```text
 my-skill/
 ├── SKILL.md           (required — frontmatter + instructions)
 ├── evals/evals.json   (test cases, optional)
@@ -33,12 +33,14 @@ my-skill/
 
 ## Adding or Editing Skills
 
-- Custom skills go in `skills/bryan/<skill-name>/SKILL.md`. Existing custom skills:
+- Skills go in `skills/<skill-name>/SKILL.md`. Current skills:
   - `description-and-tags/` — skill name `obsidian-reading-list-enrichment`; enriches Obsidian web-clipping notes with description, note summary, and tags in YAML frontmatter
   - `good-documentation/` — writing and reviewing documentation
   - `obsidian-jd-organizer/` — maintains Johnny Decimal vault structure; audits, files notes, updates indexes, expands categories
   - `obsidian-wiki-compiler/` — compiles raw sources into interconnected Obsidian wikis with diagrams and visualizations
   - `prompt-creation/` — creating and refining prompts for LLMs and AI agents
+  - `ship-and-watch/` — ship-and-watch skill
+  - `ship-and-watch-tick/` — ship-and-watch tick skill
 - Use `template/SKILL.md` as a starting point
 - If the SKILL.md body approaches 500 lines, split content into `references/` files and add clear pointers from SKILL.md
 - For multi-domain skills, organize reference files by variant (e.g., `references/aws.md`, `references/gcp.md`) so only the relevant file is loaded
@@ -56,8 +58,6 @@ The `skills/skill-creator/` skill has an eval loop for testing and improving ski
 
 ## Installing Skills in Claude Code
 
-```
-/plugin marketplace add anthropics/skills
-/plugin install document-skills@anthropic-agent-skills
-/plugin install example-skills@anthropic-agent-skills
+```bash
+/plugin marketplace add bryancowan/skills
 ```
