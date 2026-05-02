@@ -17,8 +17,8 @@ For background on the skills system, see:
 - **[obsidian-jd-organizer](./skills/obsidian-jd-organizer)** — Maintains a Johnny Decimal organizational system in Obsidian: audits structure, files loose notes, updates indexes, expands categories.
 - **[obsidian-wiki-compiler](./skills/obsidian-wiki-compiler)** — Transforms raw source documents into a structured, interconnected Obsidian wiki with concept maps and visualizations.
 - **[prompt-creation](./skills/prompt-creation)** — Creating, reviewing, and refining prompts for LLMs and AI agents. Covers system prompts, multi-agent pipelines, image/video/audio prompts, and adapting across models.
-- **[ship-and-watch](./skills/ship-and-watch)** — Ship-and-watch skill.
-- **[ship-and-watch-tick](./skills/ship-and-watch-tick)** — Ship-and-watch tick skill.
+- **[ship-and-watch](./skills/ship-and-watch)** — Commit, push, open a PR, then start a polling loop that checks CI every 5 minutes and auto-fixes failures until the PR is green.
+- **[ship-and-watch-tick](./skills/ship-and-watch-tick)** — One iteration of the ship-and-watch loop: polls PR CI status, applies a minimal fix if any check is failing, and stops the loop when everything is green. Invoked automatically by ship-and-watch.
 
 ---
 
