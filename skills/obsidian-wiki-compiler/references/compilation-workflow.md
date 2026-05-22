@@ -4,7 +4,7 @@ Step-by-step details for the wiki compilation pipeline.
 
 ## Phase 1: Source Analysis
 
-For each file in the `YYYY-MM-DD sources/` folder:
+For each file in every `YYYY-MM-DD sources/` weekly bucket (located under `XX.09 Archive for category XX/<YY> <wiki-short-name> sources/`):
 
 1. Read the full content
 2. Extract structured data:
@@ -48,7 +48,7 @@ For each article topic:
 Cross-reference rules:
 - If article A mentions a concept that article B covers in depth, link to B
 - If two articles share a source, they likely should cross-reference each other
-- The concept map in `_index.md` should match these cross-references
+- The concept map in `XX.YY Wiki Index.md` should match these cross-references
 
 ## Phase 4: Index Generation
 
@@ -64,12 +64,13 @@ After all articles are written:
    - Every raw source is cited by at least one article
    - Every article is listed in the wiki index
    - Every cross-reference in articles matches a link in the concept map
+   - Every source wikilink resolves to a file under `XX.09 Archive for category XX/<YY> <wiki> sources/<sunday-date> sources/` (no legacy daily-folder paths inside the wiki ID folder)
 
 ## Phase 5: Visualization
 
 After articles and index exist:
 
-1. Generate a **concept map** (mermaid graph in `_index.md`) — always do this
+1. Generate a **concept map** (mermaid graph in `XX.YY Wiki Index.md`) — always do this
 2. For articles with quantitative data, generate **charts**:
    - Bar/column: comparisons between items
    - Line: trends over time
@@ -81,9 +82,9 @@ After articles and index exist:
 
 When new sources are added to an existing wiki:
 
-1. If ingesting on a new date, create a new `YYYY-MM-DD sources/` folder. If same date as existing folder, add to that folder. Update `_manifest.md` in whichever sources folder applies.
+1. Compute the Sunday-of-week for today's ingest date. If a folder for that Sunday already exists under `XX.09 Archive/<YY> <wiki> sources/`, append to it. Otherwise create a new `YYYY-MM-DD sources/` folder (Sunday date) in that bucket. Update `_manifest.md` in whichever folder applies.
 2. Re-analyze: which existing articles need updates? What new articles are needed?
-3. Update existing articles with new information (add to Details, add new Sources entries). Update source wikilinks to point to the correct dated folder.
+3. Update existing articles with new information (add to Details, add new Sources entries). Update source wikilinks to point to the correct Sunday-of-week folder under the archive.
 4. Create new articles for new concepts
 5. Update `XX.YY Wiki Index.md`: table, concept map, compilation log
 6. Run a health check to catch any broken links or inconsistencies

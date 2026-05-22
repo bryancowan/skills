@@ -15,17 +15,30 @@ Before doing any vault operations, invoke the **obsidian-cli** skill for reading
 
 ### 1. Ingest
 
-Index source documents into a date-stamped sources directory within a target location.
+Index source documents into a **weekly-bucketed** sources directory inside the **category archive** (`XX.09`), scoped by the destination wiki's ID.
+
+**Path format:**
+
+```
+XX.09 Archive for category XX/<YY> <wiki-short-name> sources/<sunday-date> sources/
+```
+
+- `XX.09 Archive for category XX/` — the category's `.09` archive folder
+- `<YY> <wiki-short-name> sources/` — wiki-scoped bucket. `<YY>` is the destination wiki's two-digit ID suffix (e.g. `12` for wiki `31.12`). Dropping the `XX.` prefix keeps full-ID search (e.g. searching `31.12`) from returning the archive folder alongside the active wiki folder.
+- `<sunday-date> sources/` — week bucket, named `YYYY-MM-DD` of the **Sunday on or before** the ingest date. Covers Sunday through the following Saturday.
+
+**Sunday-of-week rule:** subtract `(weekday + 1) % 7` days from the ingest date, where Mon=0…Sun=6 (Python `datetime.weekday()`). For ingest 2026-05-20 (Wed), Sunday-of-week = 2026-05-17. For ingest 2026-05-10 (Sun), Sunday-of-week = 2026-05-10.
 
 **Steps:**
 
-1. Identify the target directory — either user-specified or determined via `obsidian-jd-organizer` for JD placement
-2. Create a `YYYY-MM-DD sources/` subdirectory in the target location, using today's date (e.g., `2026-04-18 sources/`). This date-stamped format is the only subfolder form permitted by JD rules.
-3. For each source file:
+1. Identify the destination wiki's JD ID (e.g. `31.12`) and short name (the meaningful word from the folder title, e.g. `LLM` from `31.12 Large Language Models & AI`). Use `obsidian-jd-organizer` for placement help if the wiki doesn't exist yet.
+2. Compute the Sunday-of-week for today's date.
+3. Build the archive path: `XX.09 Archive for category XX/<YY> <wiki-short-name> sources/<sunday-date> sources/`. Create the folders if they don't exist. If `<sunday-date> sources/` already exists (another ingest happened earlier in the same week), append to it.
+4. For each source file:
    - **Web URLs**: Use the `defuddle` skill to extract clean markdown, save as `.md` in the sources folder
    - **Local files** (PDFs, text, markdown, images): Copy to the sources folder
    - **Clipped articles** (from Reading List / Watch List): Move to the sources folder, preserving frontmatter
-4. Create `YYYY-MM-DD sources/_manifest.md` listing all ingested sources with metadata:
+5. Create or update `<sunday-date> sources/_manifest.md` listing all ingested sources in this week's folder with metadata:
 
 ```markdown
 ---
@@ -47,7 +60,7 @@ Analyze all raw sources and generate interconnected wiki articles.
 
 **Pipeline:**
 
-1. **Read all sources** in `context/` — extract full text content
+1. **Read all sources** across every `YYYY-MM-DD sources/` weekly bucket under `XX.09 Archive for category XX/YY <wiki> sources/` — extract full text content
 2. **Extract concepts** — identify key entities, claims, themes, relationships, and data points across all sources
 3. **Cluster by topic** — group related concepts into coherent article topics. Aim for 5-15 articles depending on source volume. Each article should cover a distinct concept, not just summarize one source.
 4. **Generate wiki articles** — one `.md` file per topic, following the article template in `references/wiki-article-template.md`
@@ -66,7 +79,7 @@ keywords: relevant, search, terms
 related:
   - "[[other-article]]"
 sources:
-  - "[[YYYY-MM-DD sources/source-file.md]]"
+  - "[[XX.09 Archive for category XX/YY <wiki> sources/YYYY-MM-DD sources/source-file.md]]"
 ---
 # Article Title
 
@@ -86,8 +99,8 @@ The main content. Use subheadings as needed. Include:
 
 ## Sources
 
-- [[YYYY-MM-DD sources/source-1.md]] — what this source contributed
-- [[YYYY-MM-DD sources/source-2.md]] — what this source contributed
+- [[XX.09 Archive for category XX/YY <wiki> sources/YYYY-MM-DD sources/source-1.md]] — what this source contributed
+- [[XX.09 Archive for category XX/YY <wiki> sources/YYYY-MM-DD sources/source-2.md]] — what this source contributed
 
 ## Related
 
@@ -131,7 +144,7 @@ graph LR
 
 ## Sources
 
-N source documents. See [[YYYY-MM-DD sources/_manifest]] for full list.
+N source documents across N weekly buckets. See `[[XX.09 Archive for category XX/YY <wiki> sources/<sunday-date> sources/_manifest]]` for each week's manifest.
 
 ## Compilation Log
 
@@ -185,10 +198,10 @@ Research questions against the compiled wiki to deepen it over time.
 3. Navigate to relevant articles for detail
 4. Research the answer — actively use web search to find current, authoritative information. Searching for new sources is encouraged and makes the wiki stronger. Only fall back on existing wiki content or general knowledge when web search doesn't yield results.
 5. Write the answer as either:
-   - A new wiki article (if the answer covers a new concept) — update `_index.md`
+   - A new wiki article (if the answer covers a new concept) — update `XX.YY Wiki Index.md`
    - An appendix to an existing article (if it extends a known concept)
-6. Update cross-references and the concept map in `_index.md`
-7. Update `_index.md` compilation log
+6. Update cross-references and the concept map in `XX.YY Wiki Index.md`
+7. Update `XX.YY Wiki Index.md` compilation log
 
 **Source attribution on new content** — every new article or addition must clearly state where the information came from. Add a `> [!info] Source` callout at the top of each new article:
 
@@ -221,7 +234,7 @@ When the user requests continuous enhancement (e.g., "keep improving this wiki")
 2. Identify gaps: concepts mentioned but not explained, claims without evidence, topics that could be explored deeper
 3. Generate 3-5 suggested research questions
 4. Present to user for approval
-5. Research answers — use web search to find fresh, authoritative sources. File new sources into the existing date-stamped sources folder and update `_manifest.md`. If ingesting a new batch on a different date, create a new `YYYY-MM-DD sources/` folder for that batch.
+5. Research answers — use web search to find fresh, authoritative sources. File new sources into the current week's sources folder (the Sunday-of-week bucket under `XX.09 Archive/<YY> <wiki> sources/`) and update its `_manifest.md`. If the current week's folder doesn't yet exist, create it.
 6. Write answers as new articles or appendices, with source attribution callouts
 7. Update the concept map and compilation log
 8. Schedule next check using `/loop` — suggest questions again after a delay
@@ -237,34 +250,51 @@ Lint the wiki for quality and consistency.
 | Check | What to look for |
 |-------|-----------------|
 | Broken wikilinks | Links to articles that don't exist |
-| Missing backlinks | Articles referenced in `_index.md` but not linked from other articles |
-| Stale summaries | `_index.md` summaries that don't match article content |
-| Orphaned articles | Articles not listed in `_index.md` |
+| Missing backlinks | Articles referenced in `XX.YY Wiki Index.md` but not linked from other articles |
+| Stale summaries | `XX.YY Wiki Index.md` summaries that don't match article content |
+| Orphaned articles | Articles not listed in `XX.YY Wiki Index.md` |
 | Source coverage | Raw sources not cited by any article |
 | Factual conflicts | Contradictory claims across articles |
 | Empty sections | Articles with placeholder or stub sections |
 | Missing visualizations | Topics with data but no charts/diagrams |
+| Legacy source location | `YYYY-MM-DD sources/` folders living **inside** the wiki's JD ID folder (old daily layout) instead of under `XX.09 Archive/<YY> <wiki> sources/`. Fix: migrate to the archive. |
+| Non-Sunday week bucket | Source folders in the archive whose `YYYY-MM-DD` is not a Sunday. Fix: snap to the Sunday-of-week; if a sibling folder for that Sunday already exists, merge contents. |
+| Wikilink drift | Source wikilinks in articles, the Wiki Index, or category JDex pointing at pre-migration paths. Fix: rewrite to the new archive path. |
+| Manifest merges | After two daily folders collapse into one weekly folder, the resulting folder needs `_manifest.md` regenerated from the combined contents. |
 
 **Output:** A health report as a markdown table with `Issue`, `Location`, `Severity`, `Suggested Fix`.
 
-After presenting the report, offer to auto-fix what's safe (broken links, missing index entries) and flag what needs human judgment (factual conflicts, reorganization).
+After presenting the report, offer to auto-fix what's safe (broken links, missing index entries, source-folder migrations including wikilink rewrites) and flag what needs human judgment (factual conflicts, reorganization). Every migration (folder move, merge, wikilink rewrite, JDex/Wiki-Index update) emits an entry to the Vault Change Log.
 
 ## Wiki Organization within JD
 
 When placing a wiki compilation in the vault's JD structure:
 
 ```
-XX.YY Topic Name/
-  YYYY-MM-DD sources/      # Original source files (date-stamped — required by JD)
-    _manifest.md           # Source inventory
-    source-1.md            # Raw sources
-    source-2.pdf
-  XX.YY Wiki Index.md      # Wiki master index with concept map
-  concept-one.md           # Compiled wiki articles
-  concept-two.md
+XX-X9 Area Name/
+  XX Category Name/
+    XX.09 Archive for category XX/
+      YY <wiki-short-name> sources/        # one bucket per wiki ID in this category
+        YYYY-MM-DD sources/                # weekly bucket, name = Sunday of that week
+          _manifest.md
+          source-1.md
+          source-2.pdf
+        YYYY-MM-DD sources/                # next week
+          _manifest.md
+          ...
+      YY <other-wiki> sources/
+        ...
+    XX.YY Topic Name/                      # active wiki folder — articles only
+      XX.YY Wiki Index.md
+      concept-one.md
+      concept-two.md
 ```
 
-**JD subfolder rules:** Only date-stamped subfolders are permitted within a JD ID folder. Always name the sources folder `YYYY-MM-DD sources/` using the ingest date. Never use generic names like `context/`, `sources/`, or `visualizations/` — these are JD violations.
+**JD subfolder rules:**
+
+- Within any active wiki ID folder (e.g. `31.12 LLM & AI/`), there are **no** source subfolders. Only the Wiki Index and articles live here. This keeps the wiki folder clean and full-ID searches uncluttered.
+- All source folders live under the category archive `XX.09 Archive for category XX/`, organized first by wiki bucket (`YY <name> sources/`, where `YY` is the wiki's two-digit ID suffix — no `XX.` prefix, by design, so searching `XX.YY` only matches the active wiki folder) and then by Sunday-of-week date-stamped subfolder (`YYYY-MM-DD sources/`).
+- Never use generic names like `context/`, `sources/`, or `visualizations/` — these are JD violations.
 
 Use the `obsidian-jd-organizer` skill to determine the correct AC.ID for placement.
 
@@ -292,6 +322,7 @@ keywords: changelog, audit, vault changes
 2026-04-12 — Wiki compiled: LLM Knowledge Bases (27.14), 8 articles from 12 sources
 2026-04-12 — Q&A: added 2 articles to LLM Knowledge Bases wiki
 2026-04-11 — Health check: fixed 3 broken wikilinks in 31.12 wiki
+2026-04-10 — Migrated 5 daily source folders to weekly archive under 31.09/12 LLM sources (wiki: 31.12 LLM), rewrote 14 wikilinks
 ```
 
 Each entry: `YYYY-MM-DD — Short description of what changed`
@@ -300,9 +331,9 @@ Keep entries in reverse chronological order (newest first). This log is shared w
 
 ## Quality Standards
 
-- Every wiki article must cite its sources via wikilinks to `context/` files
+- Every wiki article must cite its sources via wikilinks to files in `XX.09 Archive for category XX/YY <wiki> sources/YYYY-MM-DD sources/`
 - Every article must cross-link to at least one related article
-- The `_index.md` concept map must reflect actual cross-references
+- The `XX.YY Wiki Index.md` concept map must reflect actual cross-references
 - Use Obsidian callouts (`> [!info]`, `> [!warning]`, `> [!tip]`) for key findings
 - Frontmatter on every file: tags, created date, keywords, related notes
 - Article filenames: lowercase, hyphenated, descriptive (e.g., `transformer-architecture.md`)

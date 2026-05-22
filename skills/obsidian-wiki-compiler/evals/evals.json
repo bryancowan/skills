@@ -4,20 +4,24 @@
     {
       "id": 0,
       "prompt": "I have a bunch of clipped articles about AI agents in /Users/bryan/Documents/repos/skills-workspace/obsidian-wiki/test-vault/Reading List/. The AI-related ones are: 'Agent Design Is Still Hard.md', 'Agents Over Bubbles.md', 'Anthropic's New Product Aims to Handle the Hard Part of Building AI Agents', 'Build AI agents with the Mistral Agents API', and 'Claude 4, Anthropic Agents, Human-AI Agents'. Compile them into a wiki about AI agents with a concept map. Put the output in /Users/bryan/Documents/repos/skills-workspace/obsidian-wiki/test-vault/30-39 Knowledge Management & Reading/31 Technology/31.12 AI Agents Wiki/",
-      "expected_output": "A compiled wiki with: context/ folder containing the source articles, _index.md with article listing and mermaid concept map, multiple interconnected wiki articles covering key concepts (agent architecture, frameworks, challenges), each with proper frontmatter, summaries, sources, and cross-references.",
+      "expected_output": "A compiled wiki with: source articles placed under '31.09 Archive for category 31/12 AI Agents sources/<sunday-of-week> sources/' (Sunday-anchored weekly bucket, ID-suffix-scoped), the wiki ID folder '31.12 AI Agents Wiki/' containing only the '31.12 Wiki Index.md' (with article listing and mermaid concept map) plus multiple interconnected wiki articles covering key concepts (agent architecture, frameworks, challenges), each with proper frontmatter, summaries, archive-path source wikilinks, and cross-references. A '_manifest.md' should live inside the weekly source folder. No 'context/' or '_index.md' folders/files should be present.",
       "files": []
     },
     {
       "id": 1,
       "prompt": "Run a health check on the wiki at /Users/bryan/Documents/repos/skills-workspace/obsidian-wiki/test-vault/30-39 Knowledge Management & Reading/31 Technology/31.12 AI Agents Wiki/ — anything broken or missing?",
-      "expected_output": "A health report table checking for broken wikilinks, missing backlinks, orphaned articles, source coverage gaps, and missing visualizations. Should identify specific issues and suggest fixes.",
+      "expected_output": "A health report table checking for: broken wikilinks, missing backlinks, orphaned articles, source coverage gaps, missing visualizations, legacy source folders (any 'YYYY-MM-DD sources/' inside the wiki ID folder rather than under the category archive), non-Sunday week-bucket names in the archive, and wikilink drift to pre-migration paths. Should identify specific issues and suggest fixes — including auto-migration of legacy daily folders to weekly Sunday-anchored buckets under '31.09 Archive for category 31/12 AI Agents sources/' with merge behavior for same-week folders.",
       "files": []
     },
     {
       "id": 2,
       "prompt": "What gaps does the AI agents wiki at /Users/bryan/Documents/repos/skills-workspace/obsidian-wiki/test-vault/30-39 Knowledge Management & Reading/31 Technology/31.12 AI Agents Wiki/ have? Suggest some questions that would make it more comprehensive, then research and add the best 2-3 as new articles.",
-      "expected_output": "Should identify conceptual gaps in the wiki, propose 3-5 research questions, then write 2-3 new articles that fill those gaps. Should update _index.md with new articles and update the concept map.",
-      "files": []
+      "expected_output": "Should identify conceptual gaps in the wiki, propose 3-5 research questions, then write 2-3 new articles that fill those gaps. Any new sources researched should be filed into the current week's Sunday-anchored bucket under '31.09 Archive for category 31/12 AI Agents sources/<sunday-of-week> sources/' (creating the bucket if it doesn't exist) and listed in that bucket's '_manifest.md'. Should update the Wiki Index with new articles and update the concept map."
+    },
+    {
+      "id": 3,
+      "prompt": "I have a wiki at /Users/bryan/Documents/repos/skills-workspace/obsidian-wiki/test-vault/30-39 Knowledge Management & Reading/31 Technology/31.12 AI Agents Wiki/ that still uses the old daily-source-folder layout. Inside the wiki ID folder there are two legacy folders: '2026-05-12 sources/' (Tuesday) and '2026-05-16 sources/' (Saturday) — both fall in the week of Sunday 2026-05-10. Run a health check and perform the migration to the new weekly archive layout.",
+      "expected_output": "Health report should flag both legacy folders. Migration should: (1) move all contents of both folders into a single new folder '31.09 Archive for category 31/12 AI Agents sources/2026-05-10 sources/', (2) regenerate '_manifest.md' in that folder from the merged contents, (3) rewrite every source wikilink in the wiki articles, the '31.12 Wiki Index.md', and the '31.00 JDex for category 31.md' to point at the new archive paths, (4) delete the now-empty legacy folders from the wiki ID directory, (5) append an entry to 'Vault Change Log.md' summarizing the migration count and wikilink rewrites."
     }
   ]
 }
