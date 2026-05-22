@@ -15,8 +15,9 @@ These principles guide every organizational decision:
 
 - **Clarity over completeness.** Five well-chosen areas beat nine mediocre ones.
 - **Broad over granular.** Fewer, broader categories reduce decision fatigue. `Money` beats `Investments`, `Savings`, and `Budget` as separate categories.
-- **The JDex is the source of truth** — not the filesystem. The Master Index IS the system.
+- **The JDex is the source of truth** — not the filesystem. The hybrid JDex (per-category `.00` notes + the tree-format Master Index) IS the system. Do not treat the Master Index as redundant — see `references/vault-layout.md`.
 - **Friction at the category level is a feature.** Creating a new category should require thought; creating a new ID should be effortless.
+- **Recognise the full JD vocabulary.** The vault may contain headers (`.X0` IDs prefixed `■ + emoji`), extend-the-end entries (`AC.ID+ title`), and `SYS.AC.ID` multi-system prefixes. Detect and preserve them when filing or auditing, even if rare. Full rules in `references/jd-rules.md`.
 
 ## Vault Configuration
 
@@ -43,6 +44,10 @@ Compare the vault filesystem against the Master Index to find drift.
 | Category creep | Any area exceeding 10 categories |
 | Overlapping categories | Categories with similar purposes that could merge |
 | Empty standard zeros | Categories missing their standard zero IDs (.00-.04, .09) |
+| Non-standard subfolders | Subfolders inside an ID that don't follow date / alphabetical / numbered-interval patterns |
+| Header formatting | `.X0` IDs that look like headers but lack the `■` + emoji prefix (or vice versa) |
+| Category over capacity | Categories with >100 IDs, frequent `+` use, or deepening nested needs — propose expand-an-area |
+| `SYS.` prefix orphans | Imported items carrying multi-system notation the vault hasn't accounted for |
 
 4. Output a markdown table with columns: `Issue`, `Location`, `Recommended Action`
 5. Ask the user which actions to take before making changes
@@ -158,8 +163,11 @@ Build out categories marked `[Planned - not yet built]` in the Master Index.
 | Standard zero | `XX.0N Description for category/area XX` | `12.00 JDex for category 12` |
 
 - Category numbers start at `x1` (e.g., `11`, `12`), not `x0` — the `x0` slot is the area management category
-- IDs start at `.11` for user content (`.00`-`.09` are standard zeros)
-- Only exception to flat structure: date-stamped subfolders within an ID (e.g., `2024-08-08 claim docs/`)
+- IDs start at `.11` for user content (`.00`-`.09` are standard zeros; `.05`-`.08` are reserved — do not use)
+- Subfolders inside an ID must follow one of the approved patterns (date / alphabetical / numbered intervals) — see `references/jd-rules.md`
+- Headers are `.X0` IDs prefixed `■ + emoji` (containers only, never store files)
+- Extend-the-end uses `AC.ID+ title` for repeated variations of one ID
+- Multi-system prefix uses `SYS.AC.ID` where `SYS` matches `[A-Z][0-9][0-9]`
 - Tags use `#camelCase` format
 - Dates use `yyyy-mm-dd` format
 

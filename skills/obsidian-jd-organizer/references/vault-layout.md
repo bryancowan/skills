@@ -77,6 +77,17 @@ related:
 
 **Unbuilt categories** use: `      [Planned - not yet built]` (6-space indent).
 
+## JDex Method (Hybrid)
+
+This vault uses a **hybrid JDex**, combining two of the three methods documented at <https://johnnydecimal.com/documentation/the-jdex.md> and <https://johnnydecimal.com/documentation/jdex-other-methods.md>:
+
+- **Per-category `.00 JDex` notes** — the JD-preferred "one note per category" approach. Each category's `.00` note lists the IDs in that category with descriptions and wikilinks.
+- **`00.00 Master Index`** — a single tree-format note (the JD-documented "one note, one line per entry" method) that gives an at-a-glance view of the whole system.
+
+Both are intentional. The Master Index is **not** redundant with the per-category JDex notes — it's the system's table of contents and the canonical place to check whether an ID exists before assigning a new one. Do not propose collapsing the two.
+
+YAML frontmatter (rather than the JD-documented blockquote form of Description / Location / Relates to / Keywords) is the local convention because Obsidian renders frontmatter natively and Dataview queries can read it.
+
 ## Metadata Conventions
 
 Notes use this frontmatter template:
