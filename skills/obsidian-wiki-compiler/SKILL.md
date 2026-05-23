@@ -11,6 +11,23 @@ The LLM writes and maintains the wiki. The user rarely edits it directly.
 
 Before doing any vault operations, invoke the **obsidian-cli** skill for reading/creating/searching notes, the **obsidian-markdown** skill for proper Obsidian formatting, and the **obsidian-jd-organizer** skill when filing the wiki into JD locations.
 
+## File Recognition
+
+When scanning a directory, **filename casing** determines the file's role:
+
+| Filename pattern | Example | Role |
+|-----------------|---------|------|
+| `kebab-case-name.md` | `articulation-as-bottleneck.md` | **Wiki article** — already compiled; part of the wiki |
+| `Title Case Name.md` / `Title Case - timestamp.md` | `Elon Musk loses his case against Sam Altman - 2026-05-19T073414-0500.md` | **Source file** — raw input to analyze and incorporate |
+
+The rule: all-lowercase hyphen-separated = wiki article; any Title Case with spaces = unprocessed source.
+
+Apply this during every workflow:
+
+- **Ingest** — Title-Case files found in the wiki folder are sources waiting to be ingested; move them to the weekly archive bucket and process them.
+- **Compile** — If Title-Case files remain in the wiki folder, ingest them first, then compile.
+- **Health Check** — Title-Case files found inside the active wiki ID folder (`XX.YY Topic Name/`) are a lint violation (sources must live in the archive). Add to the health report and offer to move them.
+
 ## Workflows
 
 ### 1. Ingest
