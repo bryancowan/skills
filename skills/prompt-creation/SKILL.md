@@ -87,7 +87,7 @@ If the user specifies a model (or you can infer one), load the relevant model-sp
 | Google Gemini | `context/models/google-gemini/` |
 | Google Nano Banana | `context/models/google-nano-banana/` |
 | Z.ai GLM | `context/models/zai-glm/` |
-| OpenAI Codex (`gpt-5.3-codex`) | `context/models/openai-codex/codex-prompting-guide` — covers starter prompt, AGENTS.md, compaction, tools (apply_patch, shell, update_plan), preambles, phase parameter, and metaprompting |
+| OpenAI Codex (`gpt-5.3-codex`) | `context/models/openai-codex/codex-prompting-guide` — covers starter prompt, AGENTS.md, compaction, tools (apply_patch, shell, update_plan), preambles, phase parameter, and metaprompting. Full source with worked examples: `context/coding/codex-full-guide.md` |
 | Mistral | `context/models/mistral/` |
 | Alibaba Qwen | `context/models/alibaba-qwen/` |
 | MiniMax M2 | `context/models/minimax-m2/` |
@@ -106,11 +106,11 @@ Different output modalities need different prompting strategies. Load the releva
 
 | Output Type | Reference Path | Key Principle |
 |---|---|---|
-| **Image generation** | `context/image-generation/` — for gpt-image-2 specifically, read `gpt-image-2-prompting-guide` | Use natural language descriptions, not tag soup. Structure as background → subject → details → constraints. Be specific about materials, medium, and composition. |
+| **Image generation** | `context/image-generation/` — for OpenAI's GPT image family (gpt-image-2 default, plus 1.5/1/1-mini) read `gpt-image-prompting-guide.md` (model selection, sizing, use-case patterns); deep source with worked examples in `gpt-image-models-full-guide.md` | Use natural language descriptions, not tag soup. Structure as background → subject → details → constraints. Be specific about materials, medium, and composition. |
 | **Speech-to-speech (Realtime)** | `context/speech-to-speech/gpt-realtime-prompting-guide` | Voice agents need different prompting than text. Use the 8-section structure (Role, Personality, Context, Pronunciations, Tools, Rules, Conversation Flow, Safety). Prefer bullets, pin language, add Variety rule, define explicit conversation states with exit criteria. |
 | **Text-to-speech** | `context/text-to-speech/` | Normalize text (expand numbers, abbreviations). Use SSML break tags for pauses. Control pacing through narrative styling. |
 | **Video generation** | `context/video-generation/` | Load `context/video-generation/google-veo-prompt-guide.md` for Veo-specific guidance. |
-| **Code** | `context/coding/` | Specify language, framework, patterns. Include example signatures. Define error handling expectations. |
+| **Code** | `context/coding/` — includes `codex-full-guide.md` (full OpenAI Codex agentic-coding source) | Specify language, framework, patterns. Include example signatures. Define error handling expectations. |
 | **Structured data** | (no special file) | Provide exact schema. Use few-shot examples of valid output. Specify edge case handling. |
 
 ### Adapt to tools and services
