@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.6.3",
+  "checkpoint_id": "b6dcec3b2959",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "skills/prompt-creation/SKILL.md",
+    "skills/prompt-creation/context/coding/codex-full-guide.md",
+    "skills/prompt-creation/context/image-generation/gpt-image-2-prompting-guide",
+    "skills/prompt-creation/context/image-generation/gpt-image-models-full-guide.md",
+    "skills/prompt-creation/context/image-generation/gpt-image-prompting-guide.md",
+    "skills/prompt-creation/prompt-creation.skill"
+  ],
+  "sessions": [
+    {
+      "metadata": "/b6/dcec3b2959/0/metadata.json",
+      "transcript": "/b6/dcec3b2959/0/full.jsonl",
+      "content_hash": "/b6/dcec3b2959/0/content_hash.txt",
+      "prompt": "/b6/dcec3b2959/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 37854,
+    "cache_creation_tokens": 225253,
+    "cache_read_tokens": 2209201,
+    "output_tokens": 23771,
+    "api_call_count": 23
+  }
+}

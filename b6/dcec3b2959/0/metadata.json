@@ -1,0 +1,62 @@
+{
+  "cli_version": "0.6.3",
+  "checkpoint_id": "b6dcec3b2959",
+  "session_id": "61d59f62-1f6d-4201-b4a4-56417122300c",
+  "strategy": "manual-commit",
+  "created_at": "2026-06-06T22:34:55.468737Z",
+  "branch": "main",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "skills/prompt-creation/SKILL.md",
+    "skills/prompt-creation/context/coding/codex-full-guide.md",
+    "skills/prompt-creation/context/image-generation/gpt-image-2-prompting-guide",
+    "skills/prompt-creation/context/image-generation/gpt-image-models-full-guide.md",
+    "skills/prompt-creation/context/image-generation/gpt-image-prompting-guide.md",
+    "skills/prompt-creation/prompt-creation.skill"
+  ],
+  "agent": "Claude Code",
+  "model": "",
+  "turn_id": "614fe9d500fd",
+  "token_usage": {
+    "input_tokens": 37854,
+    "cache_creation_tokens": 225253,
+    "cache_read_tokens": 2209201,
+    "output_tokens": 23771,
+    "api_call_count": 23
+  },
+  "session_metrics": {
+    "turn_count": 2
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-06-06T22:34:55.456057Z",
+    "agent_lines": 1770,
+    "agent_removed": 129,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 1770,
+    "total_lines_changed": 1899,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 1659,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "skills/prompt-creation/context/coding/Codex Prompting Guide - 2026-06-06T100537-0500.md": 687,
+        "skills/prompt-creation/context/image-generation/GPT Image Generation Models Prompting Guide - 2026-06-06T100527-0500.md": 972
+      }
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 1770,
+      "agent_lines_removed": 129
+    }
+  ]
+}

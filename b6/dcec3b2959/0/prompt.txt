@@ -1,0 +1,21 @@
+Update to prompt generation
+
+I have an existing skill called prompt creation and I want to update it with some new information.
+
+
+Here is the skill directory: /Users/bryan/Documents/repos/skills/skills/prompt-creation
+
+---
+
+Here are the new files:
+
+new Codex model promting
+/Users/bryan/Documents/repos/skills/skills/prompt-creation/context/coding/Codex Prompting Guide - 2026-06-06T100537-0500.md
+
+
+new image geneation inforamtion for gpt image
+/Users/bryan/Documents/repos/skills/skills/prompt-creation/context/image-generation/GPT Image Generation Models Prompting Guide - 2026-06-06T100527-0500.md
+
+---
+
+Could you also make a new skill file and put it in the directory to make it easier to install?
