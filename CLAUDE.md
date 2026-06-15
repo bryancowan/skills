@@ -38,6 +38,7 @@ my-skill/
   - `good-documentation/` — writing and reviewing documentation
   - `obsidian-jd-organizer/` — maintains Johnny Decimal vault structure; audits, files notes, updates indexes, expands categories
   - `obsidian-wiki-compiler/` — compiles raw sources into interconnected Obsidian wikis with diagrams and visualizations
+  - `podcast-transcript/` — converts a podcast SRT into speaker-labeled markdown (append to a note or standalone file); profile-driven speakers + STT-artifact correction
   - `prompt-creation/` — creating and refining prompts for LLMs and AI agents
   - `ship-and-watch/` — ship-and-watch skill
   - `ship-and-watch-tick/` — ship-and-watch tick skill

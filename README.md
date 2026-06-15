@@ -16,6 +16,7 @@ For background on the skills system, see:
 - **[good-documentation](./skills/good-documentation)** — Writing and reviewing documentation: user guides, READMEs, tutorials, onboarding materials.
 - **[obsidian-jd-organizer](./skills/obsidian-jd-organizer)** — Maintains a Johnny Decimal organizational system in Obsidian: audits structure, files loose notes, updates indexes, expands categories.
 - **[obsidian-wiki-compiler](./skills/obsidian-wiki-compiler)** — Transforms raw source documents into a structured, interconnected Obsidian wiki with concept maps and visualizations.
+- **[podcast-transcript](./skills/podcast-transcript)** — Converts a podcast SRT into clean, speaker-labeled markdown — appended to an existing note or written as a standalone file with metadata. Uses per-podcast profiles for speakers and known speech-to-text artifacts.
 - **[prompt-creation](./skills/prompt-creation)** — Creating, reviewing, and refining prompts for LLMs and AI agents. Covers system prompts, multi-agent pipelines, image/video/audio prompts, and adapting across models.
 - **[ship-and-watch](./skills/ship-and-watch)** — Commit, push, open a PR, then start a polling loop that checks CI every 5 minutes and auto-fixes failures until the PR is green.
 - **[ship-and-watch-tick](./skills/ship-and-watch-tick)** — One iteration of the ship-and-watch loop: polls PR CI status, applies a minimal fix if any check is failing, and stops the loop when everything is green. Invoked automatically by ship-and-watch.

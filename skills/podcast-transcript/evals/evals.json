@@ -1,0 +1,23 @@
+{
+  "skill_name": "podcast-transcript",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Process the SRT at /Users/bryan/Documents/transcripts/Xi Goes to North Korea; Inspecting Xinjiang; A $295 Billion AI Buildout; The Pentagon Alleges PLA Links for Alibaba and Others.srt and append the transcript to my Sharp China note at /Users/bryan/Documents/vault/sharp-china-2026-06-14.md",
+      "expected_output": "Resolves OUTPUT_MODE to append (existing note given). Loads the sharp-china profile for speakers (Andrew Sharp / Bill Bishop) and known artifacts. Runs scripts/parse_srt.py to get paragraphs, scans the whole transcript for STT artifacts (applying profile fixes like cynicism→Sinocism, she/she's→Xi/Xi's, Trumpsey→Trump-Xi, Wong/Wahooning→Wang Huning, Latinism→Leninism, citization→sinicization), attributes speakers by alternation/role/direct-address and splits long paragraphs into multiple turns, then appends a '## Transcript' section of '**Name:** text' paragraphs to the note. Refuses to append if a '## Transcript' section already exists. Verifies the tail of the note.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "Convert this podcast transcript to a markdown file: /Users/bryan/Documents/transcripts/some-episode.srt",
+      "expected_output": "Resolves OUTPUT_MODE to new-file (only an SRT given, no target note). Parses with scripts/parse_srt.py, scans for and fixes STT artifacts, attributes speakers, and writes a standalone .md with YAML frontmatter (title, podcast if known, speakers, source path, date, 2-5 derived topics) followed by a '# Title', a one-to-two sentence summary line, and the '## Transcript'. Skips frontmatter fields it cannot determine rather than inventing them. Refuses to overwrite an existing output file.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Add transcript from /Users/bryan/Documents/transcripts/unknown-show.srt to /Users/bryan/Documents/vault/unknown-show.md — it's a podcast I haven't processed before.",
+      "expected_output": "No matching podcast profile exists, so it proceeds without one. Reads a ~500-word middle sample to identify each voice's characteristic patterns before attributing, checks first for any inline speaker labels in the SRT (and uses them if present), surfaces candidate proper nouns via 'parse_srt.py --proper-nouns' and verifies uncertain spellings (WebSearch if available), then produces the speaker-labeled '## Transcript' appended to the note. Offers to save a new podcast profile for next time.",
+      "files": []
+    }
+  ]
+}
