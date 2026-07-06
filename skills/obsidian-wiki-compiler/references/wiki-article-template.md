@@ -13,7 +13,7 @@ keywords: relevant, search, terms
 related:
   - "[[other-article]]"
 sources:
-  - "[[XX.09 Archive for category XX/YY <wiki> sources/YYYY-MM-DD sources/source-file.md]]"
+  - "[[XX.09 Archive for category XX/YYYY-MM-DD/source-file.md]]"
 ---
 # Article Title
 
@@ -29,7 +29,7 @@ summarizing each source separately.
 
 ### Subheading A
 
-Content with citations: "According to [[XX.09 Archive for category XX/YY <wiki> sources/YYYY-MM-DD sources/source-1.md]], the approach involves..."
+Content with citations: "According to [[XX.09 Archive for category XX/YYYY-MM-DD/source-1.md]], the approach involves..."
 
 ### Subheading B
 
@@ -43,9 +43,9 @@ Content with cross-references: "This relates to [[other-wiki-article]], which co
 
 ## Sources
 
-- [[XX.09 Archive for category XX/YY <wiki> sources/YYYY-MM-DD sources/source-1.md]] — Provided foundational data on X
-- [[XX.09 Archive for category XX/YY <wiki> sources/YYYY-MM-DD sources/source-2.md]] — Offered alternative perspective on Y
-- [[XX.09 Archive for category XX/YY <wiki> sources/YYYY-MM-DD sources/source-3.pdf]] — Quantitative data for charts
+- [[XX.09 Archive for category XX/YYYY-MM-DD/source-1.md]] — Provided foundational data on X
+- [[XX.09 Archive for category XX/YYYY-MM-DD/source-2.md]] — Offered alternative perspective on Y
+- [[XX.09 Archive for category XX/YYYY-MM-DD/source-3.pdf]] — Quantitative data for charts
 
 ## Related
 
@@ -66,7 +66,7 @@ Content with cross-references: "This relates to [[other-wiki-article]], which co
 - `created`: Date of article creation in `yyyy-mm-dd`
 - `keywords`: Comma-separated search terms
 - `related`: Wikilinks to other wiki articles (not raw sources)
-- `sources`: Wikilinks to raw source files. Path: `XX.09 Archive for category XX/<YY> <wiki-short-name> sources/<sunday-date> sources/<file>` where `<YY>` is the wiki's two-digit ID suffix and `<sunday-date>` is the Sunday of the week the source was ingested
+- `sources`: Wikilinks to raw source files. Path: `XX.09 Archive for category XX/<sunday-date>/<file>` where `<sunday-date>` is the Sunday of the week the source was ingested. Buckets are shared across every wiki in the category, so the same path may also be cited from another wiki's articles.
 
 ## Callout Usage
 

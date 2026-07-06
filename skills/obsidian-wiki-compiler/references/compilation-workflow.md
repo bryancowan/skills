@@ -4,7 +4,7 @@ Step-by-step details for the wiki compilation pipeline.
 
 ## Phase 1: Source Analysis
 
-For each file in every `YYYY-MM-DD sources/` weekly bucket (located under `XX.09 Archive for category XX/<YY> <wiki-short-name> sources/`):
+For each file in every `YYYY-MM-DD/` weekly bucket cited by this wiki (located flat under `XX.09 Archive for category XX/`):
 
 1. Read the full content
 2. Extract structured data:
@@ -64,7 +64,7 @@ After all articles are written:
    - Every raw source is cited by at least one article
    - Every article is listed in the wiki index
    - Every cross-reference in articles matches a link in the concept map
-   - Every source wikilink resolves to a file under `XX.09 Archive for category XX/<YY> <wiki> sources/<sunday-date> sources/` (no legacy daily-folder paths inside the wiki ID folder)
+   - Every source wikilink resolves to a file under `XX.09 Archive for category XX/<sunday-date>/` (no legacy daily-folder paths inside the wiki ID folder, and no old per-wiki wrapper-folder paths)
 
 ## Phase 5: Visualization
 
@@ -82,7 +82,7 @@ After articles and index exist:
 
 When new sources are added to an existing wiki:
 
-1. Compute the Sunday-of-week for today's ingest date. If a folder for that Sunday already exists under `XX.09 Archive/<YY> <wiki> sources/`, append to it. Otherwise create a new `YYYY-MM-DD sources/` folder (Sunday date) in that bucket. Update `_manifest.md` in whichever folder applies.
+1. Compute the Sunday-of-week for today's ingest date. If a bucket for that Sunday already exists under `XX.09 Archive for category XX/` — whether created by this wiki's earlier ingest or by a different wiki in the same category — append to it rather than creating a duplicate. Otherwise create a new flat `YYYY-MM-DD/` folder. Update `_manifest.md` in whichever folder applies; if the bucket is shared with another wiki, note that in this wiki's `## Sources` section (see SKILL.md's Ingest workflow).
 2. Re-analyze: which existing articles need updates? What new articles are needed?
 3. Update existing articles with new information (add to Details, add new Sources entries). Update source wikilinks to point to the correct Sunday-of-week folder under the archive.
 4. Create new articles for new concepts
