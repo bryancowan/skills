@@ -21,7 +21,36 @@ Some techniques in this reference require **multiple model calls or external orc
 
 **Use these only when the user has real orchestration** (multiple API calls, agent framework, scripted pipeline). If they just want a single prompt to paste somewhere, pick a single-pass alternative: Few-Shot, Skeleton-of-Thought, RCI within one response, or Decomposed Prompting delivered as labeled sub-prompts.
 
-**Reasoning-native models (o3, o4-mini, DeepSeek-R1, Qwen3-thinking):** never add Chain-of-Thought, "think step by step", or any reasoning scaffolding. These models reason internally; CoT instructions actively degrade output. State the goal and desired format. Nothing more.
+---
+
+## ⚠️ Reasoning-native models: never add Chain-of-Thought
+
+Most current frontier models reason internally. Adding "think step by step" or any reasoning scaffolding wastes tokens and degrades output. State the goal, the constraints, and the desired format — nothing more.
+
+**Reasoning is internal — do NOT add CoT:**
+
+| Family | How reasoning is controlled |
+|---|---|
+| Claude Fable 5 / Opus 5 / Sonnet 5 | Adaptive thinking, on by default (always on for Fable 5). `effort`: `low`…`max`. Manual `budget_tokens` returns a 400 error. |
+| Claude Opus 4.8 / 4.7 | Adaptive thinking, **off** unless `thinking: {type: "adaptive"}`. Same `effort` scale. |
+| GPT-5.6 / 5.5 / 5.4 | `reasoning.effort`: `none`, `low`, `medium`, `high`, `xhigh`, `max`. Plus `reasoning.mode: "pro"` on 5.6. |
+| Gemini 3.x | Thinking built in; Gemini 3.1 Flash Image exposes `minimal` / `high` thinking levels |
+| GLM-5.2 | `thinking: {type: "enabled"}` (default) + `reasoning_effort`: `high` / `max`. The model decides *whether* to think. |
+| Qwen3 (3.6+) | `thinking: true`; `/think` and `/no_think` in chat UIs |
+| Gemma 4 | `enable_thinking=True` via `apply_chat_template()`. On Cerebras, `reasoning_effort` defaults to `none` — and `low`/`medium`/`high` are **currently equivalent**. |
+| Kimi K2.5 / K2.6 / K2-Thinking | Thinking enabled; `tool_choice` restricted to `auto`/`none` while thinking |
+| o3 / o4-mini / DeepSeek-R1 | Legacy reasoning models; same rule |
+
+**When CoT still helps:** non-thinking models, and thinking-capable models running with thinking *disabled* (`reasoning.effort: "none"`, `thinking: {type: "disabled"}`, `/no_think`). There it remains a real 10–30% accuracy lever on reasoning tasks.
+
+**Raise effort instead of prompting around shallow reasoning.** Every vendor says this. Adding "think harder" to a `low`-effort request is worse than setting the parameter.
+
+**Corollaries for current models:**
+- Don't instruct a model to reproduce or explain its internal reasoning as response text — on Claude Fable 5 this can trigger a `reasoning_extraction` refusal. Read the structured `thinking` blocks instead.
+- Don't add "double-check your answer" or "include a verification step" to Claude Opus 5 — it self-verifies, and these instructions cause over-verification at real token cost.
+- Changing the reasoning-effort parameter invalidates prompt caches on OpenAI. Pick a level and hold it.
+
+See `model-selection.md` for what else changes when switching families.
 
 ---
 
