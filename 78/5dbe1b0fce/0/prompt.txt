@@ -1,0 +1,16 @@
+/init
+
+---
+
+could you update the '/Users/bryan/Documents/repos/skills/README.md'. to make sure it's
+
+1. still update to date
+2.  on the 'Installing in Claude Code' could we expand that behond code for Codex and 2 other popular coding agents
+
+---
+
+Let's to Claude Code, Codex, Cline and Cursor
+
+---
+
+"Same pattern, into Cline's skills directory:" don't skip the detials be expict for each one
