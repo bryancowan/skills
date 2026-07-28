@@ -40,22 +40,15 @@ my-skill/
   - `obsidian-wiki-compiler/` — compiles raw sources into interconnected Obsidian wikis with diagrams and visualizations
   - `podcast-transcript/` — converts a podcast SRT into speaker-labeled markdown (append to a note or standalone file); profile-driven speakers + STT-artifact correction
   - `prompt-creation/` — creating and refining prompts for LLMs and AI agents
-  - `ship-and-watch/` — ship-and-watch skill
-  - `ship-and-watch-tick/` — ship-and-watch tick skill
+  - `ship-and-watch/` — commits, pushes, opens a PR, then polls CI every 5 minutes, auto-fixing failures until green
+  - `ship-and-watch-tick/` — one iteration of the ship-and-watch polling loop; invoked automatically by `ship-and-watch`, not called directly
 - Use `template/SKILL.md` as a starting point
 - If the SKILL.md body approaches 500 lines, split content into `references/` files and add clear pointers from SKILL.md
 - For multi-domain skills, organize reference files by variant (e.g., `references/aws.md`, `references/gcp.md`) so only the relevant file is loaded
 
-## Skill Creator Eval Workflow
+## `.claude-plugin/marketplace.json`
 
-The `skills/skill-creator/` skill has an eval loop for testing and improving skills:
-
-- Test cases stored in `evals/evals.json` within the skill directory
-- Eval runs go into `<skill-name>-workspace/iteration-N/` as a sibling to the skill directory
-- Aggregation script: `python -m scripts.aggregate_benchmark <workspace>/iteration-N --skill-name <name>` (run from `<repo-root>/skills/skill-creator/`)
-- Eval viewer: `python skills/skill-creator/eval-viewer/generate_review.py <workspace>/iteration-N --skill-name "name" --benchmark <workspace>/iteration-N/benchmark.json`
-- Description optimizer: `python -m scripts.run_loop --eval-set <path> --skill-path <path> --model <model-id> --max-iterations 5` (run from `<repo-root>/skills/skill-creator/`)
-- Package a skill: `python -m scripts.package_skill <path/to/skill-folder>` (produces a `.skill` file)
+Defines the plugin bundles exposed by `/plugin marketplace add bryancowan/skills`. Note this file still lists plugins/skills (e.g. `document-skills`, `skill-creator`, `frontend-design`, `claude-api`) that are **not** present in this repo's `skills/` directory — they were part of the original Anthropic example-skills fork and were removed from `skills/` when this repo was promoted to personal use, but the marketplace entries were not cleaned up. Don't assume a skill referenced there actually exists locally; check `skills/` first.
 
 ## Installing Skills in Claude Code
 

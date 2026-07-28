@@ -74,10 +74,59 @@ Required frontmatter:
 
 ---
 
-## Installing in Claude Code
+## Installing These Skills
 
-To install skills from this repo as a Claude Code plugin:
+Skills here follow the open [Agent Skills specification](https://agentskills.io/specification) — the same `SKILL.md` folder works unmodified across every agent below, so pick whichever you use.
+
+### Claude Code
+
+Install the whole collection at once as a plugin marketplace:
 
 ```bash
 /plugin marketplace add bryancowan/skills
 ```
+
+Or install individual skills without the plugin system — clone this repo and copy the skill(s) you want:
+
+```bash
+git clone https://github.com/bryancowan/skills.git
+cp -r skills/skills/<skill-name> ~/.claude/skills/       # personal, all projects
+cp -r skills/skills/<skill-name> .claude/skills/         # this project only
+```
+
+Claude Code triggers a skill automatically when your request matches its `description`, or you can invoke it by name.
+
+### Codex CLI
+
+Clone this repo, then copy the skill(s) you want into Codex's skills directory:
+
+```bash
+git clone https://github.com/bryancowan/skills.git
+cp -r skills/skills/<skill-name> ~/.codex/skills/        # personal, all projects
+cp -r skills/skills/<skill-name> .codex/skills/          # this project only
+```
+
+Codex loads skill metadata at startup and activates a skill automatically when it matches your request. To force one, type `$<skill-name>` in the prompt, or open the `/skills` selector and pick it from the list.
+
+### Cline
+
+Clone this repo, then copy the skill(s) you want into Cline's skills directory:
+
+```bash
+git clone https://github.com/bryancowan/skills.git
+cp -r skills/skills/<skill-name> ~/.cline/skills/        # personal, all projects (global takes precedence on name conflicts)
+cp -r skills/skills/<skill-name> .cline/skills/          # this project only, shared with your team via version control
+```
+
+Cline surfaces every installed skill's name and description with each message and activates one automatically when it matches your request. To force one, type `/` in the Cline chat panel and select it from the list, or manage installed skills from the scale icon at the bottom of the Cline panel.
+
+### Cursor
+
+Cursor only reads skills from the project directory — there's no personal/global skills folder. Clone this repo, then copy the skill(s) you want into your project's `.cursor/skills/`:
+
+```bash
+git clone https://github.com/bryancowan/skills.git
+cp -r skills/skills/<skill-name> /path/to/your-project/.cursor/skills/
+```
+
+Cursor's Agent discovers skills in `.cursor/skills/` automatically and activates one when it matches your request. To force one, type `/` in Agent chat and search for the skill name.
