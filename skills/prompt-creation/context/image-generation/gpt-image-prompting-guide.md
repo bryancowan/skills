@@ -18,9 +18,21 @@ OpenAI's `gpt-image` family generates and edits production-quality visuals: phot
 
 ---
 
+Sourced: 2026-07-26
+
+Sources:
+- https://developers.openai.com/api/docs/guides/image-generation
+- https://developers.openai.com/api/docs/guides/tools-image-generation
+- https://developers.openai.com/cookbook/examples/multimodal/image-gen-models-prompting-guide
+- https://developers.openai.com/api/docs/pricing
+
+For Google's image models (Imagen, Nano Banana 2 / Pro / Lite), see `google-image-models-guide.md` in this folder.
+
+---
+
 ## Model Selection
 
-As of April 21, 2026:
+Verified current 2026-07-26:
 
 | Model | `outputQuality` | `input_fidelity` | Resolutions | Use for |
 |---|---|---|---|---|
@@ -47,6 +59,29 @@ Any `size` is allowed if **all** hold: both edges multiples of 16; max edge < 38
 | Square (default) | 1024×1024 |
 | 2K / QHD (reliability ceiling) | 2560×1440 |
 | 4K / UHD (experimental) | 3824×2144 (rounded under the <3840 edge rule) |
+
+### Output format and background
+`PNG` (default), `JPEG`, or `WebP`; for JPEG/WebP set `output_compression` (0–100). Background can be opaque or auto-selected — **`gpt-image-2` does not support transparency.** If you need a transparent PNG, use `gpt-image-1.5`/`-1`/`-mini`.
+
+### Cost
+`gpt-image-2` bills at $8.00 / 1M input tokens ($2.00 cached) and $30.00 / 1M output tokens. Image *inputs* on the GPT-5.6 family default to `original` detail (no downscaling), which raises token counts on large references — set `detail: "low"` when the reference only needs to be recognized, not read.
+
+---
+
+## Images API vs. the `image_generation` tool
+
+Two ways to reach the same models:
+
+- **Images API** — you call the endpoint directly. Use when image generation is the whole job and you control every parameter.
+- **`image_generation` tool in the Responses API** — the model decides when and how to generate or edit images as part of a conversation. Supported on `gpt-5.5`, `gpt-5.4-mini`, `gpt-5.2`, `gpt-5`, `o3`, `gpt-4.1`, `gpt-4o`, `gpt-4o-mini`.
+
+Tool-specific behavior worth prompting around:
+
+- **Parameters** mirror the Images API (`size`, `quality`, `format`, `compression`, `background`) plus `action`: `auto`, `generate`, or `edit`. `auto` lets the model pick based on the prompt.
+- **Multi-turn editing** works by referencing `previous_response_id` or an image ID in the input array — so "now make it look realistic" refines the prior image instead of starting over.
+- **`partial_images`** (1–3) streams intermediate renders for perceived latency.
+- **Use action-oriented verbs.** "Draw…" and "edit…" outperform general directives. To combine images, frame it as an edit: *"edit the first image by adding this element from the second image."*
+- The tool auto-optimizes your prompt text (a "revised prompt"), so extremely terse prompts still work — but explicit constraints still beat letting it guess.
 
 ---
 

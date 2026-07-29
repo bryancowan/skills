@@ -45,8 +45,8 @@
     },
     {
       "id": 8,
-      "prompt": "I'm using Claude Code with Claude Opus 4.7 to add a new validation function to my Express API. Write me the prompt.",
-      "expected_output": "A Claude Code prompt that includes the over-engineering guard verbatim or near-verbatim: 'Only make changes directly requested. Do not add features, refactor, or introduce abstractions beyond what was asked.' Should also include scope (which files), allowed/forbidden actions, stop conditions, and ✅ checkpoints. This tests the Opus 4.x over-engineering hard rule.",
+      "prompt": "I'm using Claude Code with Claude Opus 5 to add a new validation function to my Express API. Write me the prompt.",
+      "expected_output": "A Claude Code prompt that includes a scope guard drawn from the current Claude 5 guidance — e.g. 'Deliver what was asked, at the scope intended... rather than quietly narrowing, widening, or transforming it' or the no-extra-abstractions snippet. Should also include scope (which files), allowed/forbidden actions, stop conditions, and ✅ checkpoints. Must NOT add verification/double-check instructions (Opus 5 self-verifies) and must NOT add chain-of-thought scaffolding. This tests the scope-guard and delete-obsolete-instructions hard rules.",
       "files": []
     }
   ]

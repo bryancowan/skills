@@ -11,9 +11,10 @@ This skill helps create effective prompts for any LLM task — from simple one-s
 
 These rules apply across every mode. Violating any of them produces worse output than no prompt at all.
 
-- **Never add Chain-of-Thought to reasoning-native models.** o3, o4-mini, DeepSeek-R1, and Qwen3 in thinking mode reason internally across thousands of tokens. Adding "think step by step" or any reasoning scaffolding actively degrades their output. For these models, give short clean instructions stating only the goal and desired output format.
+- **Never add Chain-of-Thought to reasoning-native models.** Claude 5 (adaptive thinking), GPT-5.x with reasoning on, Gemini 3.x, GLM-5.2, Qwen3 thinking mode, Gemma 4 thinking, and the o-series all reason internally. "Think step by step" wastes tokens and degrades output. State the goal and desired format, nothing more. Full matrix in `references/techniques.md`. **Raise the effort parameter instead of prompting around shallow reasoning** — every vendor says this.
 - **Never embed fabrication-prone techniques in a single prompt.** Mixture of Experts, Tree of Thought, Graph of Thought, Universal Self-Consistency, and deep prompt chaining all require multi-pass orchestration or external infrastructure. When forced into a single forward pass, the model role-plays the structure and fabricates the content. Use these only when the user has real orchestration (e.g., agent SDK, LangChain, multi-call pipeline).
-- **Add an over-engineering guard to any Claude Opus 4.x prompt.** Opus 4.x adds features, refactors, and abstractions that were not requested. Always include: "Only make changes directly requested. Do not add features, refactor, or introduce abstractions beyond what was asked."
+- **Delete instructions that current models made obsolete.** Verification steps, "double-check your answer", forced progress summaries, and "CRITICAL: you MUST use this tool" all *hurt* on Claude 5, Opus 4.8, and GPT-5.6 — they cause over-verification and tool overtriggering. Prefill, `temperature`/`top_p`/`top_k`, and thinking `budget_tokens` return 400 errors on Claude 5. See `context/models/anthropic-claude/claude-5-family-guide.md` for the full delete list.
+- **Scope guards are still needed, but the wording changed.** Claude Opus 5 and Fable 5 expand scope and over-tidy at high effort; use the current snippets in the Claude 5 guide rather than the old Opus 4.x boilerplate.
 - **Cap clarifying questions at 3.** Lead with the 1–2 most important based on context; fold the rest in later. Endless clarification frustrates users and pushes the prompt off-topic.
 - **Never output a prompt without confirming the target tool/model when ambiguous.** Different tools and models need different syntax — guessing produces a worse first-shot result than asking.
 
@@ -82,21 +83,27 @@ If the user specifies a model (or you can infer one), load the relevant model-sp
 
 | Model Family | Reference Path |
 |---|---|
-| Anthropic Claude (Opus 4.7 / 4.6 / Sonnet 4.6 / Haiku 4.5) | `context/models/anthropic-claude/` — Opus 4.7 behavior changes: `claude-opus-4-7-guide.md`; full best practices: `claude-prompting-guide.md` |
-| OpenAI GPT-5 / GPT-5.4 | `context/models/openai-gpt-5-family/` — vision/document tasks: see `gpt-5-4_vision_document_guide` in that directory |
-| Google Gemini | `context/models/google-gemini/` |
-| Google Nano Banana | `context/models/google-nano-banana/` |
-| Z.ai GLM | `context/models/zai-glm/` |
-| OpenAI Codex (`gpt-5.3-codex`) | `context/models/openai-codex/codex-prompting-guide` — covers starter prompt, AGENTS.md, compaction, tools (apply_patch, shell, update_plan), preambles, phase parameter, and metaprompting. Full source with worked examples: `context/coding/codex-full-guide.md` |
-| Mistral | `context/models/mistral/` |
-| Alibaba Qwen | `context/models/alibaba-qwen/` |
-| MiniMax M2 | `context/models/minimax-m2/` |
-| Moonshot Kimi | `context/models/moonshot-kimi/` |
+| **Anthropic Claude 5** (Fable 5 / Opus 5 / Sonnet 5 / Haiku 4.5) | `context/models/anthropic-claude/claude-5-family-guide.md` — model selection, `effort`, adaptive thinking, verbosity, scope control, agentic patterns, and the list of instructions to delete from older prompts |
+| Anthropic Claude Opus 4.8 (legacy) | `context/models/anthropic-claude/claude-opus-4-8-guide.md` |
+| **OpenAI GPT-5.6** (`sol` / `terra` / `luna`) | `context/models/openai-gpt-5-family/gpt-5-6-guide.md` — lean prompts, autonomy boundaries, programmatic tool calling, persisted reasoning, explicit caching, `prompt` object migration |
+| OpenAI GPT-5.5 | `context/models/openai-gpt-5-family/gpt-5-5-guide.md` |
+| OpenAI vision / document input | `context/models/openai-gpt-5-family/openai-vision-guide.md` |
+| **Google Gemini 3.x** | `context/models/google-gemini/gemini-3-family-guide.md` (models + pricing + behavior), `gemini-prompting-strategies.md` (technique), `gemini-file-prompting.md` (files as input) |
+| Google Gemma 4 | `context/models/google-gemma/gemma-4-guide.md` — chat template control tokens, thinking, Cerebras `reasoning_effort` and image inputs |
+| Google Nano Banana | `context/image-generation/google-image-models-guide.md`; source clipping in `context/models/google-nano-banana/` |
+| **Z.ai GLM-5.2** | `context/models/zai-glm/glm-5-2-guide.md` |
+| OpenAI Codex (`gpt-5.3-codex`) | `context/models/openai-codex/codex-prompting-guide` — starter prompt, AGENTS.md, compaction, tools (apply_patch, shell, update_plan), preambles, phase parameter, metaprompting. Full source: `context/coding/codex-full-guide.md` |
+| Mistral | `context/models/mistral/mistral-guide.md` — model selection, prompting, sampling (incl. cheap `N > 1`) |
+| Alibaba Qwen3 | `context/models/alibaba-qwen/qwen3-prompt-guide.md` |
+| Moonshot Kimi | `context/models/moonshot-kimi/kimi-guide.md` |
+
+Superseded guides live in `archive/` subfolders under each model directory — load them only when the user is explicitly targeting a legacy model.
 
 Key model differences to keep in mind:
-- **Claude**: Excels with XML tags for structure, explicit instructions, extended thinking for complex reasoning. Responds well to explanations of *why* behavior matters.
-- **GPT models**: Work well with markdown formatting, system/user message separation, strong function calling support.
-- **Gemini**: Handles very large contexts (up to 2M tokens), strong at factual tasks and visual reasoning.
+- **Claude 5**: XML tags for structure; explanations of *why* a rule exists generalize well; `effort` is the main cost/quality dial; **no sampling parameters, no prefill**; Opus 5 runs verbose by default and needs an explicit brevity instruction.
+- **GPT-5.6**: Lean prompts measurably outperform padded ones; state each instruction once; put tool guidance in tool descriptions; define autonomy boundaries instead of per-action approval.
+- **Gemini 3.x**: Defaults to *concise* output — ask for detail; still accepts `temperature`/`top_p`/`top_k`; Google recommends few-shot examples in nearly every prompt (the opposite of GPT-5.6 guidance).
+- **Open-weight models** (Gemma, Qwen, GLM, Kimi): benefit from more explicit structure and few-shot examples than the frontier hosted models; Gemma 4 needs literal chat-template control tokens.
 
 If no model is specified and it matters for the prompt, ask.
 
@@ -106,10 +113,12 @@ Different output modalities need different prompting strategies. Load the releva
 
 | Output Type | Reference Path | Key Principle |
 |---|---|---|
-| **Image generation** | `context/image-generation/` — for OpenAI's GPT image family (gpt-image-2 default, plus 1.5/1/1-mini) read `gpt-image-prompting-guide.md` (model selection, sizing, use-case patterns); deep source with worked examples in `gpt-image-models-full-guide.md` | Use natural language descriptions, not tag soup. Structure as background → subject → details → constraints. Be specific about materials, medium, and composition. |
+| **Image generation (OpenAI)** | `context/image-generation/gpt-image-prompting-guide.md` — gpt-image-2 default plus 1.5/1/1-mini: model selection, sizing, Images API vs. the Responses `image_generation` tool, use-case patterns. Deep source with worked examples: `gpt-image-models-full-guide.md` | Use natural language descriptions, not tag soup. Structure as background → subject → details → constraints. Be specific about materials, medium, and composition. |
+| **Image generation (Google)** | `context/image-generation/google-image-models-guide.md` — Nano Banana 2 / 2 Lite / Pro and Imagen 4 | Nano Banana wants descriptive prose and reference images (up to 14); Imagen wants subject + context + style with photography modifiers and a 480-token ceiling. |
+| **Vision / document input** | `context/models/openai-gpt-5-family/openai-vision-guide.md`; Gemini: `context/models/google-gemini/gemini-file-prompting.md` | Name the operation, not the object. Extract before interpreting. Tell the model to write "unreadable" rather than guess. Match `detail` to whether the model must *recognize* or *read* the image. |
 | **Speech-to-speech (Realtime)** | `context/speech-to-speech/gpt-realtime-prompting-guide` | Voice agents need different prompting than text. Use the 8-section structure (Role, Personality, Context, Pronunciations, Tools, Rules, Conversation Flow, Safety). Prefer bullets, pin language, add Variety rule, define explicit conversation states with exit criteria. |
 | **Text-to-speech** | `context/text-to-speech/` | Normalize text (expand numbers, abbreviations). Use SSML break tags for pauses. Control pacing through narrative styling. |
-| **Video generation** | `context/video-generation/` | Load `context/video-generation/google-veo-prompt-guide.md` for Veo-specific guidance. |
+| **Video generation** | `context/video-generation/` — OpenAI Sora: `openai-video-generation-guide.md`; Google Veo: `google-veo-prompt-guide.md` | Name shot type, subject, action, setting, and lighting. One action beat per generation; chain beats with the extend endpoint. Describe the camera, not just the scene. |
 | **Code** | `context/coding/` — includes `codex-full-guide.md` (full OpenAI Codex agentic-coding source) | Specify language, framework, patterns. Include example signatures. Define error handling expectations. |
 | **Structured data** | (no special file) | Provide exact schema. Use few-shot examples of valid output. Specify edge case handling. |
 
@@ -159,6 +168,36 @@ When the user references prior decisions, prior failures, or established stack/a
 ```
 
 Always re-provide this block in every new session — LLMs have no inter-session memory. If the user does not supply prior decisions, ask once for the minimum needed (counts toward the 3-question cap).
+
+---
+
+## Cross-cutting concerns
+
+These apply in every mode. Load the reference file when the concern is live; don't inline the content.
+
+### Choose the model, not just the prompt
+
+`references/model-selection.md` — cross-vendor pricing, task-shape recommendations, and **what breaks when you switch families** (sampling params, prefill, few-shot philosophy, effort semantics, verbosity defaults, tokenizer changes).
+
+Two rules worth applying by default: optimize for accuracy against a real eval set before optimizing for cost, and **tune the effort parameter before switching models** — on Claude 5 and GPT-5.6 the effort range is wider than the gap between adjacent models. If the user is choosing a model or complaining about cost, read this file.
+
+### Guardrails
+
+`references/guardrails.md` — hallucination reduction, output consistency, jailbreak and prompt-injection defense, and prompt-leak mitigation, with copyable snippets.
+
+Reach for it whenever the prompt will (a) make factual claims from supplied documents, (b) run in production against untrusted users, or (c) process third-party content — web pages, emails, tool results, OCR. **Any agent that reads content it didn't author needs the indirect-injection section**, and that need is easy to miss.
+
+### Cost and caching
+
+`references/caching-and-cost.md` — caching is a prompt-*structure* decision. Static content first, volatile content last; never reorder tool definitions; never inject a timestamp near the top.
+
+Apply the ordering rule to every long system prompt you write, whether or not the user mentioned cost. Read the file when the user is running at volume, complaining about spend, or building a multi-turn agent.
+
+### Research, search, and citations
+
+`references/research-and-search.md` — deep research models, the web search tool, and citation formatting. Includes the clarify → rewrite → research pipeline that ChatGPT's Deep Research runs and the API does not.
+
+Use it for any prompt that gathers information and has to show sources. A domain allowlist enforces source quality; "use reputable sources" only wishes for it.
 
 ---
 
