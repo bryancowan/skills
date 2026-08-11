@@ -13,6 +13,7 @@ For background on the skills system, see:
 ## Skills in This Repo
 
 - **[description-and-tags](./skills/description-and-tags)** — Enriches Obsidian web-clipping notes with description, summary, and tags for YAML frontmatter. Skill name: `obsidian-reading-list-enrichment`.
+- **[construction-near-me](./skills/construction-near-me)** — Researches what new buildings and businesses are proposed, approved, permitted, under construction, or recently opened near any US location. Discovers each jurisdiction's open-data/GIS endpoints, planning agendas, and permit portal, cross-references CRE listings and local news to name the actual tenant, and caches the discovery as a reusable jurisdiction profile.
 - **[good-documentation](./skills/good-documentation)** — Writing and reviewing documentation: user guides, READMEs, tutorials, onboarding materials.
 - **[obsidian-jd-organizer](./skills/obsidian-jd-organizer)** — Maintains a Johnny Decimal organizational system in Obsidian: audits structure, files loose notes, updates indexes, expands categories.
 - **[obsidian-wiki-compiler](./skills/obsidian-wiki-compiler)** — Transforms raw source documents into a structured, interconnected Obsidian wiki with concept maps and visualizations.

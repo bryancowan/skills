@@ -35,6 +35,7 @@ my-skill/
 
 - Skills go in `skills/<skill-name>/SKILL.md`. Current skills:
   - `description-and-tags/` — skill name `obsidian-reading-list-enrichment`; enriches Obsidian web-clipping notes with description, note summary, and tags in YAML frontmatter
+  - `construction-near-me/` — researches new buildings and businesses proposed, permitted, under construction, or recently opened near a location; discovers each jurisdiction's permit/GIS/agenda sources and caches them as per-jurisdiction profiles in `references/jurisdictions/`
   - `good-documentation/` — writing and reviewing documentation
   - `obsidian-jd-organizer/` — maintains Johnny Decimal vault structure; audits, files notes, updates indexes, expands categories
   - `obsidian-wiki-compiler/` — compiles raw sources into interconnected Obsidian wikis with diagrams and visualizations
