@@ -1,6 +1,17 @@
 ---
 name: obsidian-wiki-compiler
-description: Compile raw source documents into a structured markdown wiki with visualizations inside an Obsidian vault. Use when the user wants to build a knowledge base from raw files, create a wiki from articles/papers/notes, compile research into organized markdown, generate mermaid diagrams or charts from their notes, run Q&A over a wiki, enhance or lint an existing wiki, or organize raw data into a structured knowledge base. Also trigger when the user mentions "knowledge base", "compile wiki", "research synthesis", "raw files to wiki", "index my sources", or wants visualizations of their notes. If they say "summarize these articles" or "make sense of these files" — this skill applies.
+description: Compile raw source documents into a structured markdown wiki with
+  visualizations inside an Obsidian vault. Use when the user wants to build a
+  knowledge base from raw files, create a wiki from articles/papers/notes,
+  compile research into organized markdown, generate mermaid diagrams or charts
+  from their notes, run Q&A over a wiki, enhance or lint an existing wiki, or
+  organize raw data into a structured knowledge base. Also trigger when the user
+  mentions "knowledge base", "compile wiki", "research synthesis", "raw files to
+  wiki", "index my sources", or wants visualizations of their notes. If they say
+  "summarize these articles" or "make sense of these files" — this skill
+  applies.
+metadata:
+  copilot-enabled-agents: opencode,claude,codex
 ---
 
 # Obsidian Wiki Compiler

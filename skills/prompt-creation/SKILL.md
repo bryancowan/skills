@@ -1,6 +1,17 @@
 ---
 name: prompt-creation
-description: "Create, review, and refine prompts for LLMs and AI agents. Use this skill when the user wants to: write or improve a prompt or system prompt; write AI instructions for tools like Lovable, ElevenLabs, Figma, Midjourney, or Veo; build a multi-agent pipeline or agentic workflow; fix a prompt producing bad results (hallucinating, off-topic, too generic, wrong format); write image generation, text-to-speech, video, or coding agent prompts; adapt prompts when switching models (e.g., GPT to Claude); or describe any task they want an LLM to do and need help with the instructions. Covers all output types and all major models. Also trigger when the user doesn't say 'prompt' but is clearly asking how to instruct an AI — use this skill liberally."
+description: "Create, review, and refine prompts for LLMs and AI agents. Use
+  this skill when the user wants to: write or improve a prompt or system prompt;
+  write AI instructions for tools like Lovable, ElevenLabs, Figma, Midjourney,
+  or Veo; build a multi-agent pipeline or agentic workflow; fix a prompt
+  producing bad results (hallucinating, off-topic, too generic, wrong format);
+  write image generation, text-to-speech, video, or coding agent prompts; adapt
+  prompts when switching models (e.g., GPT to Claude); or describe any task they
+  want an LLM to do and need help with the instructions. Covers all output types
+  and all major models. Also trigger when the user doesn't say 'prompt' but is
+  clearly asking how to instruct an AI — use this skill liberally."
+metadata:
+  copilot-enabled-agents: opencode,claude,codex
 ---
 
 # Prompt Creation & Refinement

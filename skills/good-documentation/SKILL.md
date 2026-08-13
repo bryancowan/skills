@@ -1,6 +1,18 @@
 ---
 name: good-documentation
-description: Use this skill when writing or reviewing any documentation — user guides, READMEs, tutorials, workflow docs, onboarding materials, release notes, or any content explaining how something works to stakeholders. Trigger on phrases like "write docs for", "document this", "help me write a guide", "write a README", "review my docs", "improve this documentation", "write a tutorial", "create onboarding material", "help me explain this feature", "draft a user guide", or "write instructions for". Use it even when the user doesn't say "documentation" explicitly — if they're asking you to explain a product, feature, or workflow in written form for an audience, this skill applies. Applies proven principles to produce clear, skimmable content that works for both technical and non-technical readers.
+description: Use this skill when writing or reviewing any documentation — user
+  guides, READMEs, tutorials, workflow docs, onboarding materials, release
+  notes, or any content explaining how something works to stakeholders. Trigger
+  on phrases like "write docs for", "document this", "help me write a guide",
+  "write a README", "review my docs", "improve this documentation", "write a
+  tutorial", "create onboarding material", "help me explain this feature",
+  "draft a user guide", or "write instructions for". Use it even when the user
+  doesn't say "documentation" explicitly — if they're asking you to explain a
+  product, feature, or workflow in written form for an audience, this skill
+  applies. Applies proven principles to produce clear, skimmable content that
+  works for both technical and non-technical readers.
+metadata:
+  copilot-enabled-agents: opencode,claude,codex
 ---
 
 # Good Documentation Skill
