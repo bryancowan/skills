@@ -49,10 +49,13 @@ my-skill/
 
 ## `.claude-plugin/marketplace.json`
 
-Defines the plugin bundles exposed by `/plugin marketplace add bryancowan/skills`. Note this file still lists plugins/skills (e.g. `document-skills`, `skill-creator`, `frontend-design`, `claude-api`) that are **not** present in this repo's `skills/` directory — they were part of the original Anthropic example-skills fork and were removed from `skills/` when this repo was promoted to personal use, but the marketplace entries were not cleaned up. Don't assume a skill referenced there actually exists locally; check `skills/` first.
+Defines the plugin bundle exposed by `/plugin marketplace add bryancowan/skills`. There's a single plugin, `personal-skills`, listing every skill under `skills/`. When adding or removing a skill folder, update the `skills` array here too — it isn't auto-discovered.
 
 ## Installing Skills in Claude Code
 
 ```bash
 /plugin marketplace add bryancowan/skills
+/plugin install personal-skills@bryancowan-skills
 ```
+
+To pick up new commits pushed to this repo later: `/plugin marketplace update bryancowan-skills` (or enable auto-update for this marketplace via the `/plugin` UI's Marketplaces tab — third-party marketplaces default to off).

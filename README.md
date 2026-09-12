@@ -85,7 +85,10 @@ Install the whole collection at once as a plugin marketplace:
 
 ```bash
 /plugin marketplace add bryancowan/skills
+/plugin install personal-skills@bryancowan-skills
 ```
+
+To pick up updates later, run `/plugin marketplace update bryancowan-skills` (or turn on auto-update for this marketplace from the `/plugin` UI's Marketplaces tab).
 
 Or install individual skills without the plugin system — clone this repo and copy the skill(s) you want:
 
