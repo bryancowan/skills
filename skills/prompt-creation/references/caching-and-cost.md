@@ -2,7 +2,7 @@
 
 Caching is a **prompt structure** decision, not just an API flag — which is why it belongs in a prompting skill. Getting the ordering right is usually worth more than any wording change you'll make.
 
-Sourced: 2026-07-26
+Sourced: 2026-09-12
 
 Sources:
 - https://developers.openai.com/api/docs/guides/prompt-caching
@@ -41,7 +41,7 @@ This conflicts with nothing else in prompt design — Anthropic's "long document
 - Any system prompt modification
 - Timestamps or dynamic metadata early in the prompt
 - Context truncation from conversation management
-- Changing the reasoning effort parameter
+- Changing the reasoning effort parameter (**through GPT-5.6 only** — GPT-6 Astra preserves the cache across mid-conversation effort changes)
 - Using Chat Completions with reasoning models (chain-of-thought tokens aren't persisted)
 - Changing `allowed_tools` — keep the full toolkit static in `tools` instead
 
@@ -58,6 +58,22 @@ This conflicts with nothing else in prompt design — Anthropic's "long document
 | Cache read (hit) | 0.1× |
 
 Break-even is **one read** for the 5-minute cache, **two reads** for the 1-hour cache. That's an aggressive payoff — cache almost anything reused.
+
+**Claude Fable 5.1 and Mythos 5.1 break the 0.1× rule:** cache hits bill at **0.025× base input ($0.25/MTok)**, 4× cheaper than every other Claude model. Writes are unchanged. The practical consequences: cache far more aggressively than the table above implies, and *compacting early to save money may no longer be the right trade* — test later compaction points rather than inheriting a threshold tuned on an older model.
+
+### Append-only history is now a correctness requirement, not just a cache optimization
+
+On Claude Fable 5.1, the edits that break the cache also **break the request**. For accounts created on or after 2026-08-31, replaying a thinking block after its prefix changed returns a **400** (or silently drops the block if you opt into `thinking.block_binding.prefix_mismatch_behavior: "drop_block"`).
+
+So the list below is no longer a cost list on that model — it's a correctness list:
+
+| Instead of | Do |
+|---|---|
+| Injecting and removing per-turn reminders | Turn-scoped system messages (`clear_at: "next_user_message"`) |
+| Summarizing older turns in place | Server-side compaction or context editing |
+| Rebuilding `system` or `tools` mid-session | Mid-conversation system messages |
+
+Full detail in `context/models/anthropic-claude/claude-5-family-guide.md`.
 
 **Minimum cacheable length dropped to 512 tokens on Opus 5** (from 1,024).
 

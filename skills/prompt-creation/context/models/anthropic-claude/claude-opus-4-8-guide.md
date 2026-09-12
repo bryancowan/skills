@@ -6,7 +6,7 @@ Claude Opus 4.8 (`claude-opus-4-8`, $5/$25 per MTok, 1M context, 128k max output
 
 Use this guide when a prompt is explicitly targeting Opus 4.8. For anything new, use `claude-5-family-guide.md`.
 
-Sourced: 2026-07-26
+Sourced: 2026-09-12
 
 Sources:
 - https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-4-8

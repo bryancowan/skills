@@ -2,7 +2,25 @@
 
 ## Overview
 
-`gpt-realtime` is OpenAI's most capable speech-to-speech model for the Realtime API. It delivers stronger instruction following, more reliable tool calling, better voice quality, and more natural expressiveness than the older `gpt-4o-realtime-preview` snapshots. Speech-to-speech systems require different prompting strategies than text models — this guide covers all the key patterns.
+`gpt-realtime` is OpenAI's speech-to-speech family for the Realtime API. It delivers stronger instruction following, more reliable tool calling, better voice quality, and more natural expressiveness than the older `gpt-4o-realtime-preview` snapshots. Speech-to-speech systems require different prompting strategies than text models — this guide covers all the key patterns.
+
+**Current models (verified 2026-09-12):**
+
+| Model | Profile | Price (text in / cached / out per 1M) |
+|---|---|---|
+| `gpt-realtime-2.1` | Reasoning-capable voice model | $4.00 / $0.40 / $24.00 |
+| `gpt-realtime-2.1-mini` | Fast, lower-cost | $0.60 / $0.06 / $2.40 |
+| `gpt-realtime-1.5` | Fast, non-reasoning speech-to-speech | — |
+
+Set reasoning effort on `gpt-realtime-2.1`; `1.5` has none. Keep preambles to **one short sentence** before a tool call — longer ones read as stalling in voice.
+
+> **Pick the right family.** These models reason *themselves*. If you want a voice layer that **delegates reasoning to a backend**, that is `gpt-live-1` — see `context/speech-to-speech/gpt-live-prompting-guide.md`. The prompt shapes are not interchangeable: GPT-Live's prompt is mostly a delegation policy, which has no analogue here.
+
+Sourced: 2026-09-12
+
+Sources:
+- https://developers.openai.com/api/docs/guides/voice-prompting
+- https://developers.openai.com/api/docs/pricing
 
 ---
 

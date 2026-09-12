@@ -6,7 +6,7 @@ Prompting and benchmarking guidance for Moonshot AI's Kimi models.
 
 > **Version note (verified 2026-07-26):** Moonshot's platform documentation covers **K2.6** (newest), **K2.5**, and the **K2-Thinking** series. Neither the prompting nor the benchmarking guide mentions a **K3** model. If you are targeting K3, check `platform.kimi.ai` for a newer page before relying on the version-specific numbers below — the general prompting principles carry over, the parameter tables may not.
 
-Sourced: 2026-07-26
+Sourced: 2026-09-12
 
 Sources:
 - https://platform.kimi.ai/docs/guide/prompt-best-practice

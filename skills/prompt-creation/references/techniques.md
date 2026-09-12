@@ -1,6 +1,9 @@
 # Prompt Engineering Techniques Reference
 
-Quick-lookup guide for selecting the right prompting technique based on task type and complexity. Read the full comprehensive guide at `context/Comprehensive Guide to Prompt Engineering Techniques  Claude - 2026-03-28T181003-0500.md` for detailed explanations and examples.
+Quick-lookup guide for selecting the right prompting technique based on task type and complexity.
+
+Sourced: 2026-09-12
+ Read the full comprehensive guide at `context/Comprehensive Guide to Prompt Engineering Techniques  Claude - 2026-03-28T181003-0500.md` for detailed explanations and examples.
 
 ---
 
@@ -31,30 +34,42 @@ Most current frontier models reason internally. Adding "think step by step" or a
 
 | Family | How reasoning is controlled |
 |---|---|
-| Claude Fable 5 / Opus 5 / Sonnet 5 | Adaptive thinking, on by default (always on for Fable 5). `effort`: `low`…`max`. Manual `budget_tokens` returns a 400 error. |
+| Claude Fable 5.1 / Fable 5 / Opus 5 / Sonnet 5 | Adaptive thinking, on by default (always on, not disableable, for Fable 5 and 5.1). `effort`: `low`…`max`, default `high`. Manual `budget_tokens` returns a 400 error. |
 | Claude Opus 4.8 / 4.7 | Adaptive thinking, **off** unless `thinking: {type: "adaptive"}`. Same `effort` scale. |
+| GPT-6 Astra | `reasoning.effort`: `low`, `medium`, `high`, `xhigh`, `max` — **no `none`**; it always reasons. Effort can be changed mid-conversation **without invalidating the cache**. |
 | GPT-5.6 / 5.5 / 5.4 | `reasoning.effort`: `none`, `low`, `medium`, `high`, `xhigh`, `max`. Plus `reasoning.mode: "pro"` on 5.6. |
 | Gemini 3.x | Thinking built in; Gemini 3.1 Flash Image exposes `minimal` / `high` thinking levels |
-| GLM-5.2 | `thinking: {type: "enabled"}` (default) + `reasoning_effort`: `high` / `max`. The model decides *whether* to think. |
+| GLM-5.3 / 5.3-Flash | `thinking: {type: "enabled"}` is **mandatory** — disabling is no longer supported. `reasoning_effort`: `low` / `high` / `max`, **default `max`**. |
 | Qwen3 (3.6+) | `thinking: true`; `/think` and `/no_think` in chat UIs |
 | Gemma 4 | `enable_thinking=True` via `apply_chat_template()`. On Cerebras, `reasoning_effort` defaults to `none` — and `low`/`medium`/`high` are **currently equivalent**. |
 | Kimi K2.5 / K2.6 / K2-Thinking | Thinking enabled; `tool_choice` restricted to `auto`/`none` while thinking |
 | o3 / o4-mini / DeepSeek-R1 | Legacy reasoning models; same rule |
 
-**When CoT still helps:** non-thinking models, and thinking-capable models running with thinking *disabled* (`reasoning.effort: "none"`, `thinking: {type: "disabled"}`, `/no_think`). There it remains a real 10–30% accuracy lever on reasoning tasks.
+**When CoT still helps:** non-thinking models, and thinking-capable models running with thinking *disabled* (`reasoning.effort: "none"` on GPT-5.6 and below, `thinking: {type: "disabled"}` on Claude Opus 5 at `high` effort or below, `/no_think` on Qwen). There it remains a real 10–30% accuracy lever on reasoning tasks.
+
+**Two models can no longer be put in that state at all:** GPT-6 Astra (no `none` level) and GLM-5.3 (thinking is mandatory). On those, CoT scaffolding is always wasted tokens — there is no configuration where it helps.
+
+> **Effort level names are not comparable across models.** `high` on one model is not `high` on another, even within a family — Anthropic says this explicitly about Fable 5 → Fable 5.1. Re-run your effort sweep against real evals on every model change.
 
 **Raise effort instead of prompting around shallow reasoning.** Every vendor says this. Adding "think harder" to a `low`-effort request is worse than setting the parameter.
 
 **Corollaries for current models:**
 - Don't instruct a model to reproduce or explain its internal reasoning as response text — on Claude Fable 5 this can trigger a `reasoning_extraction` refusal. Read the structured `thinking` blocks instead.
 - Don't add "double-check your answer" or "include a verification step" to Claude Opus 5 — it self-verifies, and these instructions cause over-verification at real token cost.
-- Changing the reasoning-effort parameter invalidates prompt caches on OpenAI. Pick a level and hold it.
+- Changing the reasoning-effort parameter invalidates prompt caches on OpenAI models **through GPT-5.6** — pick a level and hold it. **GPT-6 Astra reverses this:** effort can be adjusted mid-conversation while preserving the cache, so run low and step up for the turns that need it.
+- Don't add "verify your work" or "double-check" to Claude Fable 5.1 or Opus 5, and don't add anti-laziness scaffolding to any current model. See `context-engineering.md`.
 
 See `model-selection.md` for what else changes when switching families.
 
 ---
 
 ## Technique Selection Matrix
+
+> **Read the two warnings above before using this matrix.** It is organized by task shape, not by model capability, and several cells name techniques the warnings restrict:
+> - **Chain-of-Thought** cells apply to **non-thinking models only.** On a reasoning-native model, raise `effort` instead — the cell is a no-op at best.
+> - **Self-Consistency** and **Tree-of-Thoughts** cells require **real multi-pass orchestration.** In a single prompt the model fabricates the structure. If the user just wants something to paste, substitute Few-Shot, Skeleton-of-Thought, or RCI-within-one-response.
+>
+> The matrix tells you *which* technique fits the task. The warnings tell you *whether you're allowed to use it here.* Both apply.
 
 | Task Type | Simple | Moderate | Complex |
 |---|---|---|---|
