@@ -1,4 +1,5 @@
 ---
+name: ship-and-watch
 description: Commit + push + open PR, then poll CI every 5 min and auto-fix failures until green
 ---
 
