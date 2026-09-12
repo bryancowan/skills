@@ -2,7 +2,7 @@
 
 ## Overview
 
-GPT-5.6 is OpenAI's **cost tier beneath the current flagship**, `gpt-6-astra` (see `context/models/openai-gpt-6-family/gpt-6-astra-guide.md`). It is not legacy — all four variants are current and priced, and at $0.20–$12.50 input they are 2.5–50× cheaper than Astra, so most production volume still belongs here. It introduced the **named-variant naming scheme** in place of size suffixes. It also adds programmatic tool calling, a multi-agent beta, explicit prompt caching, persisted reasoning, `pro` mode, and a `max` reasoning effort level.
+GPT-5.6 is OpenAI's **cost tier beneath the current flagship**, `gpt-6-astra` (see `context/models/openai-gpt-6-family/gpt-6-astra-guide.md`). It is not legacy — all four variants are current and priced. The three general-purpose variants (`luna` $0.20, `terra` $2, `sol` $4 input) run **2.5–50× cheaper than Astra**, so most production volume still belongs here. **`cyber` is the exception: at $12.50/$75 it is more expensive than Astra**, not a cost tier at all — it is a security specialist priced above the flagship. It introduced the **named-variant naming scheme** in place of size suffixes. It also adds programmatic tool calling, a multi-agent beta, explicit prompt caching, persisted reasoning, `pro` mode, and a `max` reasoning effort level.
 
 The headline prompting finding: **lean prompts win.** OpenAI's internal testing found leaner system prompts improved eval scores by roughly **10–15% while cutting total tokens 41–66% and cost 33–67%**. If you are migrating a prompt from GPT-5.x, deleting redundancy is the highest-value edit you can make.
 
@@ -25,7 +25,7 @@ Sources:
 | `gpt-5.6-sol` | Top of the 5.6 family (what the `gpt-5.6` alias resolves to) | $4.00 / $0.40 / $20.00 |
 | `gpt-5.6-terra` | Strong performance at lower cost; OpenAI's documented "smaller option" to compare Astra against | $2.00 / $0.20 / $12.00 |
 | `gpt-5.6-luna` | Efficient, high-volume workloads | $0.20 / $0.02 / $1.20 |
-| `gpt-5.6-cyber` | Security-focused variant; priced above `sol` | $12.50 / $1.25 / $75.00 |
+| `gpt-5.6-cyber` | Security specialist. Priced above `sol` **and above `gpt-6-astra`** — reach for it on security work, never for cost | $12.50 / $1.25 / $75.00 |
 
 Above this family: `gpt-6-astra` $10.00 / $1.00 / $50.00.
 Below it: `gpt-5.5` $5/–/$30, `gpt-5.4` $2.50/–/$15, `gpt-5` $1.25/–/$10, `gpt-5-mini` $0.25/–/$2.

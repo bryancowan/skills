@@ -15,7 +15,16 @@ Sources:
 - https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
 - `context/Effective context engineering for AI agents - 2026-03-28T130401-0500.md` (earlier framework; altitude and just-in-time context still hold)
 
-Applies to: Claude 5 family, GPT-6 Astra / GPT-5.6, Gemini 3.x, GLM-5.3 — the shift is generational, not vendor-specific. It is best documented by Anthropic.
+**Scope — read this before applying any of it.** The *direction* is generational: every frontier model is more capable of judgment than its 2024 predecessor, so scaffolding written for weaker models is dead weight. But the **specific deletions below are Anthropic's findings, measured on Claude**, and two of them invert on other vendors:
+
+| | Claude 5.x | GPT-6 Astra / GPT-5.6 | GLM-5.3 |
+|---|---|---|---|
+| Tool-call examples | **Delete** — they constrain exploration | **Keep** — OpenAI prescribes concrete examples of how to invoke commands for coding | Keep |
+| Enumerated deliverables + verification step | Trim — it self-verifies | Fine | **Keep** — this *is* Z.ai's documented prompt shape |
+| Redundancy, repeated instructions | Delete | Delete (the measured lean-prompt win) | Delete |
+| Prescriptive rules → judgment framings | Yes | Yes | Partially — GLM rewards explicit invariants |
+
+Gemini 3.x sits apart again: Google recommends few-shot examples in nearly every prompt. Don't port a deletion across a vendor boundary without checking that vendor's own guide.
 
 ---
 
@@ -56,7 +65,8 @@ Anthropic ships `claude doctor` to help rightsize skills and `CLAUDE.md` files f
 Work through in this order — the first three usually account for most of the length:
 
 1. **Find the repeated instructions.** Same rule in the system prompt and a tool description, or restated three ways for emphasis. Keep one instance, in the most specific location.
-2. **Find the anti-laziness scaffolding.** "Be thorough", "double-check", "use tools aggressively", "CRITICAL: you MUST". Current models are already proactive; this causes over-verification and tool overtriggering. Delete it. (Full delete list: `context/models/anthropic-claude/claude-5-family-guide.md`.)
+2. **Find the anti-laziness scaffolding.** "Be thorough", "double-check", "use tools aggressively", "CRITICAL: you MUST". Current models are already proactive; this causes over-verification and tool overtriggering. Delete it — **on Claude**; see the scope table above before doing it elsewhere. (Full delete list: `context/models/anthropic-claude/claude-5-family-guide.md`.)
+   **Not the same as deleting a verification *deliverable*.** "Re-check your reasoning before answering" is scaffolding. "Run build, lint, and tests and report the results" is a task output — keep it on every model.
 3. **Find the prescriptive rules and ask what they're protecting against.** Replace each with a framing that states the goal and lets the model judge. If you can't articulate the goal, the rule was probably cargo-culted.
 4. **Find the front-loaded context.** Anything the model needs only sometimes should be retrievable, not resident.
 5. **Find the prose that should be an artifact.** "The function should handle empty input, nulls, and unicode" is three sentences the model has to interpret. Three test cases are not.

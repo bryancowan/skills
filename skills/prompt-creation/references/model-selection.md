@@ -56,7 +56,7 @@ Claude bills its 1M window at flat rates — a 900k request costs the same per t
 | Anthropic | Claude Sonnet 5 | $2 | $10 | Best speed-to-intelligence ratio. The scheduled 2026-09-01 rise to $3/$15 was **cancelled** |
 | Anthropic | Claude Haiku 4.5 | $1 | $5 | Fastest; 200k context |
 | OpenAI | `gpt-6-astra` | $10 | $50 | **Flagship.** 1.05M context. **2× input / 1.5× output above 272K input tokens** |
-| OpenAI | `gpt-5.6-cyber` | $12.50 | $75 | Security-focused variant |
+| OpenAI | `gpt-5.6-cyber` | $12.50 | $75 | Security specialist. **The most expensive model in this table** — above Astra, not a cost tier |
 | OpenAI | `gpt-5.6-sol` | $4 | $20 | Top of the 5.6 family; `gpt-5.6` alias resolves here |
 | OpenAI | `gpt-5.6-terra` | $2 | $12 | OpenAI's documented "smaller option" vs Astra |
 | OpenAI | `gpt-5.6-luna` | $0.20 | $1.20 | High-volume, efficient — cheapest OpenAI text model |

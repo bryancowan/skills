@@ -2,7 +2,7 @@
 
 ## Overview
 
-`gpt-6-astra` is OpenAI's current flagship. It supersedes the GPT-5.6 family at the top of the range, but **does not retire it** — `gpt-5.6-sol`/`terra`/`luna`/`cyber` remain current and are 2.5–50× cheaper. Treat Astra as the capability ceiling and GPT-5.6 as the cost tier beneath it (`context/models/openai-gpt-5-family/gpt-5-6-guide.md`).
+`gpt-6-astra` is OpenAI's current flagship. It supersedes the GPT-5.6 family at the top of the range, but **does not retire it** — `gpt-5.6-sol`/`terra`/`luna` remain current and run 2.5–50× cheaper (`gpt-5.6-cyber` is the exception: a security specialist priced *above* Astra at $12.50/$75). Treat Astra as the capability ceiling and GPT-5.6 as the cost tier beneath it (`context/models/openai-gpt-5-family/gpt-5-6-guide.md`).
 
 The four capabilities that are genuinely new — and that change how you architect around the model rather than just how you word the prompt — are **async tool calling**, **mid-turn steering**, **dynamic reasoning configuration**, and **misalignment monitoring**.
 
@@ -27,13 +27,15 @@ Sources:
 | Knowledge cutoff | 2026-04-30 |
 | Modalities | text + image in, text out |
 | Price per 1M | $10 input / $1 cached input / $12.50 cache write / $50 output |
-| Endpoints | Chat Completions, Batch |
+| Endpoints | **Responses** (`v1/responses`), Chat Completions, Batch. Not supported: Realtime, Live, Assistants, fine-tuning, embeddings, image generation, audio. |
 | Reasoning effort | `low`, `medium`, `high`, `xhigh`, `max` — **no `none`** |
 
 **Long-context cost cliff:** requests above **272K input tokens** are billed at **2× input and cache rates, 1.5× output rates**. This is a hard step, not a gradient. If you are anywhere near that boundary, measure your actual input size — trimming a prompt from 280K to 270K halves its input cost. (Claude bills its 1M window at flat rates; Gemini 2.5 Pro has a similar step at 200K. See `references/model-selection.md`.)
 
 Supported features: streaming, structured outputs, function calling, file search, image input, web search, prompt caching.
-Supported hosted tools: web search, file search, image generation, code interpreter, hosted shell, apply patch, skills, computer use, MCP, tool search.
+Supported hosted tools: web search, file search, image generation, code interpreter, hosted shell, apply patch, skills, computer use, MCP, tool search — reached **through the Responses API**.
+
+> **Use the Responses API for reasoning and tool workflows.** Chat Completions never carries reasoning items across turns, which degrades multi-function-call performance and raises token usage. The `instructions` parameter and `previous_response_id` discussed below are Responses-only. Astra can generate images via the hosted tool but is not itself an image-generation endpoint.
 
 ---
 
