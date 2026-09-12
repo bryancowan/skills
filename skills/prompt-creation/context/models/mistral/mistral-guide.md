@@ -4,11 +4,12 @@
 
 Mistral's current lineup is small and purpose-split: one frontier multimodal model, one efficient hybrid, one OCR service. Their prompting guidance is unusually prescriptive about **what not to ask for** — several of the "avoid" items are things people routinely put in prompts to other models.
 
-Sourced: 2026-07-26
+Sourced: 2026-09-12
 
 Sources:
 - https://docs.mistral.ai/models/model-selection-guide
 - https://docs.mistral.ai/models/best-practices/prompt-engineering
+- https://docs.mistral.ai/inference/prompting
 - https://docs.mistral.ai/models/best-practices/sampling
 
 ---
@@ -70,3 +71,32 @@ Mistral exposes `temperature`, `top_p`, `N`, `presence_penalty`, and `frequency_
 ### Where this differs from other vendors
 
 Mistral still has a full sampling surface, where Claude 5 and GPT-5.6 have removed or de-emphasized it. When porting a prompt *from* Mistral *to* Claude 5, any behavior you were getting from `temperature` or the penalties has to be re-expressed as instructions. When porting *to* Mistral, cheap `N > 1` sampling is a real technique that isn't available elsewhere at the same price.
+
+---
+
+## What to avoid (Mistral's explicit list)
+
+Mistral's `inference/prompting` guide is unusually prescriptive about what *not* to write. Several of these are things people routinely put in prompts to other models, and two are genuinely non-obvious:
+
+| Avoid | Instead |
+|---|---|
+| **Subjective and blurry words** — "too long", "many", "things", "stuff", "interesting" | State the objective measure or the exact definition. "Too long" means nothing; "over 200 words" does. |
+| **Contradictions** across instructions | Resolve them into a **decision tree**. Two rules that can both fire on the same input will be followed inconsistently, not averaged. |
+| **Making the model count words or characters** | **Supply the count as input.** LLMs cannot count reliably; asking them to produces confident wrong numbers. Compute it in code and pass it in. |
+| **Generating unnecessary tokens** | Ask only for what you need. Preambles and restated inputs are cost with no payoff. |
+| **Numeric rating scales** ("rate 1–10") | **Worded scales** ("poor / adequate / strong / excellent"). Models anchor words more consistently than numbers. |
+
+The "don't make it count" and "prefer worded scales" items are the two worth carrying across to *other* models too — both are general LLM limitations that Mistral simply documents more directly than its competitors.
+
+## Prompt structure
+
+Mistral's recommended shape:
+
+- Open with role and task: `You are a <role>, your task is...`
+- Organize instructions hierarchically with clear sections
+- Use Markdown or XML-style tags for readability and parseability
+- Add few-shot examples to improve accuracy
+- Request structured JSON output for anything that will be parsed
+- **Re-test prompts after model updates** — Mistral explicitly warns that model changes shift behavior
+
+Note that no model IDs appear in this guidance and no sampling or reasoning parameters are discussed — it is version-agnostic craft advice. For model selection and sampling, use the sections above.

@@ -2,20 +2,29 @@
 
 ## Overview
 
-The current Claude lineup is **Claude Fable 5**, **Claude Opus 5**, **Claude Sonnet 5**, and **Claude Haiku 4.5**. Claude Mythos 5 shares Fable 5's specs and pricing but is invitation-only (Project Glasswing). Everything from Opus 4.8 and earlier is legacy.
+The current Claude lineup is **Claude Fable 5.1**, **Claude Mythos 5.1**, **Claude Fable 5**, **Claude Mythos 5**, **Claude Opus 5**, **Claude Sonnet 5**, and **Claude Haiku 4.5**. Claude Opus 4.8 / 4.7 / 4.6 and Sonnet 4.6 are still documented and supported but are prior-generation.
 
-The single biggest prompting shift in this generation: **`effort` replaced thinking budgets, sampling parameters were removed, and prefill is gone.** Prompts written for Claude 4.x mostly still work, but several instructions that *helped* older models now actively hurt — see "Instructions to delete" below.
+Two prompting shifts define this generation:
 
-Sourced: 2026-07-26
+1. **`effort` replaced thinking budgets, sampling parameters were removed, and prefill is gone.** Several instructions that *helped* Claude 4.x now actively hurt — see "Instructions to delete" below.
+2. **Conversation history is now append-only.** On Fable 5.1, editing earlier turns between requests is an error, not just a cache miss. See "Append-only history" below. This is the single most common way an existing harness breaks on 5.1.
+
+Prompts written for Fable 5 generally run well on Fable 5.1 without changes. The behavioral deltas that matter are in "Fable 5.1 behavioral deltas".
+
+Sourced: 2026-09-12
 
 Sources:
 - https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
+- https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5-1
 - https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5
 - https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5
 - https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-sonnet-5
 - https://platform.claude.com/docs/en/about-claude/models/overview
 - https://platform.claude.com/docs/en/about-claude/pricing
 - https://platform.claude.com/docs/en/about-claude/models/migration-guide
+- https://claude.com/blog/the-new-rules-of-context-engineering-for-claude-5-generation-models/
+
+Companion: `references/context-engineering.md` covers the system-prompt-shrinking guidance that accompanies this generation.
 
 ---
 
@@ -23,20 +32,28 @@ Sources:
 
 | Model | API ID | Price (in / out per MTok) | Context / Max output | Pick it for |
 |---|---|---|---|---|
-| Claude Fable 5 | `claude-fable-5` | $10 / $50 | 1M / 128k | Highest available capability: multiday autonomous runs, hardest unsolved problems, parallel subagent fleets |
+| **Claude Fable 5.1** | `claude-fable-5-1` | $10 / $50 | 1M / 128k | Current top of range: multiday autonomous runs, hardest unsolved problems, parallel subagent fleets, dense-image vision work |
+| Claude Mythos 5.1 | (invitation-only) | $10 / $50 | 1M / 128k | Shares Fable 5.1's specs, pricing, and prompting guidance; Project Glasswing access only |
+| Claude Fable 5 | `claude-fable-5` | $10 / $50 | 1M / 128k | Superseded by 5.1; existing deployments run fine |
 | Claude Opus 5 | `claude-opus-5` | $5 / $25 | 1M / 128k | Complex agentic coding, enterprise knowledge work, code review, vision-heavy workflows |
-| Claude Sonnet 5 | `claude-sonnet-5` | $2 / $10 through 2026-08-31, then $3 / $15 | 1M / 128k | Best speed-to-intelligence ratio: production coding, agentic tool use, data analysis |
+| Claude Sonnet 5 | `claude-sonnet-5` | $2 / $10 | 1M / 128k | Best speed-to-intelligence ratio: production coding, agentic tool use, data analysis |
 | Claude Haiku 4.5 | `claude-haiku-4-5` | $1 / $5 | 200k / 64k | Real-time and high-volume work, subagent tasks, cost-sensitive deployments |
 
 Model IDs from the 4.6 generation onward are dateless but still **pinned snapshots**, not evergreen pointers.
 
+> **Sonnet 5 stayed at $2/$10.** The increase to $3/$15 that was scheduled for 2026-09-01 was cancelled; $2/$10 is now the standard price. If you are working from a guide or a budget written before September 2026, check this one.
+
 Two viable starting strategies: start efficiency-first with Haiku 4.5 and upgrade only on a measured capability gap, or start capability-first with Opus 5, tune the prompt, then optimize downward via `effort` before switching models. **Tuning effort is usually a better lever than switching models.**
+
+Anthropic maintains a separate prompting page per model (Fable 5.1, Fable 5, Sonnet 5, Opus 5, Opus 4.8). If the user names a specific model, read that page's deltas rather than assuming the family defaults apply.
 
 ---
 
 ## Effort: the primary cost/intelligence control
 
-`effort` lives in `output_config` and takes `low`, `medium`, `high`, `xhigh`, `max`. It defaults to `high` on Opus 5 and Sonnet 5 (Claude API and Claude Code).
+`effort` lives in `output_config` and takes `low`, `medium`, `high`, `xhigh`, `max`. It defaults to `high` on Fable 5.1, Opus 5, and Sonnet 5 (Claude API and Claude Code).
+
+> **Effort level names are not comparable across models.** The same label buys a different amount of thinking on each model. Re-run your effort sweep against your own evals every time you change model — including on a point upgrade like Fable 5 → Fable 5.1.
 
 | Level | Use for |
 |---|---|
@@ -50,21 +67,22 @@ Behavior notes that change how you prompt:
 
 - **Effort is respected strictly at the low end.** At `low` and `medium` the model scopes work to exactly what was asked. Good for cost, but risks under-thinking on moderately complex tasks.
 - **On Opus 5, `low` and `medium` produce strong quality at a fraction of the tokens.** Use them liberally as the primary cost/latency control wherever quality holds.
-- **On Fable 5, lower effort settings often exceed `xhigh` on prior models.**
+- **On Fable 5.1, capability gains over Fable 5 show up at every level and are largest at the high end.** At `medium`, 5.1 roughly matches Fable 5 at lower cost — step down where your evals show quality holds. At `low`, 5.1 is often competitive with Opus and Sonnet models on cost per task while scoring higher, so include it in the comparison anywhere you'd otherwise reach for a smaller model at higher effort.
 - Rough Sonnet mapping when migrating: Sonnet 5 at `medium` ≈ Sonnet 4.6 at `high`; Sonnet 5 at `high` ≈ Sonnet 4.6 at `max`.
 - If you see shallow reasoning, **raise effort rather than prompting around it.** If you must stay at `low`:
   ```text
   This task involves multistep reasoning. Think carefully through the problem before responding.
   ```
 - At `high`/`xhigh`/`max`, leave `max_tokens` headroom — thinking counts against it. Start at 64k. A tight budget produces an answer that is almost all thinking followed by a truncation with `stop_reason: "max_tokens"`.
+- Effort can be **changed mid-conversation**. When only some turns need depth — e.g. a retrieval-heavy turn that needs to actually search — raise it for those turns rather than for the whole session.
 
 ### Thinking
 
-Adaptive thinking is **on by default** on Opus 5 and Sonnet 5, and **always on** (not disableable) on Fable 5.
+Adaptive thinking is **on by default** on Opus 5 and Sonnet 5, and **always on** (not disableable) on Fable 5 and Fable 5.1.
 
 - Manual extended thinking (`thinking: {type: "enabled", budget_tokens: N}`) returns a 400 error. Use `effort` instead.
 - On Opus 5, `thinking: {type: "disabled"}` works only at `effort: "high"` or below.
-- On Fable 5, raw thinking is never returned; opt into summaries with `thinking: {display: "summarized"}` (default is omitted).
+- On Fable 5 and 5.1, raw thinking is never returned. Opt into `thinking: {display: "summarized"}` for summaries, or `display: "updates"` for progress updates (see below). The default is `"omitted"`.
 - If the model thinks more often than you want (common with large system prompts):
   ```text
   Thinking adds latency and should only be used when it will meaningfully improve answer quality, typically for problems that require multistep reasoning. When in doubt, respond directly.
@@ -74,6 +92,180 @@ Adaptive thinking is **on by default** on Opus 5 and Sonnet 5, and **always on**
 ```text
 When you use a tool, you may say a brief sentence first. If no tool can express what the user asked for, say so instead of guessing. Do not include internal or system XML tags in your response.
 ```
+
+---
+
+## Append-only history (Fable 5.1) — read this before building an agent loop
+
+Append each assistant turn to the history **exactly as the API returned it**, thinking blocks included, and never edit earlier turns between requests.
+
+For accounts created on or after **2026-08-31**, a Fable 5.1 thinking block is valid only in the exact conversation that produced it. A request that replays a thinking block after its prefix changed — the system prompt, the tool list, or any earlier message — returns a **400**, or silently drops the affected blocks if you set `thinking.block_binding.prefix_mismatch_behavior: "drop_block"` (beta header `thinking-binding-controls-2026-08-01`). Anthropic expects to enforce this for all accounts on future models, so adopt the pattern now.
+
+The edits that trip this check are exactly the ones that restart the prompt cache:
+
+| Don't | Do instead |
+|---|---|
+| Inject and remove per-turn reminders | Send them as **turn-scoped system messages** (`role: "system"` in `messages` with `clear_at: "next_user_message"`, beta header `mid-conversation-system-clear-at-2026-08-21`). Append a fresh copy each turn and leave earlier copies byte-for-byte in place — once cleared they cost no input tokens. |
+| Summarize older turns in place | Use server-side [compaction](https://platform.claude.com/docs/en/build-with-claude/compaction) or context editing. |
+| Rebuild `system` or `tools` mid-session | Use a mid-conversation system message. |
+
+If you must compact client-side, the safe shape is to **replace the whole history with one summary message plus the new user turn** and replay nothing else — no thinking blocks carry over, so nothing can fail. Use the summarization instruction under "Compaction" below.
+
+Cache reads are cheaper on Fable 5.1 than on Fable 5, so **compacting early to save money may no longer be the right trade** — test later compaction points.
+
+To find edits your harness already makes: run a session with `prefix_mismatch_behavior: "drop_block"` and log `input_transformations`, or capture the raw requests over a few turns and confirm consecutive requests are byte-identical up to the appended turns.
+
+---
+
+## Fable 5.1 behavioral deltas
+
+Each of these is a *change from Fable 5*. Start with the one matching the symptom you actually observe — don't apply all of them preemptively.
+
+### Little or no text between tool calls
+
+5.1 narrates less during long tool-calling turns, more so at high effort and in long chains. Users see minutes of silence, or a final message covering only the last step.
+
+**First, check your client is even receiving updates.** The model's between-tool-call notes come back as progress-update `thinking` blocks, which are empty under the default `thinking.display: "omitted"`. Set `display: "updates"` (beta `thinking-display-updates-2026-08-18`) and render each non-empty `thinking` block as a status line.
+
+**Second, delete prompt lines that suppress narration.** Older models were over-eager to narrate, so many prompts carry lines like "hold all findings for the final response." Remove those before adding anything.
+
+Only then, if you want more:
+```text
+Before you start, say in a line what you're about to do; brief updates while you work help the user follow along. Close with a short recap that stands on its own — what you found, what you did, and what's next — so a reader who only sees the last message has the full picture.
+```
+
+If your UI collapses or hides tool output, say so in a turn-scoped system message — otherwise the model runs commands to "show" the user output they never see:
+```text
+Only you see that command's output — the user's terminal shows at most a few lines of it. If the user needs to read any of it, put it in your reply.
+```
+
+### One tool call per turn in agent loops
+
+5.1 parallelizes correctly when a request *names* several things to fetch. It may serialize in coding and computer-use loops where the next independent calls are only *implied* by the task. Quality is unaffected; you pay in turns, round trips, and wall-clock time.
+
+Append this after the tool results each turn, as a turn-scoped system message (or a text block after the `tool_result` blocks if you're not on the beta):
+```text
+First privately list what you need next; then request every item that doesn't depend on another's result in this one response.
+```
+
+### Prose runs long and dense
+
+5.1 writes better than earlier models overall — fewer stock phrases, less unexplained jargon — but its sentences run longer with fewer paragraph breaks. Defining the anti-pattern works better than asking for brevity. Put it in a user message (preferred) or the system prompt:
+```text
+Mannered prose substitutes metaphor and flourish for direct statement. Instead of "a parameter worth varying," the mannered writer produces "a dial worth turning." Instead of "this point still matters," they write "this point earns its keep." The phrases exist to display the writer, not to convey the idea, and readers can tell. That is why mannered prose irritates: it makes the reader work harder so the writer can perform. It is also imprecise. Metaphors drag in connotations the writer did not choose and cannot control. The fix is to say what you mean. When a literal phrase is available, use it.
+```
+The short version often works too: `Please remove all mannered prose.`
+
+### Chat replies carry less structure than the content needs
+
+This reverses the old problem. Earlier models overused bullets and bold, so many prompts carry anti-formatting rules. 5.1 under-formats: less bold, less likely to reach for headers, lists, or quotation marks. **Delete your anti-formatting language** and replace it with a conditional rule:
+```text
+Use lists and bullet points when asked to, or when the content is multifaceted enough that they help with clarity. If the person explicitly requests minimal formatting, always format your responses without bullet points, headers, lists, or bold emphasis, as requested. In conversational, personal, or emotional exchanges, keep to plain prose.
+```
+
+### Summaries reproduce source wording without marking it as a quotation
+
+When summarizing retrieved documents, 5.1 is more likely than Fable 5 to lift passages unmarked. The fix is **one complete worked example** in the system prompt — the user's request, a correct response, and a rationale explaining *why* it's correct. Sketch:
+
+```text
+<example>
+<user>look up how the Riverton Ledger and the Coast Dispatch each covered the Harbor Bridge closure and compare their reporting</user>
+[web_search: Riverton Ledger Harbor Bridge closure]
+[web_search: Coast Dispatch Harbor Bridge closure]
+<response>
+Both outlets agree on the basics: the bridge closed on March 3 after inspectors found cracked welds, and the state expects repairs to take about eight months. Where they differ is emphasis. The Ledger treats it as a local-economy story. The Dispatch frames it as a funding failure; its editorial calls the closure "entirely foreseeable." Read together, the Ledger explains who is affected now and the Dispatch explains how it came to this — neither account alone gives the whole picture.
+</response>
+<rationale>CORRECT: The response is organized around where the two outlets agree and differ, not as a walk through either article. Each outlet's reporting is conveyed in one or two sentences of the assistant's own indirect speech. One short marked phrase from one source; every other claim is reworded. The response is still specific and complete.</rationale>
+</example>
+```
+Replace the `[web_search: ...]` lines with your own tool's name so the model reads them as templated tool output rather than literal text to emit.
+
+### Turn ends before the work is done
+
+5.1 sometimes describes what it would do next ("Next, I'll…") or asks permission for a step the original request already covered ("Shall I apply this?"). Two system-prompt blocks together fix this. **Apply both**; if prompt length is tight, the first keeps most of the effect.
+
+The opening sentence — telling the model the user isn't watching — carries much of the effect, so keep it as written. If your product needs specific confirmations, list them right after it. Note the trade-off: this block also makes the model less likely to ask about genuinely ambiguous requests.
+
+```text
+You are operating autonomously. The user is not watching in real time and cannot answer questions mid-task, so asking 'Want me to…?' or 'Shall I…?' will block the work. For reversible actions that follow from the original request, proceed without asking. Stop only for destructive actions or genuine scope changes the user must decide. Offering follow-ups after the task is done is fine; asking permission before doing the work is not.
+
+Exception: when the user is describing a problem, asking a question, or thinking out loud rather than requesting a change, the deliverable is your assessment. Report your findings and stop. Don't apply a fix until they ask for one.
+
+Before ending your turn, check your last paragraph. If it is a plan, an analysis, a question, a list of next steps, or a promise about work you have not done ('I'll…', 'let me know when…'), do that work now with tool calls. That includes retrying after errors and gathering missing information yourself. Do not stop because the context or session is long. End your turn only when the task is complete or you are blocked on input only the user can provide.
+
+Before running a command that changes system state (such as restarts, deletes, or config edits), check that the evidence actually supports that specific action. A signal that pattern-matches to a known failure may have a different cause.
+```
+
+The second defines the request as the scope of the deliverable:
+```text
+The user's request — or the plan they approved — sets the scope, and the scope is the deliverable: don't quietly narrow, widen, or swap it. Read ambiguity the way a careful colleague would: make routine judgment calls yourself, and check in only when different readings would lead to materially different work. If you see a real problem with the task as specified, say so in a sentence or two and keep building under stated assumptions; if the user hears the concern and reaffirms, that is their decision, so deliver the full request.
+
+If a question comes up partway, first do everything that doesn't depend on the answer; then state the assumption you made, or — when going ahead on a wrong guess would be unsafe or would make the work useless — put the question at the end of a turn that also delivers that progress. If one part turns out to be blocked, complete every other part in full and say exactly what you left out and why — the whole task is the deliverable, and scaling it down is the user's call, not yours. A step you have decided on is something to run, not to announce: describing the next step and ending the turn leaves it undone until the user replies.
+
+Keep changes to what the request needs. Something else you notice worth doing — cleanup or documentation the task didn't call for, a change to a file the task didn't require — is a suggestion to make at the end, not a change to make; actions clearly beyond what the ask implies, and risky or destructive ones, still need the user's go-ahead.
+```
+
+### Compaction summaries drop constraints or exact details
+
+Server-side compaction already handles this. For client-side compaction, use this summarization instruction verbatim — the six numbered items and the asymmetric weighting of user vs. assistant voice are both load-bearing:
+```text
+Summarize the transcript inside <summary></summary> tags. Include relevant information in the summary such that this conversation will be continued by a new context window without needing to redo work or be reprovided with relevant constraints or context. Be sure to preserve: (1) any difficulties or problems that came up, and how they were handled or resolved; (2) any possibilities, options, or approaches that were raised, tried, or set aside, and why; (3) anything that was asked for, decided, agreed, ruled out, or established as a preference, constraint, or boundary — stated exactly; (4) exactly where things stand now — what has been covered, settled, or completed so far; (5) anything still open, unresolved, promised, or expected to happen next; (6) specific details that would be hard to reconstruct — names, numbers, dates, exact wording, links or references — kept exactly. Be complete on these even at the cost of length; keep everything else concise. Weight the two voices differently: keep what the user said, asked for, shared, or established carefully and close to their own words; your own explanations and reasoning can be condensed much further, to what they concluded or produced — as long as nothing in the six items above is dropped.
+```
+
+### Unrequested fixes, or more test files than the task warranted
+
+Anthropic measured this instruction dropping unrequested additions and committed test code substantially, with no measurable change in task success:
+```text
+If, while working or testing, you find a pre-existing bug, a performance concern, or behavior the task doesn't mention, don't fix, optimize or extend it in this change unless the requested behavior cannot work without it; report it as a follow-up in your summary. Where the task is ambiguous, implement the reading its wording and the surrounding code most directly support, state that assumption in your summary, and don't build for the other readings as well. Verify your work however you like; scratch scripts and quick checks need not be kept. Commit tests only where the task asks for them or this repository already keeps tests for this kind of change, sized like the neighboring test files — roughly one focused test per stated behavior — and don't turn scratch checks into additional permanent test files. This is about extras only: implement every behavior the task asks for, completely.
+```
+
+### Answers from memory instead of searching, at `low` effort
+
+At `low`, 5.1 calls search and retrieval tools less often than Fable 5 did. Often the cleanest fix is to **raise effort for the affected turns** rather than the whole conversation. Otherwise:
+```text
+When a query centers on a name you do not confidently recognize, or recognize from a fast-moving area like AI models and developer tools where the landscape shifts within months, the name itself is the thing to verify: search before answering, and include the name as the user wrote it in at least one query alongside any reformulations. This holds even when you have some background on it — partial background is exactly what makes an out-of-date answer sound authoritative, so familiarity is not a reason to skip the search.
+```
+
+### Benign coding requests return `stop_reason: "refusal"`
+
+5.1's safety classifiers produce fewer false positives than Fable 5's did at launch, and finding vulnerabilities in source code is permitted. Three situations still raise the odds:
+
+- **Compile-check phrasing.** Ask "Are there any bugs in this program?" instead of "Does this program compile without errors?"
+- **Lesser-known languages.** Give the model context about the language — ideally access to its documentation.
+- **Base64 in tool output.** Tools that return base64-encoded data into context can trigger false positives. Strip it.
+
+### Whole files rewritten for small changes
+
+5.1 is likelier than Fable 5 to rewrite an entire text file rather than edit it. The result is usually the same file at higher output-token cost and latency. Append to the system prompt or first user message:
+```text
+The number of tokens used to edit files is best minimized, all else being equal. Therefore, when it will not affect the end result, try to surgically edit a file rather than rewrite the entire thing.
+```
+
+### Long deliverables at `xhigh`/`max` run long or hit `max_tokens`
+
+At `xhigh` and especially `max`, 5.1 can draft most of a long deliverable inside its thinking and then write it out again as the reply — double the tokens, double the wait. The simplest fix is to **run long-deliverable requests at `high`** and only move up where you've measured a gain. If you do run them high:
+
+- Set `max_tokens` to cover thinking *and* reply, not just the expected reply length.
+- Append this to the user message, substituting the real `max_tokens` value:
+```text
+Everything produced in one reply, including any reasoning or drafting done before the reply, counts toward a single limit of about [max_tokens] tokens. If that limit is reached before the reply is finished, the person receives a cut-off response and has to start over. Composing an entire output or deliverable in full as reasoning and then again as a reply would double the length of the turn without improving the result, so don't do that.
+
+Instead, when the person has asked for a long or effort-intensive deliverable such as a multi-section document, a large table or dataset, or a complete code file, spend extra effort on understanding the request, checking the inputs the answer depends on, settling the structure and other difficult decisions, and otherwise using the reasoning space to reason and the output space to write an output. Usually it is not needed to draft an output multiple times.
+```
+
+### Lead agent idles while subagents run
+
+Don't force the lead to block on each subagent. On coding tasks, letting it continue lowers average time to completion at similar quality, tokens, and cost. Three requirements:
+
+- The tool that starts a subagent **returns immediately**.
+- Each subagent's result comes back to the lead in a later `user` message.
+- The lead gets a **separate tool** it can call when it actually wants to wait.
+
+The model still often chooses to wait; the savings come from the runs where it doesn't.
+
+### Vision answers miss detail on dense charts
+
+5.1's vision is better out of the box, and it does its best work on dense visual input when it can iteratively analyze, crop, and verify. Best setup: run it as an agent with a container holding the raw images and PIL/OpenCV preinstalled. If that's too much overhead, **an image-cropping tool alone delivers most of the uplift** — a tool that returns a chosen region cropped and enlarged lets the model scale test-time compute with image tokens. Anthropic publishes a working definition at `platform.claude.com/cookbook/multimodal-crop-tool`.
 
 ---
 
@@ -91,8 +283,13 @@ These helped Claude 4.x and now cause measurable harm:
 | Assistant-message prefill | Returns 400 on 4.6+ models. Use structured outputs, tool enums, or a direct system instruction instead. |
 | `temperature` / `top_p` / `top_k` | Return 400 on Opus 5, Sonnet 5, Fable 5. Steer tone and variety through the prompt. |
 | "Echo / transcribe / explain your internal reasoning as your response" | On Fable 5 this can trigger the `reasoning_extraction` refusal category and elevated fallbacks. Read the structured `thinking` blocks instead. |
+| "Hold all findings for the final response" | Written for models that over-narrated. Fable 5.1 under-narrates; this makes the silence worse. |
+| Anti-formatting rules ("no bullets", "no bold", "no headers") | Same inversion. Fable 5.1 under-formats. Replace with a conditional rule (see the formatting delta above). |
+| Prescriptive style guardrails ("Never write multi-paragraph docstrings") | Replace with judgment framings the model can generalize: "Write code that reads like the surrounding code: match its comment density, naming, and idiom." |
+| Examples of how to call a tool | They constrain the model to the demonstrated exploration space. Put the guidance in the tool *description* and make the parameters expressive instead. |
+| The same instruction repeated in the system prompt and a tool description | State it once, in the tool description. |
 
-Fable 5 in particular: **skills and prompts tuned for prior models are often too prescriptive and degrade its output.** Review and remove older scaffolding before assuming a regression.
+Fable 5 and 5.1 in particular: **skills and prompts tuned for prior models are often too prescriptive and degrade output.** Review and remove older scaffolding before assuming a regression. Anthropic removed over 80% of Claude Code's system prompt for Opus 5 and Fable 5 with no measurable loss on their coding evals — see `references/context-engineering.md`.
 
 ---
 
@@ -290,6 +487,8 @@ I'm working on [the larger task] for [who it's for]. They need [what the output 
 ## Cost levers
 
 - Prompt caching: 5-minute writes cost 1.25× base input, 1-hour writes 2×, cache hits 0.1×. Breaks even after one read (5m) or two reads (1h). Minimum cacheable prompt on Opus 5 dropped to **512 tokens** (from 1,024).
+- **Cache reads are 4× cheaper on Fable 5.1 and Mythos 5.1**: hits bill at **0.025× base input ($0.25/MTok)** rather than the 0.1× every other Claude model uses. Writes are unchanged (1.25× for 5m, 2× for 1h), so the break-even moves in favor of caching aggressively and **compacting later** — an early-compaction threshold tuned on Fable 5 is probably now costing you money.
+- Batch API on Fable 5.1: $5 / $25 per MTok.
 - Batch API: 50% off input and output. Stacks with caching. Not available with fast mode.
 - Fast mode (research preview, Opus 5 / Opus 4.8): up to 2.5× output speed at $10/$50 per MTok.
 - `inference_geo: "us"` applies a 1.1× multiplier on every token category.

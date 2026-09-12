@@ -11,6 +11,9 @@ status: "Unread"
 note:
 related:
 ---
+
+> **Staleness note (checked 2026-09-12):** this deep source predates `gpt-image-2.5` (`flare` / `sunburst`). Its craft guidance — prompt structure, text rendering, reference-image roles, edit preservation, worked examples — still holds. Its **model names, quality levels, size limits, and transparency claims do not.** Take those from `gpt-image-prompting-guide.md` in this folder.
+
 ## 1\. Introduction
 
 OpenAI’s gpt-image generation models are designed for production-quality visuals and highly controllable creative workflows. They are well-suited for both professional design tasks and iterative content creation, and support both high-quality rendering and lower-latency use cases depending on the workflow.

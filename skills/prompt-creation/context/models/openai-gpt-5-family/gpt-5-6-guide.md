@@ -2,11 +2,11 @@
 
 ## Overview
 
-GPT-5.6 is OpenAI's current flagship family and introduces a **new naming scheme**: three named variants instead of size suffixes. It also adds programmatic tool calling, a multi-agent beta, explicit prompt caching, persisted reasoning, `pro` mode, and a `max` reasoning effort level.
+GPT-5.6 is OpenAI's **cost tier beneath the current flagship**, `gpt-6-astra` (see `context/models/openai-gpt-6-family/gpt-6-astra-guide.md`). It is not legacy — all four variants are current and priced, and at $0.20–$12.50 input they are 2.5–50× cheaper than Astra, so most production volume still belongs here. It introduced the **named-variant naming scheme** in place of size suffixes. It also adds programmatic tool calling, a multi-agent beta, explicit prompt caching, persisted reasoning, `pro` mode, and a `max` reasoning effort level.
 
 The headline prompting finding: **lean prompts win.** OpenAI's internal testing found leaner system prompts improved eval scores by roughly **10–15% while cutting total tokens 41–66% and cost 33–67%**. If you are migrating a prompt from GPT-5.x, deleting redundancy is the highest-value edit you can make.
 
-Sourced: 2026-07-26
+Sourced: 2026-09-12
 
 Sources:
 - https://developers.openai.com/api/docs/guides/latest-model
@@ -14,7 +14,7 @@ Sources:
 - https://developers.openai.com/api/docs/pricing
 - https://developers.openai.com/api/docs/guides/prompting/migrate-from-prompt-object
 - https://developers.openai.com/api/docs/guides/prompt-engineering
-- https://developers.openai.com/api/docs/guides/reasoning-best-practices
+- https://developers.openai.com/api/docs/guides/reasoning-best-practices (**note: stale upstream** — still names o3/o4-mini and documents no effort levels. Its one durable claim is "no CoT on reasoning models"; do not treat it as a source for which models are current.)
 
 ---
 
@@ -22,13 +22,18 @@ Sources:
 
 | Model ID | Role | Input / Cached / Output per 1M tokens |
 |---|---|---|
-| `gpt-5.6-sol` | Flagship capability (what the `gpt-5.6` alias resolves to) | $5.00 / $0.50 / $30.00 |
-| `gpt-5.6-terra` | Strong performance at lower cost | $2.50 / $0.25 / $15.00 |
-| `gpt-5.6-luna` | Efficient, high-volume workloads | $1.00 / $0.10 / $6.00 |
+| `gpt-5.6-sol` | Top of the 5.6 family (what the `gpt-5.6` alias resolves to) | $4.00 / $0.40 / $20.00 |
+| `gpt-5.6-terra` | Strong performance at lower cost; OpenAI's documented "smaller option" to compare Astra against | $2.00 / $0.20 / $12.00 |
+| `gpt-5.6-luna` | Efficient, high-volume workloads | $0.20 / $0.02 / $1.20 |
+| `gpt-5.6-cyber` | Security-focused variant; priced above `sol` | $12.50 / $1.25 / $75.00 |
 
-For reference: `gpt-5.5` $5/$0.50/$30, `gpt-5.5-pro` $30/–/$180, `gpt-5.4` $2.50/$0.25/$15, `gpt-5.4-mini` $0.75/$0.075/$4.50, `gpt-5.4-nano` $0.20/$0.02/$1.25.
+Above this family: `gpt-6-astra` $10.00 / $1.00 / $50.00.
+Below it: `gpt-5.5` $5/–/$30, `gpt-5.4` $2.50/–/$15, `gpt-5` $1.25/–/$10, `gpt-5-mini` $0.25/–/$2.
+Specialist models: `gpt-5.3-codex` $1.75/$0.175/$14, `gpt-realtime-2.1` $4/$0.40/$24 (text), `gpt-realtime-2.1-mini` $0.60/$0.06/$2.40, `gpt-live-1` $0.05/minute.
 
-**Selection method** (OpenAI's stated framework): optimize for accuracy first — set a concrete accuracy target, build a labeled eval set, start with the most capable model (`gpt-5.6`) — and only then pursue the cheapest, fastest model that still hits the target. Collect prompt/completion pairs along the way so a smaller variant can be tested zero-shot, few-shot, or fine-tuned.
+**Prices were re-verified 2026-09-12 and had all moved down since the 2026-07 revision of this file.** Re-check before quoting them to a user.
+
+**Selection method** (OpenAI's stated framework): optimize for accuracy first — set a concrete accuracy target, build a labeled eval set, start with the most capable model (now `gpt-6-astra`) — and only then pursue the cheapest, fastest model that still hits the target. Collect prompt/completion pairs along the way so a smaller variant can be tested zero-shot, few-shot, or fine-tuned.
 
 ---
 
@@ -150,7 +155,7 @@ Combine **markdown for hierarchy** (headers, lists) with **XML tags for boundari
 
 ### The `prompt` object is going away
 
-The managed `prompt` resource (`prompt: { id, version, variables }`) is deprecated and the `v1/prompts` endpoint **shuts down November 30, 2026**. Move prompt content into application code: pass `input: [{ role, content }, ...]` plus `model`, build messages with a typed helper function whose arguments replace the old template variables, and version through git rather than the API. Pin to specific model snapshots and gate prompt changes behind your normal test/deploy process.
+The managed `prompt` resource (`prompt: { id, version, variables }`) is deprecated: **de-emphasized from June 3, 2026**, and the `v1/prompts` endpoint **shuts down November 30, 2026**. Move prompt content into application code: pass `input: [{ role, content }, ...]` plus `model`, build messages with a typed helper function whose arguments replace the old template variables, and version through git rather than the API. Pin to specific model snapshots and gate prompt changes behind your normal test/deploy process.
 
 ---
 

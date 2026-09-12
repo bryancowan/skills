@@ -22,10 +22,13 @@ This skill helps create effective prompts for any LLM task — from simple one-s
 
 These rules apply across every mode. Violating any of them produces worse output than no prompt at all.
 
-- **Never add Chain-of-Thought to reasoning-native models.** Claude 5 (adaptive thinking), GPT-5.x with reasoning on, Gemini 3.x, GLM-5.2, Qwen3 thinking mode, Gemma 4 thinking, and the o-series all reason internally. "Think step by step" wastes tokens and degrades output. State the goal and desired format, nothing more. Full matrix in `references/techniques.md`. **Raise the effort parameter instead of prompting around shallow reasoning** — every vendor says this.
+- **Never add Chain-of-Thought to reasoning-native models.** Claude 5 / 5.1 (adaptive thinking), GPT-6 Astra, GPT-5.x with reasoning on, Gemini 3.x, GLM-5.3, Qwen3 thinking mode, Gemma 4 thinking, and the o-series all reason internally. "Think step by step" wastes tokens and degrades output. State the goal and desired format, nothing more. Full matrix in `references/techniques.md`. **Raise the effort parameter instead of prompting around shallow reasoning** — every vendor says this. Two models can't even be put in a non-thinking state: GPT-6 Astra (no `none` level) and GLM-5.3 (thinking mandatory).
 - **Never embed fabrication-prone techniques in a single prompt.** Mixture of Experts, Tree of Thought, Graph of Thought, Universal Self-Consistency, and deep prompt chaining all require multi-pass orchestration or external infrastructure. When forced into a single forward pass, the model role-plays the structure and fabricates the content. Use these only when the user has real orchestration (e.g., agent SDK, LangChain, multi-call pipeline).
-- **Delete instructions that current models made obsolete.** Verification steps, "double-check your answer", forced progress summaries, and "CRITICAL: you MUST use this tool" all *hurt* on Claude 5, Opus 4.8, and GPT-5.6 — they cause over-verification and tool overtriggering. Prefill, `temperature`/`top_p`/`top_k`, and thinking `budget_tokens` return 400 errors on Claude 5. See `context/models/anthropic-claude/claude-5-family-guide.md` for the full delete list.
-- **Scope guards are still needed, but the wording changed.** Claude Opus 5 and Fable 5 expand scope and over-tidy at high effort; use the current snippets in the Claude 5 guide rather than the old Opus 4.x boilerplate.
+- **Delete instructions that current models made obsolete.** Verification steps, "double-check your answer", forced progress summaries, and "CRITICAL: you MUST use this tool" all *hurt* on current models — they cause over-verification and tool overtriggering. Prefill, `temperature`/`top_p`/`top_k`, and thinking `budget_tokens` return 400 errors on Claude 5.x. Separately — these don't error, they just degrade output — drop tool-call examples and prescriptive style rules: **replace rules with judgment framings the model can generalize.** Anthropic cut >80% of Claude Code's system prompt with no eval loss. See `references/context-engineering.md` and the delete list in `context/models/anthropic-claude/claude-5-family-guide.md`.
+- **Effort level names are not comparable across models.** `high` buys a different amount of thinking on every model — including between point releases of the same family. Never port a prompt at "the same effort level" and call it a comparison; re-sweep against real evals. Defaults also run in different directions: Claude and OpenAI default mid-range and you step up, **GLM-5.3 defaults to `max`** and you step down.
+- **Agent conversation history must be append-only.** On Claude Fable 5.1, editing earlier turns between requests returns a 400 — not just a cache miss. Injecting/removing per-turn reminders, summarizing in place, and rebuilding `system` or `tools` mid-session are all now correctness bugs. If you are writing an agent-loop prompt, read the append-only section of the Claude 5 guide before anything else.
+- **Scope guards are still needed, but the wording changed.** Claude Opus 5, Fable 5, and Fable 5.1 expand scope and over-tidy at high effort; use the current snippets in the Claude 5 guide rather than the old Opus 4.x boilerplate.
+- **Check the vendor docs before quoting a model name, price, or parameter.** This skill's guides carry a `Sourced:` date; model generations have turned over in under two months. If the user is choosing a model or budgeting, verify rather than reciting.
 - **Cap clarifying questions at 3.** Lead with the 1–2 most important based on context; fold the rest in later. Endless clarification frustrates users and pushes the prompt off-topic.
 - **Never output a prompt without confirming the target tool/model when ambiguous.** Different tools and models need different syntax — guessing produces a worse first-shot result than asking.
 
@@ -41,14 +44,20 @@ Before writing anything, figure out which mode applies:
 | **Iterate from results** | User has a prompt that's producing unsatisfactory outputs |
 | **Quick paste** | User wants a single ready-to-paste prompt with no commentary |
 
-Signals for **Quick paste mode**: "just give me the prompt", "no explanation", "ready to paste", "just the prompt", "don't explain", or the user is clearly mid-flow and needs output, not lessons. When in doubt and the request is concrete (clear tool, clear task), default to Quick paste; switch to Mode 1 only if pedagogy is requested.
+Signals for **Quick paste mode**: "just give me the prompt", "no explanation", "ready to paste", "just the prompt", "don't explain", or the user is clearly mid-flow and needs output, not lessons.
+
+**Tiebreakers** (these modes overlap constantly — resolve them this way):
+
+- **Mode 1 vs. Mode 5.** Concreteness alone doesn't decide it. Go to Quick paste when the user's message is *short and transactional*. Go to Mode 1 when they supplied background, constraints, or an example product/input — that effort signals they want the reasoning too.
+- **Mode 3 vs. Mode 4.** If they pasted a prompt, start in Mode 3. But **always check the Mode 4 symptom table too** — the diagnosis for "goes off on tangents", "too verbose", or "ignores instructions" lives there, and Mode 3's checklist alone will miss it.
+- **Mode 2** wins over all of them whenever the answer is more than one prompt.
 
 Then gather the key details. Ask targeted follow-up questions for anything missing — don't guess at critical parameters.
 
 ### What to ask about
 
 - **Task**: What should the LLM accomplish? What does a good output look like?
-- **Target model**: Which model will run this? (Claude, GPT-5, Gemini, Codex, GLM, etc.) Different models respond differently to the same prompt.
+- **Target model**: Which model will run this? (Claude Fable 5.1 / Opus 5 / Sonnet 5, GPT-6 Astra, GPT-5.6, Gemini 3.x, Codex, GLM-5.3, etc.) Different models respond differently to the same prompt. **Family-level ("Claude", "GPT") is usually not specific enough** — effort defaults, verbosity, and cost differ sharply within a family. Ask for the tier when it would change the prompt.
 - **Output type**: Text, code, image generation prompt, text-to-speech script, video prompt, structured data, or something else?
 - **Tool or service**: Will this run in a specific tool? (Lovable, Figma, ElevenLabs, OpenClaw, Claude Code, ChatGPT, etc.)
 - **Audience & tone**: Who sees the output? What personality should the LLM adopt?
@@ -82,9 +91,9 @@ Read `references/techniques.md` for a complete technique selection matrix. The k
 
 - **Simple, well-defined tasks** → Zero-shot with clear instructions is often enough. Start here.
 - **Tasks needing consistent format** → Few-shot examples are the most reliable lever.
-- **Reasoning-heavy tasks** → Chain-of-thought or step-back prompting.
+- **Reasoning-heavy tasks** → On reasoning-native models, **raise effort** — do not add chain-of-thought. Step-back prompting is still fine. CoT only helps on non-thinking models.
 - **Complex multi-part tasks** → Decompose into sub-prompts or use least-to-most.
-- **Quality-critical outputs** → Recursive criticism & improvement, or self-consistency.
+- **Quality-critical outputs** → Recursive criticism & improvement *within one response*. **Self-consistency needs N real samples plus aggregation** — only recommend it when the user has actual orchestration, never as a line inside a single prompt.
 
 Start with the simplest approach that could work. Add complexity only when simpler methods fall short.
 
@@ -94,27 +103,31 @@ If the user specifies a model (or you can infer one), load the relevant model-sp
 
 | Model Family | Reference Path |
 |---|---|
-| **Anthropic Claude 5** (Fable 5 / Opus 5 / Sonnet 5 / Haiku 4.5) | `context/models/anthropic-claude/claude-5-family-guide.md` — model selection, `effort`, adaptive thinking, verbosity, scope control, agentic patterns, and the list of instructions to delete from older prompts |
-| Anthropic Claude Opus 4.8 (legacy) | `context/models/anthropic-claude/claude-opus-4-8-guide.md` |
-| **OpenAI GPT-5.6** (`sol` / `terra` / `luna`) | `context/models/openai-gpt-5-family/gpt-5-6-guide.md` — lean prompts, autonomy boundaries, programmatic tool calling, persisted reasoning, explicit caching, `prompt` object migration |
+| **Anthropic Claude 5.x** (Fable 5.1 / Mythos 5.1 / Fable 5 / Opus 5 / Sonnet 5 / Haiku 4.5) | `context/models/anthropic-claude/claude-5-family-guide.md` — model selection, `effort`, adaptive thinking, **append-only history**, the Fable 5.1 behavioral deltas, verbosity, scope control, agentic patterns, and the delete list |
+| Anthropic Claude Opus 4.8 (prior gen) | `context/models/anthropic-claude/claude-opus-4-8-guide.md` |
+| **OpenAI GPT-6 Astra** (`gpt-6-astra`) | `context/models/openai-gpt-6-family/gpt-6-astra-guide.md` — spec, effort (no `none`), the 272K pricing cliff, async tool calling, mid-turn steering, dynamic reasoning config, `instructions` vs roles, `prompt` object retirement |
+| **OpenAI GPT-5.6** (`sol` / `terra` / `luna` / `cyber`) — cost tier below Astra | `context/models/openai-gpt-5-family/gpt-5-6-guide.md` — lean prompts, autonomy boundaries, programmatic tool calling, persisted reasoning, explicit caching |
 | OpenAI GPT-5.5 | `context/models/openai-gpt-5-family/gpt-5-5-guide.md` |
-| OpenAI vision / document input | `context/models/openai-gpt-5-family/openai-vision-guide.md` |
-| **Google Gemini 3.x** | `context/models/google-gemini/gemini-3-family-guide.md` (models + pricing + behavior), `gemini-prompting-strategies.md` (technique), `gemini-file-prompting.md` (files as input) |
+| OpenAI frontend/UI generation | `context/models/openai-gpt-5-family/gpt-5_frontend` |
+| OpenAI — prompt isn't working and you don't know why | `context/models/openai-gpt-5-family/gpt-5-toubleshooting-guide` (filename typo is in the repo, not here) |
+| OpenAI vision / document input | `context/vision-and-documents/document-understanding-tips.md` (settings-first decision guide), `context/models/openai-gpt-5-family/openai-vision-guide.md` |
+| **Google Gemini 3.x** (flagship `gemini-3.8-flash`) | `context/models/google-gemini/gemini-3-family-guide.md` (models + pricing + behavior), `gemini-prompting-strategies.md` (technique), `gemini-file-prompting.md` (files as input) |
 | Google Gemma 4 | `context/models/google-gemma/gemma-4-guide.md` — chat template control tokens, thinking, Cerebras `reasoning_effort` and image inputs |
 | Google Nano Banana | `context/image-generation/google-image-models-guide.md`; source clipping in `context/models/google-nano-banana/` |
-| **Z.ai GLM-5.2** | `context/models/zai-glm/glm-5-2-guide.md` |
-| OpenAI Codex (`gpt-5.3-codex`) | `context/models/openai-codex/codex-prompting-guide` — starter prompt, AGENTS.md, compaction, tools (apply_patch, shell, update_plan), preambles, phase parameter, metaprompting. Full source: `context/coding/codex-full-guide.md` |
+| **Z.ai GLM-5.3 / GLM-5.3-Flash (VLM)** | `context/models/zai-glm/glm-5-3-guide.md`; agentic coding harnesses: `context/coding/zai-coding-agents.md` — mandatory thinking, `reasoning_effort` defaulting to `max`, deliverable-enumerating prompt style, and the VLM render→inspect→refine loop |
+| OpenAI Codex (`gpt-5.3-codex`) | `context/models/openai-codex/codex-prompting-guide` — starter prompt, AGENTS.md, compaction, tools, preambles, phase parameter, metaprompting. **Goals (`/goal`): `context/coding/codex-goals.md`.** Full source: `context/coding/codex-full-guide.md` |
 | Mistral | `context/models/mistral/mistral-guide.md` — model selection, prompting, sampling (incl. cheap `N > 1`) |
-| Alibaba Qwen3 | `context/models/alibaba-qwen/qwen3-prompt-guide.md` |
+| Alibaba Qwen3 (text) | `context/models/alibaba-qwen/qwen3-prompt-guide.md` |
+| Alibaba **Wan** (image + video generation — a different family from Qwen) | `context/models/alibaba-wen/text-to-image-guide.md`, `context/models/alibaba-wen/Text-to-video-image-to-video prompt guide` |
 | Moonshot Kimi | `context/models/moonshot-kimi/kimi-guide.md` |
 
 Superseded guides live in `archive/` subfolders under each model directory — load them only when the user is explicitly targeting a legacy model.
 
 Key model differences to keep in mind:
-- **Claude 5**: XML tags for structure; explanations of *why* a rule exists generalize well; `effort` is the main cost/quality dial; **no sampling parameters, no prefill**; Opus 5 runs verbose by default and needs an explicit brevity instruction.
-- **GPT-5.6**: Lean prompts measurably outperform padded ones; state each instruction once; put tool guidance in tool descriptions; define autonomy boundaries instead of per-action approval.
-- **Gemini 3.x**: Defaults to *concise* output — ask for detail; still accepts `temperature`/`top_p`/`top_k`; Google recommends few-shot examples in nearly every prompt (the opposite of GPT-5.6 guidance).
-- **Open-weight models** (Gemma, Qwen, GLM, Kimi): benefit from more explicit structure and few-shot examples than the frontier hosted models; Gemma 4 needs literal chat-template control tokens.
+- **Claude 5.x**: XML tags for structure; explanations of *why* a rule exists generalize well; `effort` is the main cost/quality dial; **no sampling parameters, no prefill**; **history must be append-only on Fable 5.1**. Opus 5 runs verbose and needs an explicit brevity instruction. **Fable 5.1 inverts two old habits**: it *under*-formats in chat and *under*-narrates during tool calls, so anti-bullet and "save it for the summary" rules ported from older prompts make things worse.
+- **GPT-6 Astra / GPT-5.6**: Lean prompts measurably outperform padded ones; state each instruction once; put tool guidance in tool descriptions. On Astra, match register to effort — precise logic and data at `low`/`medium`, goal-and-constraints at `high`+.
+- **Gemini 3.x**: Defaults to *concise* output — ask for detail; Google now **strongly** recommends leaving sampling params at default despite accepting them; Google recommends few-shot examples in nearly every prompt (the opposite of OpenAI's lean-prompt guidance). Don't port either belief blindly.
+- **Open-weight models** (Gemma, Qwen, GLM, Kimi): benefit from more explicit structure and few-shot examples than the frontier hosted models; Gemma 4 needs literal chat-template control tokens. GLM rewards **enumerating the deliverables** you want back.
 
 If no model is specified and it matters for the prompt, ask.
 
@@ -124,13 +137,14 @@ Different output modalities need different prompting strategies. Load the releva
 
 | Output Type | Reference Path | Key Principle |
 |---|---|---|
-| **Image generation (OpenAI)** | `context/image-generation/gpt-image-prompting-guide.md` — gpt-image-2 default plus 1.5/1/1-mini: model selection, sizing, Images API vs. the Responses `image_generation` tool, use-case patterns. Deep source with worked examples: `gpt-image-models-full-guide.md` | Use natural language descriptions, not tag soup. Structure as background → subject → details → constraints. Be specific about materials, medium, and composition. |
+| **Image generation (OpenAI)** | `context/image-generation/gpt-image-prompting-guide.md` — **gpt-image-2.5 (`flare` / `sunburst`)** default, plus gpt-image-2 and the 1.x family: model selection, quality levels through `max`, sizing to 3840px, transparency, Images API vs. the Responses `image_generation` tool. Deep source with worked examples: `gpt-image-models-full-guide.md` | Define the result, then use labeled sections: scene → subject → details → constraints. Format (prose, JSON-ish, tags) is your choice — optimize for maintainability. Separate what changes from what must be preserved. |
 | **Image generation (Google)** | `context/image-generation/google-image-models-guide.md` — Nano Banana 2 / 2 Lite / Pro and Imagen 4 | Nano Banana wants descriptive prose and reference images (up to 14); Imagen wants subject + context + style with photography modifiers and a 480-token ceiling. |
-| **Vision / document input** | `context/models/openai-gpt-5-family/openai-vision-guide.md`; Gemini: `context/models/google-gemini/gemini-file-prompting.md` | Name the operation, not the object. Extract before interpreting. Tell the model to write "unreadable" rather than guess. Match `detail` to whether the model must *recognize* or *read* the image. |
-| **Speech-to-speech (Realtime)** | `context/speech-to-speech/gpt-realtime-prompting-guide` | Voice agents need different prompting than text. Use the 8-section structure (Role, Personality, Context, Pronunciations, Tools, Rules, Conversation Flow, Safety). Prefer bullets, pin language, add Variety rule, define explicit conversation states with exit criteria. |
+| **Vision / document input** | `context/vision-and-documents/document-understanding-tips.md`; `context/models/openai-gpt-5-family/openai-vision-guide.md`; Gemini: `context/models/google-gemini/gemini-file-prompting.md` | **Check the settings before rewriting the prompt** — `detail`, verbosity, and reasoning effort dominate wording here. Name the operation, not the object. Extract before interpreting. Tell the model to write "unreadable" rather than guess. State the bounding-box coordinate contract explicitly. |
+| **Speech-to-speech (Realtime)** | `context/speech-to-speech/gpt-realtime-prompting-guide` — `gpt-realtime-2.1` / `1.5` | Voice agents need different prompting than text. Use the 8-section structure (Role, Personality, Context, Pronunciations, Tools, Rules, Conversation Flow, Safety). Prefer bullets, pin language, add Variety rule, define explicit conversation states with exit criteria. Preambles: one short sentence. |
+| **Live voice with backend delegation** | `context/speech-to-speech/gpt-live-prompting-guide.md` — `gpt-live-1` | Different model *and* different prompt shape: the prompt is mostly a **delegation policy**. Personality + backchannel policy + interruption policy + delegation policy. "Delegate before answering; don't guess while waiting." Not interchangeable with gpt-realtime prompts. |
 | **Text-to-speech** | `context/text-to-speech/` | Normalize text (expand numbers, abbreviations). Use SSML break tags for pauses. Control pacing through narrative styling. |
 | **Video generation** | `context/video-generation/` — OpenAI Sora: `openai-video-generation-guide.md`; Google Veo: `google-veo-prompt-guide.md` | Name shot type, subject, action, setting, and lighting. One action beat per generation; chain beats with the extend endpoint. Describe the camera, not just the scene. |
-| **Code** | `context/coding/` — includes `codex-full-guide.md` (full OpenAI Codex agentic-coding source) | Specify language, framework, patterns. Include example signatures. Define error handling expectations. |
+| **Code** | `context/coding/` — includes `codex-goals.md` (persistent `/goal` objectives) and `codex-full-guide.md` (full OpenAI Codex agentic-coding source) | Specify language, framework, patterns. Include example signatures. Define error handling expectations. For long-running work with an unknown path, reach for a Codex Goal instead of a prompt. |
 | **Structured data** | (no special file) | Provide exact schema. Use few-shot examples of valid output. Specify edge case handling. |
 
 ### Adapt to tools and services
@@ -139,9 +153,10 @@ If the prompt will run in a specific tool, load the relevant guide:
 
 | Tool / Service | Reference Path |
 |---|---|
+| ChatGPT (the product, not the API) | `context/tools-and-services/chatgpt/chatgpt-prompt-guide.md` — write for a non-technical user: no parameters, no system-prompt architecture |
 | Lovable | `context/tools-and-services/lovable/` |
 | ElevenLabs | `context/tools-and-services/eleven-labs/` |
-| Figma | `context/tools-and-services/figma/` |
+| Figma | `context/tools-and-services/figma/` — **plugin-API reference only (`defineProperties`), not prompting guidance.** For Figma Make, use the Bolt / v0 / Stitch row below. |
 | OpenClaw | `context/tools-and-services/openclaw/` |
 | Cursor / Windsurf | `context/tools-and-services/cursor-windsurf/` |
 | Cline | `context/tools-and-services/cline/` |
@@ -192,6 +207,12 @@ These apply in every mode. Load the reference file when the concern is live; don
 
 Two rules worth applying by default: optimize for accuracy against a real eval set before optimizing for cost, and **tune the effort parameter before switching models** — on Claude 5 and GPT-5.6 the effort range is wider than the gap between adjacent models. If the user is choosing a model or complaining about cost, read this file.
 
+### Context engineering — read this when reviewing any long prompt
+
+`references/context-engineering.md` — the habits that helped 2024–2025 models now hurt. Prescriptive rules → judgment framings; tool-call examples → expressive parameters; front-loading → progressive disclosure; prose specs → test suites and reference code. Anthropic removed **>80% of Claude Code's system prompt** with no eval loss.
+
+**Default hypothesis when a user brings a long system prompt for review: it's too long, not missing a rule.** Work the five-step reduction pass in that file before adding anything.
+
 ### Guardrails
 
 `references/guardrails.md` — hallucination reduction, output consistency, jailbreak and prompt-injection defense, and prompt-leak mitigation, with copyable snippets.
@@ -216,7 +237,7 @@ Use it for any prompt that gathers information and has to show sources. A domain
 
 When the user needs multiple coordinated prompts for a workflow (e.g., a research pipeline, content creation flow, or data processing chain), apply context engineering principles.
 
-Read `context/Effective context engineering for AI agents - 2026-03-28T130401-0500.md` for the full framework. Key principles:
+Read `references/context-engineering.md` first — it carries the current generation's rules. `context/Effective context engineering for AI agents - 2026-03-28T130401-0500.md` is the older deep source; its altitude and just-in-time material still holds, its scaffolding assumptions don't. Key principles:
 
 ### Clarify before writing
 Before drafting the agent series, ask the user about operational details that affect prompt design:
@@ -241,10 +262,15 @@ For each agent in the series:
 5. **Specify tools and limits** — Which tools the agent should use, how many results to retrieve, and when to stop. Agents with explicit tool instructions and resource limits produce more focused, predictable results.
 
 ### Apply context engineering principles
-- **Right altitude**: Instructions should be specific enough to guide behavior, flexible enough to handle edge cases. Avoid brittle if-else logic and avoid vague hand-waving.
-- **Just-in-time context**: Don't front-load all information. Let agents retrieve what they need when they need it.
-- **Minimal context**: Each agent should receive only the context relevant to its task. Don't pass the full conversation history if a summary suffices.
+- **Right altitude**: Specific enough to guide behavior, flexible enough to handle edge cases. Brittle if-else logic and vague hand-waving fail in opposite directions.
+- **Judgment over rules**: Give each agent the goal and the reasoning behind a constraint, not a list of prohibitions. Rules fire in the cases you didn't anticipate; judgment framings generalize.
+- **Just-in-time context**: Don't front-load. Let agents retrieve what they need when they need it.
+- **Minimal context**: Each agent receives only what its task needs. Pass a summary, not the full history.
 - **Progressive disclosure**: Let agents discover context through exploration rather than preloading everything.
+- **State each instruction once.** If it's in the tool description, it doesn't belong in the system prompt too.
+- **Don't give tool-call examples.** They constrain the agent to the demonstrated exploration space. Make the tool's parameters and types expressive instead.
+- **Prefer rich references to prose specs.** A failing test is an unambiguous specification; a paragraph describing the test is not.
+- **Keep history append-only** in any Claude-backed loop — see the hard rules.
 
 ### For long-horizon workflows
 Read `context/coding/agent-memory.md` for memory architecture patterns. Consider:
@@ -275,9 +301,11 @@ Evaluate the prompt against these dimensions:
 - **Clarity**: Are instructions unambiguous? Could they be misinterpreted?
 - **Specificity**: Are expectations concrete? Or is the model left guessing about format, length, or approach?
 - **Structure**: Is information organized logically? Are sections delineated? Or is it a wall of text?
+- **Bloat**: Is it longer than it needs to be? Repeated instructions, anti-laziness scaffolding ("be thorough", "double-check"), tool-call examples, and prescriptive style rules are all net-negative on current models. Run the reduction pass in `references/context-engineering.md` — on a long prompt this is usually the highest-impact edit available.
 - **Technique usage**: Is it using appropriate techniques for the task complexity? (See `references/techniques.md`)
 - **Examples**: Does it include examples where they'd help? Are the examples diverse and representative?
-- **Negative framing**: Are there "don't do X" instructions? Reframe them positively — models follow positive instructions more reliably. "Don't use jargon" becomes "Use plain language accessible to a general audience." "Don't add unrequested features" becomes "Implement exactly what was requested; if you notice improvement opportunities, mention them in a separate note." Always convert negatives during review.
+- **Negative framing**: Are there "don't do X" instructions? Reframe them positively where the positive form is at least as clear — models generally follow positive instructions more reliably. "Don't use jargon" becomes "Use plain language accessible to a general audience."
+  **Two exceptions — do not convert these.** (a) Vendor-published snippets measured in the vendor's own testing: the scope-control and unrequested-changes blocks in the Claude 5 guide are deliberately negative and outperform paraphrases. Paste them as written. (b) Cases where the negative names a specific behavior and the positive only gestures at it — "don't add error handling for scenarios that cannot happen" has no crisp positive equivalent.
 - **Redundancy**: Are there repeated or contradictory instructions?
 - **Model fit**: If a target model is known, does the prompt use that model's strengths?
 
@@ -307,11 +335,14 @@ When the user's prompt is producing unsatisfactory outputs, diagnose the root ca
 | Symptom | Likely Cause | Fix |
 |---|---|---|
 | Output too verbose | No length constraints; exploratory personality | Add explicit length limits; switch to Efficient personality; add "Be concise" |
-| Output too short / shallow | Insufficient context; no instruction to elaborate | Add "Provide detailed analysis with reasoning"; use Chain-of-Thought |
+| Output too short / shallow | Insufficient context; no instruction to elaborate; effort set too low | **Raise effort first** — that is the intended lever on every current model. Then add "Provide detailed analysis with reasoning". Add Chain-of-Thought only on non-thinking models. |
 | Wrong format | No format specification or examples | Add explicit format template; add 2-3 few-shot examples |
 | Hallucinating facts | No grounding instruction; no source material | Add "Only use information from the provided context"; add Fact-Based personality |
-| Ignoring instructions | Instructions buried in long prompt; contradictory rules | Restructure with headers; move critical instructions to the top; resolve contradictions |
-| Inconsistent outputs | No examples; ambiguous instructions | Add few-shot examples; use Self-Consistency (multiple runs); tighten constraints |
+| Ignoring instructions | Instructions buried in long prompt; contradictory rules | Restructure with headers; move critical instructions to the top; resolve contradictions; **cut length** — dilution is as common a cause as burial |
+| Over-verifying, over-tidying, expanding scope | Anti-laziness scaffolding written for older models | Delete "double-check"/"be thorough"/"CRITICAL: you MUST"; add the current scope-control snippet from the Claude 5 guide |
+| Agent goes silent during long tool runs (Claude) | Fable 5.1 narrates less; client may not be requesting updates at all | Set `thinking.display: "updates"`; delete "hold findings for the final response" lines |
+| Agent request fails with a 400 mid-conversation (Claude) | History was edited between requests | Make history append-only; move reminders to turn-scoped system messages |
+| Inconsistent outputs | No examples; ambiguous instructions | Add few-shot examples; tighten constraints. Self-Consistency is an option **only if they can make multiple runs and aggregate** — it is not a prompt instruction. |
 | Off-topic tangents | Scope not defined; no guardrails | Add explicit scope ("Focus only on X"); add "If the question is outside [scope], say so" |
 | Tone mismatch | No personality defined; wrong personality for task | Add or change personality archetype; provide tone examples |
 
@@ -367,7 +398,9 @@ Scan the user's request for these failure patterns. Fix without commentary unles
 
 **Scope:** no file/function boundaries for IDE AI → add scope lock; no stop conditions for agents → add checkpoint and human-review triggers.
 
-**Reasoning:** logic task with no step-by-step (on standard models) → add CoT; CoT on reasoning-native model → REMOVE IT; new prompt contradicts prior session decisions → flag and resolve.
+**Reasoning:** logic task with no step-by-step (on standard models) → add CoT; CoT on reasoning-native model → REMOVE IT; shallow reasoning → raise effort, don't prompt around it; new prompt contradicts prior session decisions → flag and resolve.
+
+**Bloat:** same instruction stated twice → keep one; anti-laziness scaffolding → delete; tool-call examples → move guidance into the tool description.
 
 **Agentic:** no starting state → add current state; no target state → add deliverable; silent agent → add "After each step output: ✅ [what was completed]"; unrestricted filesystem → add scope lock; no human-review trigger → add stop conditions for destructive actions.
 
@@ -376,7 +409,7 @@ Scan the user's request for these failure patterns. Fix without commentary unles
 Before delivering, confirm:
 1. Target tool/model correctly identified, syntax matches.
 2. Critical constraints in the first 30% of the prompt.
-3. Strongest signal words used (MUST over should, NEVER over avoid).
+3. Emphasis used sparingly and only where it's load-bearing. Do **not** reflexively upgrade to MUST/NEVER/CRITICAL — on current models that causes tool overtriggering and over-compliance. Give the reason behind the rule instead; it generalizes further than the shouting does.
 4. No fabrication-prone single-prompt techniques embedded.
 5. No CoT instructions on reasoning-native models.
 6. Every sentence load-bearing — no padding.
@@ -413,9 +446,11 @@ Before/after examples showing the techniques in action.
 
 ---
 
-## Output format
+## Output format (Modes 1–4)
 
-When delivering a prompt to the user:
+**Mode 5 overrides this entirely** — Quick paste delivers the prompt plus two lines and nothing else. The rest of this section does not apply there.
+
+When delivering a prompt to the user in Modes 1–4:
 
 1. **The prompt itself** in a fenced code block (easy to copy)
 2. **Key design choices** — 3-5 bullets explaining the most important decisions and why (so the user learns, not just receives)
