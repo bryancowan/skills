@@ -55,6 +55,8 @@ Defines the plugin bundle exposed by `/plugin marketplace add bryancowan/skills`
 
 Make canonical skill edits under `skills/`. The generated Codex marketplace copies are `description-and-tags`, `good-documentation`, `obsidian-jd-organizer`, `obsidian-wiki-compiler`, and `prompt-creation` under `plugins/personal-skills/skills/`; do not edit those copies directly.
 
+The five canonical and generated skill directories must contain real files and directories only; nested symlinks are unsupported.
+
 After changing one of the five bundled skills, synchronize the bundle:
 
 ```bash

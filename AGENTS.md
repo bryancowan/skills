@@ -4,6 +4,8 @@
 
 Treat `skills/` as authoritative. The files under `plugins/personal-skills/skills/` are generated copies for the Codex marketplace plugin; never edit them directly.
 
+The five canonical and generated skill directories must contain real files and directories only; nested symlinks are unsupported.
+
 The Codex plugin intentionally bundles only `description-and-tags`, `good-documentation`, `obsidian-jd-organizer`, `obsidian-wiki-compiler`, and `prompt-creation`.
 
 ## Keep the Codex bundle synchronized

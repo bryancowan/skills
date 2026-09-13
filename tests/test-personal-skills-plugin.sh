@@ -287,6 +287,99 @@ run_executable_bit_regression() (
   fi
 )
 
+run_nested_symlink_regression() (
+  set -euo pipefail
+  umask 077
+  fixture_root="$(mktemp -d "${TMPDIR:-/tmp}/personal-skills-plugin-nested-link.XXXXXX")"
+  trap 'rm -rf "$fixture_root"' EXIT
+  make_fixture "$fixture_root"
+
+  source_dir="$fixture_root/skills/good-documentation"
+  bundled_dir="$fixture_root/plugins/personal-skills/skills/good-documentation"
+  failed=0
+
+  ln -s payload "$source_dir/nested-link" || return 1
+  if bash "$fixture_root/scripts/sync-personal-skills-plugin.sh" \
+    > "$fixture_root/canonical-link.log" 2>&1; then
+    cat "$fixture_root/canonical-link.log" >&2
+    echo "sync accepted a nested canonical symlink" >&2
+    failed=1
+  fi
+  grep -F "canonical skill must not contain symlinks" \
+    "$fixture_root/canonical-link.log" > /dev/null || return 1
+  rm "$source_dir/nested-link" || return 1
+
+  bash "$fixture_root/scripts/sync-personal-skills-plugin.sh" || return 1
+  rm "$bundled_dir/payload" || return 1
+  ln -s "$source_dir/payload" "$bundled_dir/payload" || return 1
+
+  if bash "$fixture_root/scripts/sync-personal-skills-plugin.sh" --check \
+    > "$fixture_root/bundled-check.log" 2>&1; then
+    cat "$fixture_root/bundled-check.log" >&2
+    echo "--check accepted a nested bundled symlink" >&2
+    failed=1
+  fi
+  grep -F "bundled skill must not contain symlinks" \
+    "$fixture_root/bundled-check.log" > /dev/null || return 1
+  if bash "$fixture_root/scripts/sync-personal-skills-plugin.sh" \
+    > "$fixture_root/bundled-sync.log" 2>&1; then
+    cat "$fixture_root/bundled-sync.log" >&2
+    echo "sync accepted a nested bundled symlink" >&2
+    failed=1
+  fi
+  grep -F "bundled skill must not contain symlinks" \
+    "$fixture_root/bundled-sync.log" > /dev/null || return 1
+
+  return "$failed"
+)
+
+run_symlink_scan_failure_regression() (
+  set -euo pipefail
+  umask 077
+  fixture_root="$(mktemp -d "${TMPDIR:-/tmp}/personal-skills-plugin-find-failure.XXXXXX")"
+  trap 'rm -rf "$fixture_root"' EXIT
+  make_fixture "$fixture_root"
+  bash "$fixture_root/scripts/sync-personal-skills-plugin.sh" || return 1
+
+  mkdir -p "$fixture_root/fake-bin" || return 1
+  printf '%s\n' '#!/usr/bin/env bash' 'exit 73' > "$fixture_root/fake-bin/find" || return 1
+  chmod +x "$fixture_root/fake-bin/find" || return 1
+
+  if PATH="$fixture_root/fake-bin:$PATH" \
+    bash "$fixture_root/scripts/sync-personal-skills-plugin.sh" --check \
+    > "$fixture_root/check.log" 2>&1; then
+    cat "$fixture_root/check.log" >&2
+    echo "--check accepted a failed symlink scan" >&2
+    return 1
+  fi
+  grep -F "could not inspect symlinks" "$fixture_root/check.log" > /dev/null || return 1
+)
+
+run_symlink_preflight_regression() (
+  set -euo pipefail
+  umask 077
+  fixture_root="$(mktemp -d "${TMPDIR:-/tmp}/personal-skills-plugin-preflight.XXXXXX")"
+  trap 'rm -rf "$fixture_root"' EXIT
+  make_fixture "$fixture_root"
+  bash "$fixture_root/scripts/sync-personal-skills-plugin.sh" || return 1
+
+  printf '%s\n' changed >> "$fixture_root/skills/description-and-tags/payload" || return 1
+  ln -s payload "$fixture_root/skills/prompt-creation/nested-link" || return 1
+  if bash "$fixture_root/scripts/sync-personal-skills-plugin.sh" \
+    > "$fixture_root/sync.log" 2>&1; then
+    cat "$fixture_root/sync.log" >&2
+    echo "sync accepted a later nested canonical symlink" >&2
+    return 1
+  fi
+  grep -F "canonical skill must not contain symlinks" \
+    "$fixture_root/sync.log" > /dev/null || return 1
+  if [[ "$(cat "$fixture_root/plugins/personal-skills/skills/description-and-tags/payload")" \
+    != "description-and-tags" ]]; then
+    echo "sync modified an earlier skill before symlink preflight completed" >&2
+    return 1
+  fi
+)
+
 make_metadata_fixture() {
   local fixture_root="$1"
   local fixture_skill
@@ -399,6 +492,9 @@ regression_failures=0
 run_symlink_regression || regression_failures=1
 run_unexpected_entry_regression || regression_failures=1
 run_executable_bit_regression || regression_failures=1
+run_nested_symlink_regression || regression_failures=1
+run_symlink_scan_failure_regression || regression_failures=1
+run_symlink_preflight_regression || regression_failures=1
 run_future_version_regression || {
   echo "validator rejected a valid future plugin version" >&2
   regression_failures=1

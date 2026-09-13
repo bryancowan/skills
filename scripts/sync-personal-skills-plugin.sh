@@ -39,6 +39,26 @@ require_real_directory() {
   fi
 }
 
+require_no_symlinks() {
+  local directory="$1"
+  local label="$2"
+  local symlink_list
+  local symlink_path
+
+  symlink_list="$(mktemp "${TMPDIR:-/tmp}/personal-skills-symlinks.XXXXXX")" || return 1
+  if ! find "$directory" -type l -print0 > "$symlink_list"; then
+    echo "could not inspect symlinks: $directory" >&2
+    rm -f "$symlink_list"
+    return 1
+  fi
+  while IFS= read -r -d '' symlink_path; do
+    echo "$label must not contain symlinks: $symlink_path" >&2
+    rm -f "$symlink_list"
+    return 1
+  done < "$symlink_list"
+  rm -f "$symlink_list"
+}
+
 validate_bundle_root() (
   local require_complete="$1"
   local bundled_entry
@@ -102,8 +122,17 @@ if [[ "$mode" == "--check" ]]; then
   for skill_dir in "${skill_dirs[@]}"; do
     source_dir="$repo_root/skills/$skill_dir"
     bundled_dir="$bundle_root/$skill_dir"
+    if ! require_real_directory "$source_dir" "$source_dir" "canonical skill"; then
+      result_code=1
+      continue
+    fi
     if [[ ! -d "$bundled_dir" || -L "$bundled_dir" ]]; then
       echo "missing bundled skill: $skill_dir" >&2
+      result_code=1
+      continue
+    fi
+    if ! require_no_symlinks "$source_dir" "canonical skill" || \
+      ! require_no_symlinks "$bundled_dir" "bundled skill"; then
       result_code=1
       continue
     fi
@@ -119,8 +148,15 @@ for skill_dir in "${skill_dirs[@]}"; do
   source_dir="$repo_root/skills/$skill_dir"
   bundled_dir="$bundle_root/$skill_dir"
   require_real_directory "$source_dir" "$source_dir" "canonical skill" || exit 1
+  require_no_symlinks "$source_dir" "canonical skill" || exit 1
   mkdir -p "$bundled_dir"
   require_real_directory "$bundled_dir" "$bundle_root/$skill_dir" "bundled skill" || exit 1
+  require_no_symlinks "$bundled_dir" "bundled skill" || exit 1
+done
+
+for skill_dir in "${skill_dirs[@]}"; do
+  source_dir="$repo_root/skills/$skill_dir"
+  bundled_dir="$bundle_root/$skill_dir"
   rsync -a --delete "$source_dir/" "$bundled_dir/"
 done
 
