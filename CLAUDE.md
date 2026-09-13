@@ -66,6 +66,7 @@ Before committing, validate the bundle and its manifests:
 ```bash
 bash scripts/sync-personal-skills-plugin.sh --check
 bash tests/test-personal-skills-plugin.sh
+bash tests/test-personal-skills-plugin-version-policy.sh
 ```
 
 Increment `plugins/personal-skills/plugin.json` whenever published plugin contents or metadata change.
