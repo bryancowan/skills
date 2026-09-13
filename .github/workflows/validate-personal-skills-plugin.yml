@@ -11,7 +11,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Validate manifests and bundled skills
+        env:
+          PERSONAL_SKILLS_BASE_REVISION: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: bash tests/test-personal-skills-plugin.sh
+      - name: Test plugin version policy
+        run: bash tests/test-personal-skills-plugin-version-policy.sh
       - name: Check generated bundle drift
         run: bash scripts/sync-personal-skills-plugin.sh --check

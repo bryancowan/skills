@@ -14,16 +14,58 @@ skill_dirs=(
   prompt-creation
 )
 
-python3 - "$marketplace_file" "$plugin_file" "$plugin_root" "${skill_dirs[@]}" <<'PY'
+python3 - "$marketplace_file" "$plugin_file" "$plugin_root" "$repo_root" "${skill_dirs[@]}" <<'PY'
 import json
+import os
 import pathlib
 import re
+import subprocess
 import sys
 
 
 def require(condition, message):
     if not condition:
         raise SystemExit(message)
+
+
+def parse_semver(version):
+    prerelease_identifier = r"(?:0|[1-9]\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)"
+    semantic_version = (
+        r"(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)"
+        rf"(?:-(?P<prerelease>{prerelease_identifier}(?:\.{prerelease_identifier})*))?"
+        r"(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?"
+    )
+    match = re.fullmatch(semantic_version, version) if isinstance(version, str) else None
+    require(match, f"invalid portable plugin version: {version!r}")
+    return match
+
+
+def version_is_greater(current, previous):
+    current_match = parse_semver(current)
+    previous_match = parse_semver(previous)
+    current_core = tuple(int(current_match.group(part)) for part in ("major", "minor", "patch"))
+    previous_core = tuple(int(previous_match.group(part)) for part in ("major", "minor", "patch"))
+    if current_core != previous_core:
+        return current_core > previous_core
+
+    current_pre = current_match.group("prerelease")
+    previous_pre = previous_match.group("prerelease")
+    if current_pre is None or previous_pre is None:
+        return previous_pre is not None and current_pre is None
+
+    current_parts = current_pre.split(".")
+    previous_parts = previous_pre.split(".")
+    for current_part, previous_part in zip(current_parts, previous_parts):
+        if current_part == previous_part:
+            continue
+        current_numeric = current_part.isdigit()
+        previous_numeric = previous_part.isdigit()
+        if current_numeric and previous_numeric:
+            return int(current_part) > int(previous_part)
+        if current_numeric != previous_numeric:
+            return not current_numeric
+        return current_part > previous_part
+    return len(current_parts) > len(previous_parts)
 
 
 def frontmatter_name(skill_file):
@@ -49,7 +91,8 @@ def frontmatter_name(skill_file):
 marketplace_path = pathlib.Path(sys.argv[1])
 plugin_path = pathlib.Path(sys.argv[2])
 plugin_root = pathlib.Path(sys.argv[3])
-expected_dirs = sys.argv[4:]
+repo_root = pathlib.Path(sys.argv[4])
+expected_dirs = sys.argv[5:]
 
 with marketplace_path.open(encoding="utf-8") as handle:
     marketplace = json.load(handle)
@@ -66,17 +109,50 @@ require(
 )
 require(plugin["name"] == "personal-skills", "unexpected portable plugin name")
 plugin_version = plugin.get("version")
-prerelease_identifier = r"(?:0|[1-9]\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)"
-semantic_version = (
-    r"(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)"
-    rf"(?:-{prerelease_identifier}(?:\.{prerelease_identifier})*)?"
-    r"(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?"
-)
-require(
-    isinstance(plugin_version, str)
-    and re.fullmatch(semantic_version, plugin_version),
-    "invalid portable plugin version",
-)
+parse_semver(plugin_version)
+
+base_revision = os.environ.get("PERSONAL_SKILLS_BASE_REVISION")
+if base_revision:
+    package_path = plugin_root.relative_to(repo_root).as_posix()
+    base_manifest_path = f"{base_revision}:{package_path}/plugin.json"
+    base_exists = subprocess.run(
+        ["git", "-C", str(repo_root), "rev-parse", "--verify", f"{base_revision}^{{commit}}"],
+        capture_output=True,
+    )
+    require(base_exists.returncode == 0, f"invalid base revision: {base_revision}")
+    base_manifest_entry = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(repo_root),
+            "ls-tree",
+            "--name-only",
+            base_revision,
+            "--",
+            f"{package_path}/plugin.json",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    require(base_manifest_entry.returncode == 0, f"could not inspect package at {base_revision}")
+    if base_manifest_entry.stdout.strip():
+        base_manifest = subprocess.run(
+            ["git", "-C", str(repo_root), "show", base_manifest_path],
+            capture_output=True,
+            text=True,
+        )
+        require(base_manifest.returncode == 0, f"could not read package manifest at {base_revision}")
+        package_changed = subprocess.run(
+            ["git", "-C", str(repo_root), "diff", "--quiet", base_revision, "--", package_path]
+        )
+        require(package_changed.returncode in (0, 1), f"could not compare package with {base_revision}")
+        if package_changed.returncode == 1:
+            base_version = json.loads(base_manifest.stdout).get("version")
+            require(
+                version_is_greater(plugin_version, base_version),
+                f"personal-skills package changed without a version increment: "
+                f"{base_version} -> {plugin_version}",
+            )
 
 bundle_root = plugin_root / "skills"
 require(bundle_root.is_dir() and not bundle_root.is_symlink(), f"invalid bundle root: {bundle_root}")
@@ -204,10 +280,12 @@ run_embedded_validator() {
     /^python3 - / { in_python = 1; next }
     in_python && $0 == "PY" { exit }
     in_python { print }
-  ' "$repo_root/tests/test-personal-skills-plugin.sh" | python3 - \
+  ' "$repo_root/tests/test-personal-skills-plugin.sh" | \
+    env -u PERSONAL_SKILLS_BASE_REVISION python3 - \
     "$fixture_root/.agents/plugins/marketplace.json" \
     "$fixture_root/plugins/personal-skills/plugin.json" \
     "$fixture_root/plugins/personal-skills" \
+    "$fixture_root" \
     "${skill_dirs[@]}"
 }
 

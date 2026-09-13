@@ -16,5 +16,6 @@ Before committing, run:
 
 `bash scripts/sync-personal-skills-plugin.sh --check`
 `bash tests/test-personal-skills-plugin.sh`
+`bash tests/test-personal-skills-plugin-version-policy.sh`
 
 Increment `plugins/personal-skills/plugin.json` whenever published plugin contents or metadata change. Do not change `.claude-plugin/marketplace.json` unless the Claude marketplace itself changes.
