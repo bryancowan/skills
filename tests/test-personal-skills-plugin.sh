@@ -8,9 +8,11 @@ plugin_file="$plugin_root/plugin.json"
 bundle_root="$plugin_root/skills"
 skill_dirs=(
   description-and-tags
+  construction-near-me
   good-documentation
   obsidian-jd-organizer
   obsidian-wiki-compiler
+  podcast-transcript
   prompt-creation
 )
 
