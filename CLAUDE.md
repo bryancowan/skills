@@ -51,6 +51,25 @@ my-skill/
 
 Defines the plugin bundle exposed by `/plugin marketplace add bryancowan/skills`. There's a single plugin, `personal-skills`, listing every skill under `skills/`. When adding or removing a skill folder, update the `skills` array here too — it isn't auto-discovered.
 
+## Codex marketplace bundle
+
+Make canonical skill edits under `skills/`. The generated Codex marketplace copies are `description-and-tags`, `good-documentation`, `obsidian-jd-organizer`, `obsidian-wiki-compiler`, and `prompt-creation` under `plugins/personal-skills/skills/`; do not edit those copies directly.
+
+After changing one of the five bundled skills, synchronize the bundle:
+
+```bash
+bash scripts/sync-personal-skills-plugin.sh
+```
+
+Before committing, validate the bundle and its manifests:
+
+```bash
+bash scripts/sync-personal-skills-plugin.sh --check
+bash tests/test-personal-skills-plugin.sh
+```
+
+Increment `plugins/personal-skills/plugin.json` whenever published plugin contents or metadata change.
+
 ## Installing Skills in Claude Code
 
 ```bash

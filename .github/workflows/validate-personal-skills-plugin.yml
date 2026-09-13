@@ -1,0 +1,17 @@
+name: Validate personal skills plugin
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate manifests and bundled skills
+        run: bash tests/test-personal-skills-plugin.sh
+      - name: Check generated bundle drift
+        run: bash scripts/sync-personal-skills-plugin.sh --check
