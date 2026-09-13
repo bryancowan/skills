@@ -27,12 +27,13 @@ The city is the best-instrumented jurisdiction in this profile: it publishes bui
 - **Endpoint:** `https://maps.murfreesborotn.gov/server/rest/services/BuildingCodes/Permits/MapServer/1`
 - **Capabilities:** `Query, Map, Data` — public, no auth
 - **Size:** 30,659 records, of which 30,347 are sanely dated. By year — 2023: 855, 2024: 836, 2025: 727, 2026 (partial): 325
-- **Coverage/lag:** newest permit **2026-05-28** as of 2026-08-03 — roughly a **2-month lag**. 2026 monthly volume runs 43–92 permits. Don't read a quiet recent month as "nothing happening"; re-check freshness each run:
+- **Coverage/lag (historical snapshot):** newest permit **2026-05-28** as of 2026-08-03 — roughly a **2-month lag**. 2026 monthly volume runs 43–92 permits. Don't read a quiet recent month as "nothing happening"; re-check freshness each run:
 
 ```bash
-# Note the DATE literal — a raw epoch value in `where` errors out
+# Bound the query by the current UTC date; a raw epoch value in `where` errors out
+run_date="$(date -u +%F)"
 curl -s -G "https://maps.murfreesborotn.gov/server/rest/services/BuildingCodes/Permits/MapServer/1/query" \
-  --data-urlencode "where=PRMT_DATE <= DATE '2026-08-03'" \
+  --data-urlencode "where=PRMT_DATE <= DATE '$run_date'" \
   --data-urlencode "outStatistics=[{\"statisticType\":\"max\",\"onStatisticField\":\"PRMT_DATE\",\"outStatisticFieldName\":\"mx\"}]" \
   --data-urlencode "f=json"
 ```
