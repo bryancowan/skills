@@ -102,7 +102,22 @@ Claude Code triggers a skill automatically when your request matches its `descri
 
 ### Codex CLI
 
-Clone this repo, then copy the skill(s) you want into Codex's skills directory:
+Install the five selected skills as the `personal-skills` Codex marketplace plugin:
+
+```bash
+codex plugin marketplace add bryancowan/skills
+codex plugin add personal-skills@bryancowan-skills
+```
+
+The plugin contains `description-and-tags`, `good-documentation`, `obsidian-jd-organizer`, `obsidian-wiki-compiler`, and `prompt-creation`. To pick up future plugin updates, run:
+
+```bash
+codex plugin marketplace upgrade bryancowan-skills
+```
+
+#### Manual direct-install fallback for skills outside the five-skill plugin
+
+For a repository skill not included in the plugin, clone this repository and copy the skill into Codex's skills directory:
 
 ```bash
 git clone https://github.com/bryancowan/skills.git

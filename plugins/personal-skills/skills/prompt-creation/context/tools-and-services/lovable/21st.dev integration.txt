@@ -1,0 +1,79 @@
+# 21st.dev integration
+
+> Add Pre-Built UI Components to Your Lovable Projects
+
+21st.dev provides a library of pre-built UI components that you can instantly add to your Lovable projects with a simple copy-paste workflow. Do this to improve the design of your project and make your Lovable projects look less generic.
+
+## Step-by-step guide
+
+<Frame>
+
+  <video autoPlay loop muted playsInline className="w-full">
+
+    <source src="https://mintcdn.com/lovable-f9060f1e/-8-xuzzl5-8vrfz4/assets/tips-tricks/videos/21st-dev.mp4?fit=max&auto=format&n=-8-xuzzl5-8vrfz4&q=85&s=32ae04476488d612717354a8a42eb65f" type="video/mp4" data-path="assets/tips-tricks/videos/21st-dev.mp4" />
+
+  </video>
+
+</Frame>
+
+<Steps>
+
+  <Step title="Go to 21st.dev">
+
+    Navigate to [21st.dev](https://21st.dev/) to browse the component library.
+
+  </Step>
+
+  <Step title="Find a Component You Like">
+
+    Browse through the available components to find one that fits your needs:
+
+    * Hero sections
+
+    * Navigation bars
+
+    * Testimonial layouts
+
+    * CTAs and feature grids
+
+    * Form components
+
+  </Step>
+
+  <Step title="Open the Component and Copy the Prompt">
+
+    Click on your chosen component to open its detail page. Select **Lovable** as the prompt type, then copy the prompt.
+
+  </Step>
+
+  <Step title="Paste into Lovable">
+
+    Open your Lovable project and paste the copied prompt.
+
+  </Step>
+
+  <Step title="Specify Component Placement">
+
+    Add a line specifying where you want the component to appear in your project (e.g., "Add this to the homepage hero section" or "Use this as the background").
+
+  </Step>
+
+  <Step title="Let Lovable Integrate the Component">
+
+    Send your message. Lovable will automatically copy the component code into your codebase and place it where you specified.
+
+    <Note>
+
+      The component will inherit your project's existing styles and can be further customized using Visual Edits or prompting.
+
+    </Note>
+
+  </Step>
+
+</Steps>
+
+---
+
+> To find navigation and other pages in this documentation, fetch the llms.txt file at: https://docs.lovable.dev/llms.txt
+
+<br/>

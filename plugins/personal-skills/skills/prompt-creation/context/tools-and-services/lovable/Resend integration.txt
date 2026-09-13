@@ -1,0 +1,511 @@
+# Resend integration
+
+> Learn how to integrate Resend with your Lovable application
+
+## What is Resend?
+
+[Resend](https://resend.com/emails) is an email API built for developers. It focuses on high deliverability, ease of integration, and a clean developer experience for sending transactional and marketing emails.
+
+## Step-by-step tutorial
+
+<iframe width="100%" height="315" src="https://www.youtube.com/embed/5ZL744_Wxjo?si=qrKlOL_1fAnz7rgc" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen />
+
+This tutorial walks you through building a fully functional CRM in under an hour—complete with lead collection, email confirmation, newsletter subscription, and an internal admin dashboard. You'll use:
+
+* **Lovable**: to generate the front end and backend logic.
+
+* **Supabase**: for secure data storage and authentication.
+
+* **Resend**: to automate and track transactional + marketing emails.
+
+Let's get started.
+
+<Steps>
+
+  <Step title="Create a Landing Page with a Contact Form">
+
+    Use Lovable's AI to quickly generate a landing page for your product or service.
+
+    **Instructions:**
+
+    <Steps>
+
+      <Step title="New Lovable Project">
+
+        Create a new Lovable project.
+
+      </Step>
+
+      <Step title="Prompt:">
+
+        <Info>
+
+          Create a SaaS landing page with a contact form collecting name, email, and message.
+
+        </Info>
+
+                <img src="https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/landing-page-lovable-project.png?fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=1709452fa10440f910f463a98011f99e" alt="Landing Page Lovable Project Pn" data-og-width="1888" width="1888" data-og-height="929" height="929" data-path="images/landing-page-lovable-project.png" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/landing-page-lovable-project.png?w=280&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=8766818073e4649a8a0f174bf29fe98d 280w, https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/landing-page-lovable-project.png?w=560&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=fcc985587e0904765cf9f8a784345e20 560w, https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/landing-page-lovable-project.png?w=840&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=c386d17d74c0705f77300c6f5cef6830 840w, https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/landing-page-lovable-project.png?w=1100&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=861e5daf7fed51d4b42844179044707d 1100w, https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/landing-page-lovable-project.png?w=1650&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=46cde7dea76574b0c5d11cbe68a649c2 1650w, https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/landing-page-lovable-project.png?w=2500&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=d188b58e82d9ff00844c0232b8b299e7 2500w" />
+
+      </Step>
+
+      <Step title="Inspect the generated code">
+
+        Inspect the generated code or use the select tool to tweak elements.
+
+      </Step>
+
+      <Step title="Add input validation">
+
+        Add input validation and a `message` field for better user experience.
+
+                <img src="https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/email-resend-form.png?fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=e420fd0b8d9fd3f1f5caf232e412a78d" alt="Email Resend Form Pn" data-og-width="1882" width="1882" data-og-height="935" height="935" data-path="images/email-resend-form.png" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/email-resend-form.png?w=280&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=22c11ef09ef002e38e06c82315e4c3bf 280w, https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/email-resend-form.png?w=560&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=d36c3d67e66dd8d8a5d1d24acc8f960a 560w, https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/email-resend-form.png?w=840&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=df5f61fc66208a298a8ed0573e6610b1 840w, https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/email-resend-form.png?w=1100&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=224c5bb09e6dd245e25e0f8429c6e1ee 1100w, https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/email-resend-form.png?w=1650&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=40bbf6b132b9d64fb2f3e5ddf93fd93c 1650w, https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/email-resend-form.png?w=2500&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=0521d1dda1afa144d119a2294ea71f5e 2500w" />
+
+      </Step>
+
+    </Steps>
+
+  </Step>
+
+  <Step title="Store Form Submissions in Supabase">
+
+    Supabase acts as your secure backend database.
+
+    <Steps>
+
+      <Step title="Supabase account">
+
+        Create a free Supabase account and a new project.
+
+      </Step>
+
+      <Step title="API Key">
+
+        In Lovable, connect your Supabase project using the API key.
+
+                <img src="https://mintcdn.com/lovable-f9060f1e/luGRYj9iOP9EB2xE/images/supabase-resend-email.png?fit=max&auto=format&n=luGRYj9iOP9EB2xE&q=85&s=c70995035022e084d4e4617ff1c3bac7" alt="Supabase Resend Email Pn" data-og-width="1509" width="1509" data-og-height="775" height="775" data-path="images/supabase-resend-email.png" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/lovable-f9060f1e/luGRYj9iOP9EB2xE/images/supabase-resend-email.png?w=280&fit=max&auto=format&n=luGRYj9iOP9EB2xE&q=85&s=0409d5cfce92dd821489743dfe713225 280w, https://mintcdn.com/lovable-f9060f1e/luGRYj9iOP9EB2xE/images/supabase-resend-email.png?w=560&fit=max&auto=format&n=luGRYj9iOP9EB2xE&q=85&s=6e789af4a3481019124c7fdf793a0ee1 560w, https://mintcdn.com/lovable-f9060f1e/luGRYj9iOP9EB2xE/images/supabase-resend-email.png?w=840&fit=max&auto=format&n=luGRYj9iOP9EB2xE&q=85&s=855cdcdd7b56399f322713482e85fa10 840w, https://mintcdn.com/lovable-f9060f1e/luGRYj9iOP9EB2xE/images/supabase-resend-email.png?w=1100&fit=max&auto=format&n=luGRYj9iOP9EB2xE&q=85&s=33330bb9551cbb397984a69ad54c5cee 1100w, https://mintcdn.com/lovable-f9060f1e/luGRYj9iOP9EB2xE/images/supabase-resend-email.png?w=1650&fit=max&auto=format&n=luGRYj9iOP9EB2xE&q=85&s=3e1d2fd4dd1ee0238fb520cf883ebc88 1650w, https://mintcdn.com/lovable-f9060f1e/luGRYj9iOP9EB2xE/images/supabase-resend-email.png?w=2500&fit=max&auto=format&n=luGRYj9iOP9EB2xE&q=85&s=27953df5a80dc3cc31d0fcc29e5a937e 2500w" />
+
+      </Step>
+
+      <Step title="Create a `contacts` table with:">
+
+        * `id`: UUID, primary key
+
+        * `name`: text
+
+        * `email`: text
+
+        * `message`: text
+
+        * `created_at`: timestamp
+
+      </Step>
+
+      <Step title="Submission logic">
+
+        Modify the form submission logic to insert data into Supabase.
+
+      </Step>
+
+      <Step title="RLS">
+
+        Apply Supabase Row-Level Security (RLS) to restrict access to only authenticated users.
+
+      </Step>
+
+    </Steps>
+
+  </Step>
+
+  <Step title="Send Confirmation Emails via Resend">
+
+    Set up [Resend]() to send automated confirmation emails every time a lead submits the form.
+
+    <Steps>
+
+      <Step title="Sign up at Resend">
+
+        Sign up at [Resend](https://resend.com) and verify your custom domain.
+
+        * You'll be asked to update your DNS records (TXT, MX).
+
+        * Use subdomains like `updates.domain.com` to manage email reputation better.
+
+      </Step>
+
+      <Step title="API Key">
+
+        Integrate the API key in Lovable via environment settings or backend function.
+
+      </Step>
+
+      <Step title="SDK">
+
+        Use Resend's SDK to send a confirmation email on form submission.
+
+                <img src="https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/confirmation-email-submission-resend.png?fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=f9cb734efb8a133b85b431530c734b13" alt="Confirmation Email Submission Resend Pn" data-og-width="1499" width="1499" data-og-height="769" height="769" data-path="images/confirmation-email-submission-resend.png" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/confirmation-email-submission-resend.png?w=280&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=071cc42b302cbe9d2ee725a126cda378 280w, https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/confirmation-email-submission-resend.png?w=560&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=e3103842eb47f43f73f370942f913e74 560w, https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/confirmation-email-submission-resend.png?w=840&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=667f7ab43517beb6a17406432349d9fe 840w, https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/confirmation-email-submission-resend.png?w=1100&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=1e31ef09942faa570aafa1f81aa04ae0 1100w, https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/confirmation-email-submission-resend.png?w=1650&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=c724dad0163ac4c48c35349648ce6e9e 1650w, https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/confirmation-email-submission-resend.png?w=2500&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=dcec570adf6969435517e3b47d038e89 2500w" />
+
+      </Step>
+
+      <Step title="Optional: React Email">
+
+        Use [React Email](https://react.email) (also by Resend) to customize the look and feel of your emails with reusable components.
+
+                <img src="https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/customize-email-resend.png?fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=9682fc17f20368f785a652e5f1fb3e6f" alt="Customize Email Resend Pn" data-og-width="1501" width="1501" data-og-height="772" height="772" data-path="images/customize-email-resend.png" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/customize-email-resend.png?w=280&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=c2b5a51bb489cd43c510cc5bb229d6e7 280w, https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/customize-email-resend.png?w=560&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=402a128386640ea59b091e550c5ddc33 560w, https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/customize-email-resend.png?w=840&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=70285c1f195de97d21d1524967637a99 840w, https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/customize-email-resend.png?w=1100&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=bb7e65d92176eb1fa6f761466a55ad5b 1100w, https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/customize-email-resend.png?w=1650&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=24c4dbafdea4fd4b9417f09049328d06 1650w, https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/customize-email-resend.png?w=2500&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=2725953f64066a66e634e8cd9af71708 2500w" />
+
+      </Step>
+
+    </Steps>
+
+  </Step>
+
+  <Step title="Build a Secure Admin Dashboard">
+
+    Allow only authenticated users to view and manage leads.
+
+    <Steps>
+
+      <Step title="Admin route">
+
+        Create an `/admin` route in Lovable.
+
+      </Step>
+
+      <Step title="Supabase Authentication">
+
+        Enable Supabase authentication with email/password login.
+
+      </Step>
+
+      <Step title="Contacts">
+
+        Display the `contacts` table with columns:
+
+        * Name
+
+        * Email
+
+        * Message preview
+
+        * Submission date
+
+      </Step>
+
+      <Step title="Full contact detail">
+
+        Add a detail pane (e.g., a sliding panel) showing full contact details when a row is clicked.
+
+                <img src="https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/crm-resend-email.png?fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=679b36c78cf45caeb7c541a9c364cad8" alt="Crm Resend Email Pn" data-og-width="972" width="972" data-og-height="683" height="683" data-path="images/crm-resend-email.png" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/crm-resend-email.png?w=280&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=7845cc4ea011b3f05a920182b17018c9 280w, https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/crm-resend-email.png?w=560&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=561b5ce78c55adfbf8daf88b0776b204 560w, https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/crm-resend-email.png?w=840&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=df656923f9a097a6b313d3503d231d65 840w, https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/crm-resend-email.png?w=1100&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=87affc2b1a3eca74c28f196f9560834e 1100w, https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/crm-resend-email.png?w=1650&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=41b194ca34f9ec30f05c52d17feef220 1650w, https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/crm-resend-email.png?w=2500&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=441e1201403af1fe65026f35c1a56d83 2500w" />
+
+      </Step>
+
+      <Step title="Redirect logic">
+
+        Add redirect logic so unauthenticated users are routed to `/login`.
+
+      </Step>
+
+    </Steps>
+
+  </Step>
+
+  <Step title="Enable Custom Email Replies from Admin">
+
+    Allow your team to send personalized follow-ups.
+
+    <Steps>
+
+      <Step title="Contact detail pane">
+
+        In the contact detail pane, add a **text field** and **predefined templates** (e.g., "Thanks for signing up!").
+
+      </Step>
+
+      <Step title="Add send button">
+
+        Add a **send button** wired to Resend.
+
+      </Step>
+
+      <Step title="Store sent messages">
+
+        Store each sent message in a `sent_emails` table in Supabase:
+
+        * `contact_id`
+
+        * `subject`
+
+        * `body`
+
+        * `sent_at`
+
+        This gives you a searchable log of all follow-ups.
+
+      </Step>
+
+    </Steps>
+
+  </Step>
+
+  <Step title="Add a Newsletter Subscription Form">
+
+    Use Resend's **Audiences** to manage subscribers and send broadcast emails.
+
+        <img src="https://mintcdn.com/lovable-f9060f1e/luGRYj9iOP9EB2xE/images/subscription-newsletter-resend.png?fit=max&auto=format&n=luGRYj9iOP9EB2xE&q=85&s=a6fb96bc1a5aee0746e7f0638cf9a15f" alt="Subscription Newsletter Resend Pn" data-og-width="538" width="538" data-og-height="678" height="678" data-path="images/subscription-newsletter-resend.png" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/lovable-f9060f1e/luGRYj9iOP9EB2xE/images/subscription-newsletter-resend.png?w=280&fit=max&auto=format&n=luGRYj9iOP9EB2xE&q=85&s=608f9ed43a9f75f62f90081d365d2069 280w, https://mintcdn.com/lovable-f9060f1e/luGRYj9iOP9EB2xE/images/subscription-newsletter-resend.png?w=560&fit=max&auto=format&n=luGRYj9iOP9EB2xE&q=85&s=c52e14e732c7ca5dc0765efb9c87f49d 560w, https://mintcdn.com/lovable-f9060f1e/luGRYj9iOP9EB2xE/images/subscription-newsletter-resend.png?w=840&fit=max&auto=format&n=luGRYj9iOP9EB2xE&q=85&s=78eb9dff88b42ac698bd3a870d1d36d1 840w, https://mintcdn.com/lovable-f9060f1e/luGRYj9iOP9EB2xE/images/subscription-newsletter-resend.png?w=1100&fit=max&auto=format&n=luGRYj9iOP9EB2xE&q=85&s=31b4eab975a31d26bdbe8c3c0d463261 1100w, https://mintcdn.com/lovable-f9060f1e/luGRYj9iOP9EB2xE/images/subscription-newsletter-resend.png?w=1650&fit=max&auto=format&n=luGRYj9iOP9EB2xE&q=85&s=512666f1a9b492f1cb41dec1b0f903b7 1650w, https://mintcdn.com/lovable-f9060f1e/luGRYj9iOP9EB2xE/images/subscription-newsletter-resend.png?w=2500&fit=max&auto=format&n=luGRYj9iOP9EB2xE&q=85&s=57bb90d6f56df2f34e39fa117c463fd2 2500w" />
+
+    <Steps>
+
+      <Step title="Add new form">
+
+        Add a new form on your landing page for newsletter signup.
+
+      </Step>
+
+      <Step title="Resend contact">
+
+        When submitted:
+
+        * Create a Resend contact via the API
+
+        * (Optional) Store the contact locally in Supabase as well
+
+      </Step>
+
+      <Step title="Design">
+
+        Use Resend's broadcast email UI to design and send newsletters.
+
+        * Built-in unsubscribe logic
+
+        * Performance insights (open rates, delivery status)
+
+      </Step>
+
+      <Step title="Compliance check!">
+
+        For compliance (e.g. GDPR), consider implementing a **double opt-in** flow.
+
+      </Step>
+
+    </Steps>
+
+  </Step>
+
+  <Step title="BONUS: Connecting Resend to Supabase Auth">
+
+    <img src="https://mintcdn.com/lovable-f9060f1e/luGRYj9iOP9EB2xE/images/send-batch-emails-gdpr-resend.png?fit=max&auto=format&n=luGRYj9iOP9EB2xE&q=85&s=c1c7dc82b8215a67dcbd9f77a25a78d9" alt="Send Batch Emails Gdpr Resend Pn" data-og-width="687" width="687" data-og-height="772" height="772" data-path="images/send-batch-emails-gdpr-resend.png" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/lovable-f9060f1e/luGRYj9iOP9EB2xE/images/send-batch-emails-gdpr-resend.png?w=280&fit=max&auto=format&n=luGRYj9iOP9EB2xE&q=85&s=c820a89d2d0fa3d5ff4c219ec87deead 280w, https://mintcdn.com/lovable-f9060f1e/luGRYj9iOP9EB2xE/images/send-batch-emails-gdpr-resend.png?w=560&fit=max&auto=format&n=luGRYj9iOP9EB2xE&q=85&s=a200eb2abff84e0b38e600b9f8a223a1 560w, https://mintcdn.com/lovable-f9060f1e/luGRYj9iOP9EB2xE/images/send-batch-emails-gdpr-resend.png?w=840&fit=max&auto=format&n=luGRYj9iOP9EB2xE&q=85&s=ed2d316db893fbc38847a76af0eef313 840w, https://mintcdn.com/lovable-f9060f1e/luGRYj9iOP9EB2xE/images/send-batch-emails-gdpr-resend.png?w=1100&fit=max&auto=format&n=luGRYj9iOP9EB2xE&q=85&s=27e98cf7e11d538a676e38e2c940c06b 1100w, https://mintcdn.com/lovable-f9060f1e/luGRYj9iOP9EB2xE/images/send-batch-emails-gdpr-resend.png?w=1650&fit=max&auto=format&n=luGRYj9iOP9EB2xE&q=85&s=a6e90b4240a2aaee53fccf885dba5e4d 1650w, https://mintcdn.com/lovable-f9060f1e/luGRYj9iOP9EB2xE/images/send-batch-emails-gdpr-resend.png?w=2500&fit=max&auto=format&n=luGRYj9iOP9EB2xE&q=85&s=9d902cdc20c9d420eb97b7cf941c9624 2500w" />
+
+    Want to improve Supabase's default email auth (which limits you to 4 emails/hour)?
+
+    <Steps>
+
+      <Step title="Resend supabase">
+
+        Go to [Resend's Supabase integration](https://resend.com/integrations/supabase).
+
+      </Step>
+
+      <Step title="Authentication">
+
+        Authenticate with your Supabase project.
+
+      </Step>
+
+      <Step title="Domain setup">
+
+        Choose your domain and sender name/email.
+
+      </Step>
+
+      <Step title="SMTP">
+
+        Resend automatically sets up SMTP and replaces Supabase's default email system.
+
+      </Step>
+
+      <Step title="Customization">
+
+        You can now customize auth email templates from the Supabase dashboard.
+
+      </Step>
+
+    </Steps>
+
+  </Step>
+
+  <Step title="Final Touches & Best Practices">
+
+        <img src="https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/audience-resend.png?fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=c3e9d1de44412516616dbafe24d50f12" alt="Audience Resend Pn" data-og-width="1200" width="1200" data-og-height="766" height="766" data-path="images/audience-resend.png" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/audience-resend.png?w=280&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=1133f35502e1c1aaf6dde276dd97a24d 280w, https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/audience-resend.png?w=560&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=12d7d6ff14daaa4d0e769a327539dadc 560w, https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/audience-resend.png?w=840&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=36a52386e2f5d88620974440f01e0045 840w, https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/audience-resend.png?w=1100&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=12204074ee8b45e0826a4050061997f8 1100w, https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/audience-resend.png?w=1650&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=3b3ec954be60cc60c2e9ee8b2d9908f0 1650w, https://mintcdn.com/lovable-f9060f1e/9SLskRqE33AbtOUv/images/audience-resend.png?w=2500&fit=max&auto=format&n=9SLskRqE33AbtOUv&q=85&s=29895b71593b8950f4170a91988a94ef 2500w" />
+
+    * **Error Handling**: Lovable might show build errors that are false positives. Always test your functionality live.
+
+    * **Reverting with Supabase**: If reverting code in Lovable, remember to manually delete associated Supabase policies or migrations—they're not rolled back automatically.
+
+    * **Deliverability Tips**:
+
+      * Use subdomains to isolate reputation.
+
+      * Always include a plain text version of your email.
+
+      * Monitor email performance with Resend's insights dashboard.
+
+  </Step>
+
+  <Step title="You're Done! 🎉">
+
+    In less than an hour, you've built a modern CRM with:
+
+    * A landing page and contact form
+
+    * Database-powered lead storage
+
+    * Automated email confirmations
+
+    * Admin dashboard for lead management
+
+    * Custom email replies
+
+    * Newsletter broadcasts
+
+    * Auth and email verification
+
+  </Step>
+
+</Steps>
+
+## Want to go further?
+
+_Add support for_ *scheduled emails** via Supabase cron jobs
+
+_Build_ *automation flows** to trigger emails based on lead stages
+
+* Style your UI for better brand trust and conversion
+
+## Resend integration FAQ
+
+<AccordionGroup>
+
+  <Accordion title="What is Resend?">
+
+    Resend is an email API built for developers. It focuses on high deliverability, ease of integration, and a clean developer experience for sending transactional and marketing emails.
+
+  </Accordion>
+
+  <Accordion title="Do I need a paid Resend plan to follow this tutorial?">
+
+    No. You can complete the entire CRM setup using **Resend's free tier**, which supports sending emails from a verified domain and up to 3,000 contacts for marketing emails.
+
+  </Accordion>
+
+  <Accordion title="How do I verify a domain in Resend?">
+
+    Go to Resend → **Domains** → Add your domain. You'll be given DNS records (TXT, MX) to add via your DNS provider (e.g., Cloudflare, Namecheap). Once added, click **Verify**.
+
+    <Tip>
+
+      Use a subdomain like `updates.yourdomain.com` to isolate your email reputation.
+
+    </Tip>
+
+  </Accordion>
+
+  <Accordion title="Why are my Resend emails going to spam?">
+
+    There are a few common reasons:
+
+    * You haven't verified your domain
+
+    * Your email lacks a plain-text version
+
+    * You're sending from a generic sender like `onboarding@resend.dev`
+
+    * You're not following best practices (e.g., missing unsubscribe links in marketing emails)
+
+    Use Resend's **Deliverability Insights** panel to get actionable tips.
+
+  </Accordion>
+
+  <Accordion title="Can I customize the design of the emails I send?">
+
+    Yes. Use [React Email](https://react.email/)—an open-source library by the Resend team—to design styled, responsive emails with React components.
+
+  </Accordion>
+
+  <Accordion title="Does Resend support marketing emails or only transactional?">
+
+    Resend supports **both**:
+
+    * **Transactional emails** (confirmation, reset, notifications) using the API or SDK.
+
+    * **Marketing emails** via the **Broadcast** feature and **Audiences**.
+
+    You can create, preview, and track campaigns from the dashboard.
+
+  </Accordion>
+
+  <Accordion title="How do I manage newsletter subscribers in Resend?">
+
+    Use **Audiences**:
+
+    * Add contacts manually, via CSV, or programmatically using the API.
+
+    * Each Audience has a unique ID you can use to associate subscriptions.
+
+    * Users can unsubscribe automatically via Resend's built-in unsubscribe link.
+
+  </Accordion>
+
+  <Accordion title="Can I set up double opt-in for newsletters?">
+
+    Not by default, but you can implement it manually:
+
+    1. On form submission, send an initial confirmation email.
+
+    2. Ask users to click a link.
+
+    3. On click, confirm their subscription and add them to your Resend audience.
+
+  </Accordion>
+
+  <Accordion title="Can I schedule or automate email flows in Resend?">
+
+    Not yet. Resend doesn't currently support drip campaigns or automated sequences.
+
+    <Tip>
+
+      Workaround:
+
+      Use **Supabase Cron Jobs** to schedule tasks that trigger Resend emails at set intervals.
+
+    </Tip>
+
+  </Accordion>
+
+  <Accordion title="How do I connect Resend to Supabase Auth?">
+
+    Use the official Supabase Integration by Resend:
+
+    1. Authenticate with your Supabase project.
+
+    2. Provide a domain and sender name.
+
+    3. Resend automatically configures your Supabase auth emails to use your Resend account.
+
+  </Accordion>
+
+  <Accordion title="How does Resend handle unsubscribes?">
+
+    Resend automatically processes unsubscribes:
+
+    * You must include an unsubscribe link in broadcast emails.
+
+    * When a user unsubscribes, they are removed from the selected audience.
+
+    * This is required for email compliance (e.g., CAN-SPAM, GDPR).
+
+  </Accordion>
+
+</AccordionGroup>
+
+---
+
+> To find navigation and other pages in this documentation, fetch the llms.txt file at: https://docs.lovable.dev/llms.txt

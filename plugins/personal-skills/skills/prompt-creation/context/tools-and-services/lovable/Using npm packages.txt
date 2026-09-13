@@ -1,0 +1,61 @@
+# Using npm packages
+
+> Learn how to leverage npm packages to extend your Lovable applications with advanced features
+
+While Lovable is powerful on its own, enabling users to build sophisticated web applications, you can leverage npm packages for more advanced and extended features. These packages help you build even more complex and feature-rich applications with ease.
+
+<Info>
+
+  **What is npm?**
+
+  npm (Node Package Manager) is a package manager for JavaScript that allows developers to share and reuse code. It hosts thousands of packages, which are pieces of reusable code, that you can easily integrate into your projects to extend functionality.
+
+  You can access it [at npmjs.com](https://www.npmjs.com/).
+
+</Info>
+
+## Using npm packages for advanced features
+
+Let's say you'd like to create a tool that enables you to arrange your tasks in different Kanban boards, similar to many popular project management tools. You can prompt Lovable to build this tool from scratch, but it might be slower and more challenging to achieve the desired functionality.
+
+Instead, you can use npm packages to simplify and speed up the process. For example, the [@hello-pangea/dnd](https://www.npmjs.com/package/@hello-pangea/dnd) package provides robust drag-and-drop functionality. By using this package, you can easily create a Kanban board where users can add new cards, move them within columns, and reorder them.
+
+<CodeGroup>
+
+  ```bash Example prompt theme={null}
+
+  Use the hello-pangea/dnd npm package to add drag-and-drop functionality to my Kanban board app.
+
+  Ensure users can add new cards, move them within columns, and reorder them.
+
+  ```
+
+</CodeGroup>
+
+This prompt directs Lovable to integrate the package into your project, making it easier to achieve the desired functionality. Depending on other requirements, your result might look somewhat like this.
+
+<Frame>
+
+  <img src="https://mintcdn.com/lovable-f9060f1e/5WiQj0NImuyTcvae/assets/npm-example-using-pangea-dnd.png?fit=max&auto=format&n=5WiQj0NImuyTcvae&q=85&s=bf2d3caa0fe98bf7b6fb8a86336fdf27" alt="Lovable implemented drag-and-drop Kanban functionality" data-og-width="816" width="816" data-og-height="353" height="353" data-path="assets/npm-example-using-pangea-dnd.png" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/lovable-f9060f1e/5WiQj0NImuyTcvae/assets/npm-example-using-pangea-dnd.png?w=280&fit=max&auto=format&n=5WiQj0NImuyTcvae&q=85&s=8efb5cbccca71da026159d3dffdbeaba 280w, https://mintcdn.com/lovable-f9060f1e/5WiQj0NImuyTcvae/assets/npm-example-using-pangea-dnd.png?w=560&fit=max&auto=format&n=5WiQj0NImuyTcvae&q=85&s=0b3fd264b5b120be40d0f66f0ede931f 560w, https://mintcdn.com/lovable-f9060f1e/5WiQj0NImuyTcvae/assets/npm-example-using-pangea-dnd.png?w=840&fit=max&auto=format&n=5WiQj0NImuyTcvae&q=85&s=776cf86a5bc28a64f88d0375b7e3fb90 840w, https://mintcdn.com/lovable-f9060f1e/5WiQj0NImuyTcvae/assets/npm-example-using-pangea-dnd.png?w=1100&fit=max&auto=format&n=5WiQj0NImuyTcvae&q=85&s=ed6f1578aa1b063239c1a8665b3e6b36 1100w, https://mintcdn.com/lovable-f9060f1e/5WiQj0NImuyTcvae/assets/npm-example-using-pangea-dnd.png?w=1650&fit=max&auto=format&n=5WiQj0NImuyTcvae&q=85&s=bbefbb5ae77de2a728efcbd1dbb5a25c 1650w, https://mintcdn.com/lovable-f9060f1e/5WiQj0NImuyTcvae/assets/npm-example-using-pangea-dnd.png?w=2500&fit=max&auto=format&n=5WiQj0NImuyTcvae&q=85&s=2bc53ef0843c7a5e5d53e5e677ab4b3f 2500w" />
+
+</Frame>
+
+## Quality and responsibility
+
+It's important to note that while npm packages can significantly enhance your projects, Lovable cannot guarantee the quality or reliability of these third-party packages.
+
+The functionality and performance of npm packages are the responsibility of the end user, and it's essential to thoroughly test and validate them within your application.
+
+### Increasing your chances of success
+
+Here are a few strategies to help you evaluate the legitimacy and quality of npm packages before integrating them into your projects.
+
+* **Number of downloads** - Check the number of downloads on the package's npm page. A high number of downloads typically indicates that the package is widely used and trusted by the community.
+
+* **Maintenance status and latest updates** - Look at the package's repository to see if it is actively maintained. Frequent commits, recent updates, and responsiveness to issues are good indicators of an actively maintained package. Ensure the package has recent updates. A package that is regularly updated is more likely to be compatible with the latest versions of dependencies and security practices.
+
+* **Reviews and community feedback** - A lot of npm packages are hosted on GitHub or similar code repositories. Read through reviews, discussions, and feedback from other developers on those locations, too. Additionally, specific developer forums can provide insights into the package's reliability and any potential issues.
+
+---
+
+> To find navigation and other pages in this documentation, fetch the llms.txt file at: https://docs.lovable.dev/llms.txt

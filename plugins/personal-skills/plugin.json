@@ -1,0 +1,41 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "personal-skills",
+  "version": "1.0.0",
+  "description": "Bryan Cowan's selected documentation, Obsidian, and prompt-development skills.",
+  "author": {
+    "name": "Bryan Cowan",
+    "email": "bryan@bryancowan.com",
+    "url": "https://github.com/bryancowan"
+  },
+  "homepage": "https://github.com/bryancowan/skills",
+  "repository": "https://github.com/bryancowan/skills",
+  "keywords": [
+    "documentation",
+    "obsidian",
+    "prompts",
+    "skills"
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Personal Skills",
+        "shortDescription": "Documentation, Obsidian, and prompt-development workflows.",
+        "longDescription": "Five selected personal skills for documentation, Obsidian reading-list enrichment and organization, wiki compilation, and prompt development.",
+        "developerName": "Bryan Cowan",
+        "category": "Productivity",
+        "capabilities": [
+          "Read",
+          "Write"
+        ],
+        "websiteURL": "https://github.com/bryancowan/skills",
+        "defaultPrompt": [
+          "Help me improve this documentation.",
+          "Organize these notes in my Obsidian vault.",
+          "Help me create a precise prompt."
+        ],
+        "brandColor": "#5B5BD6"
+      }
+    }
+  }
+}
