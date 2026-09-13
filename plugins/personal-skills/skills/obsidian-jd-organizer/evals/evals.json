@@ -1,0 +1,23 @@
+{
+  "skill_name": "obsidian-jd-organizer",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Run an audit on my vault — what's out of place and what needs attention? The vault is at /Users/bryan/Documents/repos/skills-workspace/obsidian-wiki/test-vault",
+      "expected_output": "A markdown table showing issues found: orphaned files in Reading List, missing JDex notes, any drift between Master Index and actual folder structure. Should identify the Reading List articles as loose files needing JD placement.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "I have some articles in my Reading List folder that should be filed properly. Look at what's in /Users/bryan/Documents/repos/skills-workspace/obsidian-wiki/test-vault/Reading List/ and suggest where they should go in my JD system. Use the Master Index at /Users/bryan/Documents/repos/skills-workspace/obsidian-wiki/test-vault/00-09 System Management/00 System-management category/00.00 Master Index.md for reference.",
+      "expected_output": "A proposal table mapping each Reading List article to a JD category/ID with reasoning. AI agent articles should map to 31.12 (LLMs & AI) or similar. The personal website article might go to 31.11 or 32.xx. Should suggest creating new IDs where needed.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Build out category 13 Health & Wellness in my vault — it's marked as planned but not yet built in my index. The vault is at /Users/bryan/Documents/repos/skills-workspace/obsidian-wiki/test-vault. Use the Master Index for context.",
+      "expected_output": "Should create the category 13 folder with standard zeros (13.00 JDex, 13.01 Inbox, 13.02 Tasks, 13.03 Templates, 13.04 Links, 13.09 Archive), suggest starter IDs, create the notes with proper frontmatter, and update the Master Index.",
+      "files": []
+    }
+  ]
+}

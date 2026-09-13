@@ -1,0 +1,169 @@
+# Using images in Lovable
+
+> Learn how to add images to your Lovable projects
+
+To add images you can do one of four things:
+
+<AccordionGroup>
+
+  <Accordion title="Upload the image to the prompt chat">
+
+    Simply upload them in the chat and explain to Lovable's Agent where and how you'd like them to appear in your project. For example:
+
+    > Replace the logo in navbar with this image
+
+  </Accordion>
+
+  <Accordion title="Replace it on the visual editor">
+
+    You can replace an existing image directly using the [visual editor](https://docs.lovable.dev/features/precision-edit#visual-edits) functionality:
+
+    <Steps>
+
+      <Step title="Step 1">
+
+        Click on "Edit" tool.
+
+      </Step>
+
+      <Step title="Step 2">
+
+        Select the image holder you would like to change.
+
+                <img src="https://mintcdn.com/lovable-f9060f1e/luGRYj9iOP9EB2xE/images/visual-edit-replace.png?fit=max&auto=format&n=luGRYj9iOP9EB2xE&q=85&s=c3ef73f6ff41ea097d98877ad851b7b4" alt="images/visual-edit-replace.png" data-og-width="1378" width="1378" data-og-height="1190" height="1190" data-path="images/visual-edit-replace.png" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/lovable-f9060f1e/luGRYj9iOP9EB2xE/images/visual-edit-replace.png?w=280&fit=max&auto=format&n=luGRYj9iOP9EB2xE&q=85&s=076c957c779d71314a5ff334746e9257 280w, https://mintcdn.com/lovable-f9060f1e/luGRYj9iOP9EB2xE/images/visual-edit-replace.png?w=560&fit=max&auto=format&n=luGRYj9iOP9EB2xE&q=85&s=37deb92c55324742a38b251696238095 560w, https://mintcdn.com/lovable-f9060f1e/luGRYj9iOP9EB2xE/images/visual-edit-replace.png?w=840&fit=max&auto=format&n=luGRYj9iOP9EB2xE&q=85&s=e034b4d985a68dafd4d22ea77e9868fd 840w, https://mintcdn.com/lovable-f9060f1e/luGRYj9iOP9EB2xE/images/visual-edit-replace.png?w=1100&fit=max&auto=format&n=luGRYj9iOP9EB2xE&q=85&s=4138aa37a64fc7da59ab34e6b0bcbad7 1100w, https://mintcdn.com/lovable-f9060f1e/luGRYj9iOP9EB2xE/images/visual-edit-replace.png?w=1650&fit=max&auto=format&n=luGRYj9iOP9EB2xE&q=85&s=ae5ca91126daca4bf2f1992db57640ec 1650w, https://mintcdn.com/lovable-f9060f1e/luGRYj9iOP9EB2xE/images/visual-edit-replace.png?w=2500&fit=max&auto=format&n=luGRYj9iOP9EB2xE&q=85&s=0aebb1409cbcf0629b3ff73933021332 2500w" />
+
+      </Step>
+
+      <Step title="Step 3">
+
+        Change the image.
+
+                <img src="https://mintcdn.com/lovable-f9060f1e/luGRYj9iOP9EB2xE/images/visual-edit-image.png?fit=max&auto=format&n=luGRYj9iOP9EB2xE&q=85&s=933dfe0bbcd73ea410a7eeccc6b380ae" alt="images/visual-edit-image.png" data-og-width="412" width="412" data-og-height="392" height="392" data-path="images/visual-edit-image.png" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/lovable-f9060f1e/luGRYj9iOP9EB2xE/images/visual-edit-image.png?w=280&fit=max&auto=format&n=luGRYj9iOP9EB2xE&q=85&s=c9f7623ab5b5a2df6bbf58b92352306a 280w, https://mintcdn.com/lovable-f9060f1e/luGRYj9iOP9EB2xE/images/visual-edit-image.png?w=560&fit=max&auto=format&n=luGRYj9iOP9EB2xE&q=85&s=7d3f0aed878cf3907940ed638fe02371 560w, https://mintcdn.com/lovable-f9060f1e/luGRYj9iOP9EB2xE/images/visual-edit-image.png?w=840&fit=max&auto=format&n=luGRYj9iOP9EB2xE&q=85&s=d10d33eec93bbce95fe796adb3610e17 840w, https://mintcdn.com/lovable-f9060f1e/luGRYj9iOP9EB2xE/images/visual-edit-image.png?w=1100&fit=max&auto=format&n=luGRYj9iOP9EB2xE&q=85&s=d2b5a261d32502435eb63b13cc786150 1100w, https://mintcdn.com/lovable-f9060f1e/luGRYj9iOP9EB2xE/images/visual-edit-image.png?w=1650&fit=max&auto=format&n=luGRYj9iOP9EB2xE&q=85&s=d407ac29e3885befe7bbb021697de578 1650w, https://mintcdn.com/lovable-f9060f1e/luGRYj9iOP9EB2xE/images/visual-edit-image.png?w=2500&fit=max&auto=format&n=luGRYj9iOP9EB2xE&q=85&s=5f647da44072a192faa71a8441bda42a 2500w" />
+
+      </Step>
+
+    </Steps>
+
+  </Accordion>
+
+  <Accordion title="Using an external image URL">
+
+    One way to add images to your project is by referencing an image from an external URL. This method allows you to use images hosted on external platforms like Unsplash, Imgur, or any other image-hosting service. Be mindful of use copyrights!
+
+    Here's how to prompt Lovable to use an external image:
+
+    <Steps>
+
+      <Step title="Step 1">
+
+        Find the image you want to use.
+
+        For example, you can visit a site like Unsplash, select an image, and copy its URL.
+
+      </Step>
+
+      <Step title="Step 2">
+
+        In your project prompt, simply tell Lovable to use that image by specifying the URL. For example:
+
+        ```
+
+        Use the image from this URL
+
+        https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/Pale_Blue_Dot.png/442px-Pale_Blue_Dot.png
+
+        for the hero section image.
+
+        ```
+
+      </Step>
+
+    </Steps>
+
+  </Accordion>
+
+  <Accordion title="Using images from your GitHub public directory">
+
+    Another method to add images to your Lovable project is by using images uploaded to the `public` directory of your connected GitHub repository. Here's how you can do it:
+
+    <Steps>
+
+      <Step title="Connect your GitHub repository">
+
+        Ensure your project is connected to your GitHub repo. [Here's how to connect your repo](https://docs.lovable.dev/integrations/git-integration).
+
+      </Step>
+
+      <Step title="Locate the public folder">
+
+        Inside your GitHub repository, navigate to the `public` directory. This folder is typically used for hosting assets like images that can be referenced in your project.
+
+      </Step>
+
+      <Step title="Add file">
+
+        Click on **Add file** and then from a dropdown, select **Upload files** option. <img src="https://mintcdn.com/lovable-f9060f1e/5WiQj0NImuyTcvae/assets/using-images-github-upload.png?fit=max&auto=format&n=5WiQj0NImuyTcvae&q=85&s=6fade7ed311819f21d86cccc8301e20a" alt="Selecting files for upload" data-og-width="1339" width="1339" data-og-height="453" height="453" data-path="assets/using-images-github-upload.png" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/lovable-f9060f1e/5WiQj0NImuyTcvae/assets/using-images-github-upload.png?w=280&fit=max&auto=format&n=5WiQj0NImuyTcvae&q=85&s=2a733396adfe706b1cf13e2d3f7824fd 280w, https://mintcdn.com/lovable-f9060f1e/5WiQj0NImuyTcvae/assets/using-images-github-upload.png?w=560&fit=max&auto=format&n=5WiQj0NImuyTcvae&q=85&s=93b65b43b7833304848c2d6ab0bc4ad1 560w, https://mintcdn.com/lovable-f9060f1e/5WiQj0NImuyTcvae/assets/using-images-github-upload.png?w=840&fit=max&auto=format&n=5WiQj0NImuyTcvae&q=85&s=e5395e8b4f86049b5a2cc62867682a55 840w, https://mintcdn.com/lovable-f9060f1e/5WiQj0NImuyTcvae/assets/using-images-github-upload.png?w=1100&fit=max&auto=format&n=5WiQj0NImuyTcvae&q=85&s=3ea777f0ab3bb774664967dfac12d1a1 1100w, https://mintcdn.com/lovable-f9060f1e/5WiQj0NImuyTcvae/assets/using-images-github-upload.png?w=1650&fit=max&auto=format&n=5WiQj0NImuyTcvae&q=85&s=69d2f6fc2a0d94b493543b17eb22fffc 1650w, https://mintcdn.com/lovable-f9060f1e/5WiQj0NImuyTcvae/assets/using-images-github-upload.png?w=2500&fit=max&auto=format&n=5WiQj0NImuyTcvae&q=85&s=f523a635a82436169776c4370c97f20f 2500w" />
+
+      </Step>
+
+      <Step title="Upload an image">
+
+        The next step is to transfer your image to your repo:
+
+        * Drag and drop the image into the public folder, or
+
+         _Click on the_ *"choose your files"** link to browse and select the image file. <img src="https://mintcdn.com/lovable-f9060f1e/5WiQj0NImuyTcvae/assets/using-images-github-commiting.png?fit=max&auto=format&n=5WiQj0NImuyTcvae&q=85&s=20260b87c26626661ee3c9fa07ddeaa8" alt="Selecting files for upload" data-og-width="1339" width="1339" data-og-height="826" height="826" data-path="assets/using-images-github-commiting.png" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/lovable-f9060f1e/5WiQj0NImuyTcvae/assets/using-images-github-commiting.png?w=280&fit=max&auto=format&n=5WiQj0NImuyTcvae&q=85&s=ae4caaff2fc68dd47d97887a847c4f4e 280w, https://mintcdn.com/lovable-f9060f1e/5WiQj0NImuyTcvae/assets/using-images-github-commiting.png?w=560&fit=max&auto=format&n=5WiQj0NImuyTcvae&q=85&s=c88be1086558d235d96cbc638627e77f 560w, https://mintcdn.com/lovable-f9060f1e/5WiQj0NImuyTcvae/assets/using-images-github-commiting.png?w=840&fit=max&auto=format&n=5WiQj0NImuyTcvae&q=85&s=1dcc3b0ed334d30c030a74876333353b 840w, https://mintcdn.com/lovable-f9060f1e/5WiQj0NImuyTcvae/assets/using-images-github-commiting.png?w=1100&fit=max&auto=format&n=5WiQj0NImuyTcvae&q=85&s=9519ca4119545f27069e5fa31c905e9a 1100w, https://mintcdn.com/lovable-f9060f1e/5WiQj0NImuyTcvae/assets/using-images-github-commiting.png?w=1650&fit=max&auto=format&n=5WiQj0NImuyTcvae&q=85&s=4f3748962a9e05c653ecf47afcc5a7c4 1650w, https://mintcdn.com/lovable-f9060f1e/5WiQj0NImuyTcvae/assets/using-images-github-commiting.png?w=2500&fit=max&auto=format&n=5WiQj0NImuyTcvae&q=85&s=eb7f84a1d6d2508187e20478437299d5 2500w" />
+
+      </Step>
+
+      <Step title="Commit the changes">
+
+        After selecting your image, write a simple commit message (e.g., "Adding image files to be used in the app") and click **"Commit changes"** to save the file to your repo.
+
+      </Step>
+
+      <Step title="Get the image path">
+
+        Once the file is uploaded, select it and then click on the copy icon next to the file name to copy the image's path. This path will be used in your Lovable prompt. <img src="https://mintcdn.com/lovable-f9060f1e/5WiQj0NImuyTcvae/assets/using-images-github-selecting.png?fit=max&auto=format&n=5WiQj0NImuyTcvae&q=85&s=a79d146039307e9a5a332200fb289fa6" alt="Selecting files for upload" data-og-width="1339" width="1339" data-og-height="825" height="825" data-path="assets/using-images-github-selecting.png" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/lovable-f9060f1e/5WiQj0NImuyTcvae/assets/using-images-github-selecting.png?w=280&fit=max&auto=format&n=5WiQj0NImuyTcvae&q=85&s=52beca34c06351a6301aab67c29206ae 280w, https://mintcdn.com/lovable-f9060f1e/5WiQj0NImuyTcvae/assets/using-images-github-selecting.png?w=560&fit=max&auto=format&n=5WiQj0NImuyTcvae&q=85&s=f1a9061706356b979ae68b7320391288 560w, https://mintcdn.com/lovable-f9060f1e/5WiQj0NImuyTcvae/assets/using-images-github-selecting.png?w=840&fit=max&auto=format&n=5WiQj0NImuyTcvae&q=85&s=c83fe5aaf27c1783ed89fca3320e6da7 840w, https://mintcdn.com/lovable-f9060f1e/5WiQj0NImuyTcvae/assets/using-images-github-selecting.png?w=1100&fit=max&auto=format&n=5WiQj0NImuyTcvae&q=85&s=0c133b714b1ec1f089ec58f6dd5c15dd 1100w, https://mintcdn.com/lovable-f9060f1e/5WiQj0NImuyTcvae/assets/using-images-github-selecting.png?w=1650&fit=max&auto=format&n=5WiQj0NImuyTcvae&q=85&s=3763728eb2a932888e8afe8086f87b1c 1650w, https://mintcdn.com/lovable-f9060f1e/5WiQj0NImuyTcvae/assets/using-images-github-selecting.png?w=2500&fit=max&auto=format&n=5WiQj0NImuyTcvae&q=85&s=9a243e859291e2f46b4e71c1926be43f 2500w" />
+
+      </Step>
+
+      <Step title="Use the image in Lovable">
+
+        You can now reference this image in your project by using a prompt like the following:
+
+        ```
+
+        Add an additional image to the hero section.
+
+        This time, use this one from my local repo: public/c-64-close-up.jpg.jpeg
+
+        ```
+
+        Be sure to use your image name and path you copied in the previous step.
+
+        <Warning>
+
+          Uploading large images to your GitHub repo can cause it to grow in size, which can affect Lovable performance (longer repo cloning times, slower startup of previews/sandbox).
+
+          Try to optimize your images before uploading them to your `public` folder by compressing them and using dimensions that are relevant to your use case. For example, don't use a full HD-sized image if it will only be displayed as a small icon.
+
+        </Warning>
+
+      </Step>
+
+    </Steps>
+
+    To help you better understand how to integrate images using the methods outlined above, we have a project you can explore: [Lovable Project Example](https://lovable.dev/projects/e823fedf-238d-4313-86a8-1fd4bfc2a9ba). In this project, you can see the actual prompts and how each method works in practice.
+
+    Additionally, here's a public GitHub repository that includes the commits, uploaded images, and full implementation details. You can view the repository here: [GitHub: Adding Images Example](https://github.com/viborc/adding-images-example).
+
+    Feel free to explore the project and repository to deepen your understanding and improve your implementation skills.
+
+  </Accordion>
+
+</AccordionGroup>
+
+---
+
+> To find navigation and other pages in this documentation, fetch the llms.txt file at: https://docs.lovable.dev/llms.txt

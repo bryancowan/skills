@@ -1,0 +1,105 @@
+# Using custom (Google) fonts
+
+> Learn how to use web-safe fonts and Google Fonts in your Lovable projects
+
+Currently, Lovable does not support direct uploads of custom fonts.
+
+However, there are several easy ways to use web-safe or incorporate custom fonts into your projects. Below, we'll guide you through the available methods for **using web-safe** and **Google fonts**:
+
+<AccordionGroup>
+
+  <Accordion title="Using a web-safe font">
+
+    <Info>
+
+      **What are web-safe fonts?**
+
+      Web-safe fonts are fonts that are commonly installed on most operating systems (Windows, macOS, Linux, etc.) and are visible on all devices.
+
+      These fonts ensure that your text looks consistent across different browsers and platforms without needing to load any external resources. Some of the common web-safe fonts are:
+
+      * Arial/Helvetica
+
+      * Times New Roman
+
+      * Georgia
+
+      * Courier New
+
+      * Verdana
+
+      * Tahoma
+
+      * Trebuchet MS
+
+      * Lucida Sans Unicode
+
+    </Info>
+
+    If you want to use a web-safe font in your project, you can specify the font directly in your prompt. For example, if you want to use **Courier New** for a heading or title in the hero section, simply reference the font by name in your prompt.
+
+    ```text  theme={null}
+
+    Use Courier New as the heading font in the hero section for the main title.
+
+    ```
+
+    Web-safe fonts like Courier New ensure that your project will have consistent typography across all platforms without requiring external resources to load the font. However, they can limit your creativity. Lucikly, there are otions like the ability to use Google Fonts.
+
+  </Accordion>
+
+  <Accordion title="Using Google Fonts">
+
+    If you prefer to use custom fonts, Lovable works nicely with **Google Fonts**. This allows you to easily use a wide range of fonts in your project. You can either reference a Google font by name or by linking directly to the font resource.
+
+    ### Using by name
+
+    In your prompt, you can specify the name of a Google font, and Lovable will include it in your project. For example:
+
+    ```text  theme={null}
+
+    Use Playfair Display as the first subtitle title font in the hero section.
+
+    Make sure to use the useEffect React hook to apply the font properly.
+
+    ```
+
+    ### Using by link
+
+    Alternatively, you can provide a direct link to the Google font, and Lovable will use that font in your project. You can get the link from [Google Fonts](https://fonts.google.com) by selecting the desired font and copying the link.
+
+    Here's how to prompt Lovable to use a Google font via a link:
+
+    ```text  theme={null}
+
+    Add this Google font link https://fonts.google.com/specimen/Dancing+Script
+
+    and use this font for the third subtitle.
+
+    Make sure to load the font using the useEffect React hook.
+
+    ```
+
+    By following these methods, you can customize the typography of your Lovable project using either web-safe fonts or Google Fonts.
+
+    ## Further learning and examples
+
+    To see these font integration methods in action, you can explore one of our example projects: [Lovable using fonts example project](https://lovable.dev/projects/3a826f38-d9cb-4d60-b4da-30a9b00149c8).
+
+    In this project, you'll find real prompts demonstrating how we applied different font styles, including web-safe fonts like Courier New and custom fonts from Google Fonts.
+
+    <Frame>
+
+            <img src="https://mintcdn.com/lovable-f9060f1e/5WiQj0NImuyTcvae/assets/using-custom-fonts-example.png?fit=max&auto=format&n=5WiQj0NImuyTcvae&q=85&s=48c5a2c6cbd54fa842897a03aa8e8313" alt="Different fonts used in Lovable project" data-og-width="1122" width="1122" data-og-height="269" height="269" data-path="assets/using-custom-fonts-example.png" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/lovable-f9060f1e/5WiQj0NImuyTcvae/assets/using-custom-fonts-example.png?w=280&fit=max&auto=format&n=5WiQj0NImuyTcvae&q=85&s=34b03654b9ac9b53a11b2b3273829c2e 280w, https://mintcdn.com/lovable-f9060f1e/5WiQj0NImuyTcvae/assets/using-custom-fonts-example.png?w=560&fit=max&auto=format&n=5WiQj0NImuyTcvae&q=85&s=b36f298c4b898ae2f81465020544c7a8 560w, https://mintcdn.com/lovable-f9060f1e/5WiQj0NImuyTcvae/assets/using-custom-fonts-example.png?w=840&fit=max&auto=format&n=5WiQj0NImuyTcvae&q=85&s=9dde0dc297c4811aa4d067a527b79bc8 840w, https://mintcdn.com/lovable-f9060f1e/5WiQj0NImuyTcvae/assets/using-custom-fonts-example.png?w=1100&fit=max&auto=format&n=5WiQj0NImuyTcvae&q=85&s=e3da6dfb1fd4785f9d31c333ea1d3aec 1100w, https://mintcdn.com/lovable-f9060f1e/5WiQj0NImuyTcvae/assets/using-custom-fonts-example.png?w=1650&fit=max&auto=format&n=5WiQj0NImuyTcvae&q=85&s=ec8981621ebc7abe895c802d8bfe9e23 1650w, https://mintcdn.com/lovable-f9060f1e/5WiQj0NImuyTcvae/assets/using-custom-fonts-example.png?w=2500&fit=max&auto=format&n=5WiQj0NImuyTcvae&q=85&s=8bacc974ddebb4ccbb4c46ae27a8ea3d 2500w" />
+
+    </Frame>
+
+    Additionally, for a more technical look at how fonts were integrated, check out this public repository: [GitHub: adding-fonts-example](https://github.com/viborc/adding-fonts-example). It includes the full implementation details, showcasing how various fonts were loaded and applied in the project.
+
+  </Accordion>
+
+</AccordionGroup>
+
+---
+
+> To find navigation and other pages in this documentation, fetch the llms.txt file at: https://docs.lovable.dev/llms.txt

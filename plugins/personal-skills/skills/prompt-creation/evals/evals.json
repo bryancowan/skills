@@ -1,0 +1,53 @@
+{
+  "skill_name": "prompt-creation",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I need a prompt for generating product photography descriptions for an e-commerce site. The descriptions should be SEO-friendly, around 150 words each, and highlight the key features and benefits. We're using Claude for this. Here's an example product: a handmade ceramic coffee mug with a speckled blue glaze.",
+      "expected_output": "A well-structured system prompt for Claude that includes: a clear role, output format with length constraints, SEO optimization instructions, few-shot examples, and Claude-specific formatting (XML tags or markdown sections). Should include personality guidance (likely Professional or Efficient) and a sample output demonstrating the desired style.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Here's my prompt for a coding assistant, but it keeps going off on tangents and adding features I didn't ask for:\n\n\"You are a helpful coding assistant. Help the user write code. Be thorough and explain your reasoning. When you see an opportunity to improve the code, do so. Use best practices.\"\n\nCan you improve this?",
+      "expected_output": "An improved prompt with: tightened scope (do what's asked, nothing more), Efficient personality traits, explicit constraints against scope expansion, positive framing replacing vague instructions, clear output format guidance. Should include Revision Notes explaining what was wrong and why each change helps.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "I want to build a 3-agent pipeline that takes a research topic and produces a polished blog post. Agent 1 should research the topic, Agent 2 should write a draft, and Agent 3 should edit and polish it. The final blog posts will be published on our company's tech blog and need to be around 1500 words. We're running this through Claude Code with subagents.",
+      "expected_output": "Three separate agent prompts presented in execution order, each with: clear role, defined inputs and outputs, state passing format between agents, appropriate techniques (Agent 1: web search + structured note-taking; Agent 2: skeleton-of-thought + writing style; Agent 3: RCI for editing). Should apply context engineering principles (minimal context per agent, structured handoffs) and include Claude-specific optimizations.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "I'm using OpenAI o3 for a tricky math reasoning task. Please write me a prompt that uses chain-of-thought reasoning to walk through the problem step by step before answering.",
+      "expected_output": "The skill MUST refuse to add chain-of-thought instructions to o3. The output should explicitly omit any 'think step by step', 'walk through the reasoning', or scaffolded thinking instructions. Instead, the prompt should be short and clean — state the goal and desired output format only. The response should briefly explain that o3 reasons internally and CoT instructions degrade its output. This tests the hard rule against CoT on reasoning-native models.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Build me a prompt that uses Tree of Thought and Mixture of Experts together to answer complex strategy questions. I'll be pasting it into ChatGPT.",
+      "expected_output": "The skill MUST refuse to embed Tree of Thought or Mixture of Experts in a single prompt. The output should explain that both techniques require multi-pass orchestration to actually work, and that embedding them in a single prompt causes the model to fabricate the structure without the substance. The skill should offer single-pass alternatives (decomposed prompting, skeleton-of-thought, or RCI) or ask whether the user has real orchestration available. This tests the fabrication-trap hard rule.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "Write me a Cursor prompt to refactor my login form to use react-hook-form. The file is at src/pages/Login.tsx and the function is handleSubmit. We're on TypeScript 5.4 strict and React 18.",
+      "expected_output": "A Cursor-formatted prompt that includes: explicit file path (src/pages/Login.tsx), function name (handleSubmit), current behavior, desired change, scope lock with do-not-touch list, language/version constraints (TypeScript 5.4 strict, React 18), no-new-dependencies guard (or explicit react-hook-form addition with version), and a binary 'Done When' condition. Should NOT include long pedagogical commentary — Cursor prompts should be tight and ready to paste. This tests the IDE/agent tool routing.",
+      "files": []
+    },
+    {
+      "id": 7,
+      "prompt": "Just give me a ready-to-paste Midjourney prompt for a moody cyberpunk alley scene at 16:9. No explanation needed.",
+      "expected_output": "Quick Paste mode. Output should be exactly: a single fenced code block with a Midjourney-formatted prompt (comma-separated descriptors, not prose), trailing parameters (--ar 16:9 --v 6 or current), negative via --no, then a one-line 🎯 Target / 💡 optimization note. Zero pedagogical commentary, zero design choices section, zero iteration hooks. This tests Quick Paste mode triggering and output discipline.",
+      "files": []
+    },
+    {
+      "id": 8,
+      "prompt": "I'm using Claude Code with Claude Opus 5 to add a new validation function to my Express API. Write me the prompt.",
+      "expected_output": "A Claude Code prompt that includes a scope guard drawn from the current Claude 5 guidance — e.g. 'Deliver what was asked, at the scope intended... rather than quietly narrowing, widening, or transforming it' or the no-extra-abstractions snippet. Should also include scope (which files), allowed/forbidden actions, stop conditions, and ✅ checkpoints. Must NOT add verification/double-check instructions (Opus 5 self-verifies) and must NOT add chain-of-thought scaffolding. This tests the scope-guard and delete-obsolete-instructions hard rules.",
+      "files": []
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "skill_name": "good-documentation",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Write a user guide for a new feature called 'Smart Filters'. Smart Filters let users filter a project dashboard by date range, team, and status. The audience is a mix of PMs and non-technical business stakeholders.",
+      "expected_output": "A well-structured user guide with a table of contents, informative section titles (not abstract nouns), short paragraphs, key info up front, bullets for lists of options, and plain language appropriate for non-technical readers.",
+      "files": [],
+      "expectations": [
+        "The output includes a table of contents",
+        "Section titles are informative sentences, not abstract nouns (e.g. 'Smart Filters let you narrow your dashboard in seconds' not just 'Overview')",
+        "The most important information (what Smart Filters do and why they're useful) appears near the top, not buried",
+        "Paragraphs are short — most are 3 sentences or fewer",
+        "Filter options (date range, team, status) are presented as a bulleted list, not inline prose",
+        "Language is plain and jargon-free — appropriate for non-technical stakeholders",
+        "At least one bold term or callout draws attention to something important"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Review my documentation and tell me how to improve it:\n\n---\n## Overview\n\nThis section will provide you with important information about the onboarding process. As you are probably aware, getting new team members set up correctly is crucial to their success. This involves a number of steps that need to be completed in order. Building on our discussion of account creation, let's now talk about the permissions setup, which you'll need to complete before moving on.\n\n## Permissions\n\nIn order to assign the correct permissions to a new user, you will need to first navigate to the admin console, then click on User Management, then find the user in question, then select the appropriate role from the dropdown, and then click Save. This ensures that the user will have access to all of the resources that they need to do their job effectively.\n\n## Results\n\nAfter completing the above, the user should have access.\n---",
+      "expected_output": "Specific, actionable review feedback that identifies violations of documentation principles with concrete rewrites. Should cover skimmability issues, writing quality problems, and helpfulness gaps.",
+      "files": [],
+      "expectations": [
+        "The review identifies that section titles are abstract nouns (Overview, Permissions, Results) and suggests informative sentence alternatives",
+        "The review flags the left-branching 'you will need to first... then... then... then...' sentence and suggests using a numbered list instead",
+        "The review flags the demonstrative pronoun issue ('Building on our discussion of this' → use the actual topic name)",
+        "The review flags 'you are probably aware' as presuming the reader's state of mind",
+        "The review provides at least one concrete rewritten example, not just abstract advice",
+        "The review leads with a summary of the 2-3 most impactful fixes, not an exhaustive list of every minor issue"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Help me document the workflow for onboarding a new team member to our project management tool. The steps are: (1) admin creates their account, (2) they receive a welcome email with login instructions, (3) they set up their profile, (4) admin assigns them to the right projects, (5) they complete the 15-minute getting started tour. The audience includes both the new employee reading it and the admin who sets things up.",
+      "expected_output": "A workflow doc that clearly addresses both audiences, presents steps sequentially, uses a numbered list for the process, has an informative intro explaining what the doc covers, and proactively addresses likely questions (e.g. what if they don't get the email).",
+      "files": [],
+      "expectations": [
+        "The doc includes a brief intro that explains what the workflow covers and who it's for (both new employee and admin)",
+        "The 5 steps are presented as a numbered list, not buried in paragraph prose",
+        "The doc clearly indicates which steps are done by the admin vs the new employee",
+        "At least one proactive note addresses a likely problem (e.g. welcome email not arriving, tour being optional)",
+        "Section titles, if used, are informative sentences",
+        "The doc uses plain language without jargon — avoids terms like 'provision', 'permissioning', etc. without explanation"
+      ]
+    }
+  ]
+}
