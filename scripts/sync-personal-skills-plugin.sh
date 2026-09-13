@@ -69,6 +69,28 @@ validate_bundle_root() (
   fi
 )
 
+compare_skill_directories() {
+  local source_dir="$1"
+  local bundled_dir="$2"
+  local source_file
+  local bundled_file
+  local relative_path
+  local result_code=0
+
+  diff -qr "$source_dir" "$bundled_dir" || result_code=1
+  while IFS= read -r -d '' source_file; do
+    relative_path="${source_file#"$source_dir"/}"
+    bundled_file="$bundled_dir/$relative_path"
+    if [[ -x "$source_file" && ! -x "$bundled_file" ]] || \
+      [[ ! -x "$source_file" && -x "$bundled_file" ]]; then
+      echo "executable-bit mismatch: $source_file and $bundled_file" >&2
+      result_code=1
+    fi
+  done < <(find "$source_dir" -type f -print0)
+
+  return "$result_code"
+}
+
 if [[ "$mode" != "sync" && "$mode" != "--check" ]]; then
   echo "usage: $0 [--check]" >&2
   exit 2
@@ -85,7 +107,7 @@ if [[ "$mode" == "--check" ]]; then
       result_code=1
       continue
     fi
-    diff -qr "$source_dir" "$bundled_dir" || result_code=1
+    compare_skill_directories "$source_dir" "$bundled_dir" || result_code=1
   done
 
   exit "$result_code"

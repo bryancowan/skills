@@ -256,6 +256,37 @@ run_unexpected_entry_regression() (
   return "$failed"
 )
 
+run_executable_bit_regression() (
+  set -euo pipefail
+  umask 077
+  fixture_root="$(mktemp -d "${TMPDIR:-/tmp}/personal-skills-plugin-mode.XXXXXX")"
+  trap 'rm -rf "$fixture_root"' EXIT
+  make_fixture "$fixture_root"
+
+  source_file="$fixture_root/skills/good-documentation/payload"
+  bundled_file="$fixture_root/plugins/personal-skills/skills/good-documentation/payload"
+  chmod +x "$source_file"
+  bash "$fixture_root/scripts/sync-personal-skills-plugin.sh" || return 1
+  if [[ ! -f "$bundled_file" || ! -x "$bundled_file" ]]; then
+    echo "sync did not preserve the canonical executable bit" >&2
+    return 1
+  fi
+  chmod -x "$source_file"
+
+  if bash "$fixture_root/scripts/sync-personal-skills-plugin.sh" --check \
+    > "$fixture_root/check.log" 2>&1; then
+    cat "$fixture_root/check.log" >&2
+    echo "--check accepted executable-bit drift" >&2
+    return 1
+  fi
+
+  bash "$fixture_root/scripts/sync-personal-skills-plugin.sh" || return 1
+  if [[ ! -f "$bundled_file" || -x "$bundled_file" ]]; then
+    echo "sync did not repair executable-bit drift" >&2
+    return 1
+  fi
+)
+
 make_metadata_fixture() {
   local fixture_root="$1"
   local fixture_skill
@@ -367,6 +398,7 @@ PY_MUTATE
 regression_failures=0
 run_symlink_regression || regression_failures=1
 run_unexpected_entry_regression || regression_failures=1
+run_executable_bit_regression || regression_failures=1
 run_future_version_regression || {
   echo "validator rejected a valid future plugin version" >&2
   regression_failures=1
