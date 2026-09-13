@@ -6,9 +6,11 @@ bundle_root="$repo_root/plugins/personal-skills/skills"
 mode="${1:-sync}"
 skill_dirs=(
   description-and-tags
+  construction-near-me
   good-documentation
   obsidian-jd-organizer
   obsidian-wiki-compiler
+  podcast-transcript
   prompt-creation
 )
 

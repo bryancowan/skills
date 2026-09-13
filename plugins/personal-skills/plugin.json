@@ -1,8 +1,8 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "personal-skills",
-  "version": "1.0.0",
-  "description": "Bryan Cowan's selected documentation, Obsidian, and prompt-development skills.",
+  "version": "1.1.0",
+  "description": "Bryan Cowan's selected research, documentation, Obsidian, podcast-transcript, and prompt-development skills.",
   "author": {
     "name": "Bryan Cowan",
     "email": "bryan@bryancowan.com",
@@ -13,15 +13,17 @@
   "keywords": [
     "documentation",
     "obsidian",
+    "podcasts",
     "prompts",
+    "research",
     "skills"
   ],
   "extensions": {
     "com.openai": {
       "interface": {
         "displayName": "Personal Skills",
-        "shortDescription": "Documentation, Obsidian, and prompt-development workflows.",
-        "longDescription": "Five selected personal skills for documentation, Obsidian reading-list enrichment and organization, wiki compilation, and prompt development.",
+        "shortDescription": "Research, documentation, Obsidian, podcast, and prompt workflows.",
+        "longDescription": "Seven selected personal skills for development research, documentation, Obsidian reading-list enrichment and organization, wiki compilation, podcast transcript processing, and prompt development.",
         "developerName": "Bryan Cowan",
         "category": "Productivity",
         "capabilities": [
@@ -30,9 +32,9 @@
         ],
         "websiteURL": "https://github.com/bryancowan/skills",
         "defaultPrompt": [
-          "Help me improve this documentation.",
-          "Organize these notes in my Obsidian vault.",
-          "Help me create a precise prompt."
+          "Research what's being built near this location.",
+          "Turn this podcast SRT into a clean transcript.",
+          "Organize or enrich these notes in my Obsidian vault."
         ],
         "brandColor": "#5B5BD6"
       }

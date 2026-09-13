@@ -4,9 +4,11 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 skill_dirs=(
   description-and-tags
+  construction-near-me
   good-documentation
   obsidian-jd-organizer
   obsidian-wiki-compiler
+  podcast-transcript
   prompt-creation
 )
 

@@ -1,0 +1,35 @@
+{
+  "skill_name": "construction-near-me",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "What's being built near Medical Center Pkwy in Murfreesboro?",
+      "expected_output": "Loads references/jurisdictions/murfreesboro-rutherford-tn.md rather than rediscovering sources. Queries the city ArcGIS permits layer with ST_NAME='MEDICAL CENTER' (no suffix, uppercase). Also checks at least one naming source (planning commission minutes via the CivicPlus AgendaCenter, CRE listings, or local news) rather than stopping at permit data. Output has a header stating the interpreted location and ~1 mile radius, a findings table with Project / What it is / Status / Confidence / Latest activity / Source, a Coverage section stating the permit data's actual freshness (re-checked at runtime with a bounded MAX, not assumed) and how many single-family (PRMT_TYPE 101) permits were filtered, and a What's next section offering a vault note. Every entry has a date and a source link.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "Any new businesses or development going up around the corner of Rutherford Blvd and Greenland Dr?",
+      "expected_output": "Recognizes this as an intersection query, resolves it to Murfreesboro city limits (near MTSU), and applies the ~1 mile default radius, stating it. Should surface named commercial tenants from the BUS_NAM field where present. Should not invent tenants for unnamed commercial shell permits — those get 'Tenant unknown' with the building described instead. Uses the controlled status vocabulary (Proposed / Rezoning pending / Approved / Permitted / Under construction / Open / Stalled) and confidence levels.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "What new construction is happening in Boise, Idaho? Specifically along Chinden Blvd.",
+      "expected_output": "Cold path — no jurisdiction profile exists. Should follow references/source-discovery.md: resolve city vs Ada County jurisdiction (Chinden runs through Boise, Garden City, Meridian and unincorporated county, so multiple jurisdictions apply and should be flagged), probe for ArcGIS REST services and the Socrata catalog, identify the permit portal vendor from the city's own site rather than guessing a URL, locate planning commission agendas and their platform, and check CRE listings plus named local outlets. Produces a sourced findings table and then OFFERS to save a new jurisdiction profile — does not save without asking.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Check what's going up near Medical Center Pkwy again and tell me what changed since last time.",
+      "expected_output": "Delta mode. Looks for a prior 'Construction Watch — <Location> — YYYY-MM-DD.md' report for the same location. Classifies each project NEW / CHANGED (with old → new status) / UNCHANGED / DROPPED, and leads the report with NEW and CHANGED. For DROPPED items, investigates whether the project actually ended or a source simply went stale, and distinguishes the two. If no prior report exists, says so and runs a fresh report instead of fabricating a comparison.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "I want to remodel my kitchen — who should I hire and what permits do I need to pull?",
+      "expected_output": "NEGATIVE CASE — this skill should not trigger. This is a homeowner hiring and personal permit-pulling question, explicitly out of scope per the skill description. Claude should answer normally without invoking construction-near-me.",
+      "files": []
+    }
+  ]
+}
