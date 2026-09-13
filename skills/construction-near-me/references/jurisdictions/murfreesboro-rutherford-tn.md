@@ -174,5 +174,5 @@ High-activity corridors worth naming in searches: Medical Center Pkwy, Gateway, 
 - **`ST_NAME` holds no suffix and is uppercase.** Querying `'MEDICAL CENTER PKWY'` returns nothing; query `'MEDICAL CENTER'`.
 - **Street number lives in two fields.** `ADD_NO` for detached, `ADD_NOS` for attached ranges. Coalesce both — `ADD_NOS` is null on most `103` records.
 - **Mail kiosks and sales centers** appear as `103` permits with a business name (`CLARI PARK MAIL KIOSK`, `MEADOWLARK SALES CENTER`). They aren't businesses — they're proof a subdivision is actively building. Roll them into the subdivision.
-- **The city permit layer lags ~5 months.** For anything more recent, planning commission minutes and local news are the only options.
+- **The city permit layer lags.** Calculate the current lag from the bounded freshness query above. For anything newer than the freshest permit record, check planning commission minutes and local news.
 - County records are PDF-only and cover unincorporated areas exclusively — a quiet county report doesn't mean a quiet area if the site is inside a municipality.

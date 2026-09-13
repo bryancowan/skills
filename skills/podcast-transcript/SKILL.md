@@ -189,27 +189,39 @@ with open(NOTE_FILE, "a", encoding="utf-8") as f:
 **new-file mode** — write frontmatter + summary + transcript. Refuse to clobber:
 
 ```python
-import os, datetime
+import datetime
+import json
+import os
+
 OUTPUT_FILE = "/path/to/new-note.md"
 if os.path.exists(OUTPUT_FILE):
     raise SystemExit(f"{OUTPUT_FILE} already exists — choose a different path or confirm overwrite.")
 
 speakers = sorted({spk for spk, _ in labeled_paragraphs})
-fm = [
-    "---",
-    f"title: {title}",                       # episode title or a derived headline
-    f"podcast: {podcast}",                    # from profile if known; else omit
-    "speakers: [" + ", ".join(speakers) + "]",
-    f"source: {SRT_FILE}",
-    f"date: {datetime.date.today().isoformat()}",
-    "topics: [" + ", ".join(topics) + "]",   # 2–5 topics you extract from the transcript
-    "---",
-]
+metadata = {
+    "title": title,                           # episode title or a derived headline
+    "podcast": podcast,                       # from profile if known; else None
+    "speakers": speakers,
+    "source": SRT_FILE,
+    "date": datetime.date.today().isoformat(),
+    "topics": topics,                         # 2–5 topics extracted from the transcript
+}
+fm = ["---"]
+fm.extend(
+    f"{key}: {json.dumps(value, ensure_ascii=False)}"
+    for key, value in metadata.items()
+    if value is not None
+)
+fm.append("---")
 body = "\n\n".join(f"**{spk}:** {txt}" for spk, txt in labeled_paragraphs)
 doc = "\n".join(fm) + f"\n\n# {title}\n\n> Summary: {summary}\n\n## Transcript\n\n" + body + "\n"
 with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
     f.write(doc)
 ```
+
+JSON strings and arrays are valid YAML, so this standard-library encoding keeps
+colons, hashes, commas, quotes, Unicode, and path punctuation literal. Never
+interpolate unquoted metadata values into the frontmatter.
 
 Derive `title`, `topics`, and `summary` from the full transcript content. **Skip
 any frontmatter field you can't determine — don't invent values.**

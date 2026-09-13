@@ -68,7 +68,7 @@ Use exactly these. Consistency is what makes delta mode work.
 
 Pick the **furthest-along** status supported by evidence, and date it. A project can be `Open` while a later phase is `Permitted` — that's two rows.
 
-Note when the *record* status and reality likely diverge: a permit issued 14 months ago with no follow-up inspections is probably `Stalled`, not `Permitted`. Say which one you're inferring.
+Note when the *record* status and reality likely diverge: a permit issued 19 months ago with no follow-up inspections is probably `Stalled`, not `Permitted`. Say which one you're inferring.
 
 ---
 

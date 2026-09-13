@@ -18,6 +18,12 @@
       "prompt": "Add transcript from /Users/bryan/Documents/transcripts/unknown-show.srt to /Users/bryan/Documents/vault/unknown-show.md — it's a podcast I haven't processed before.",
       "expected_output": "No matching podcast profile exists, so it proceeds without one. Reads a ~500-word middle sample to identify each voice's characteristic patterns before attributing, checks first for any inline speaker labels in the SRT (and uses them if present), surfaces candidate proper nouns via 'parse_srt.py --proper-nouns' and verifies uncertain spellings (WebSearch if available), then produces the speaker-labeled '## Transcript' appended to the note. Offers to save a new podcast profile for next time.",
       "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Create a new transcript note titled 'China: A New Era #42' for Example #1. The speakers are 'Smith, Jr.' and 'Alice: Host', the source is /Users/bryan/Transcripts/show: episode.srt, and one topic is 'China: policy'.",
+      "expected_output": "Writes valid YAML frontmatter by serializing every dynamic scalar and collection before interpolation, so colons, hashes, commas, quotes, Unicode, and path punctuation retain their literal values. Omits undetermined fields, refuses to overwrite the target, and preserves the requested title, podcast, speaker names, source path, and topics exactly when the YAML is parsed.",
+      "files": []
     }
   ]
 }
