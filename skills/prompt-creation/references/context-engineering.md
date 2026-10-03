@@ -93,4 +93,4 @@ Don't over-rotate. These still hold:
 - **Just-in-time retrieval over preloading.** Let each agent fetch what it needs.
 - **Compaction between stages**, preserving decisions, constraints, and unresolved issues — not a prose recap. See the compaction summarization instruction in the Claude 5 family guide.
 - **Separate instruction memory from learning memory.** Rules and constraints are not the same artifact as accumulated experience.
-- **Keep conversation history append-only.** On Claude Fable 5.1 this is now a correctness requirement, not just a caching optimization — editing earlier turns invalidates thinking blocks and errors. See `caching-and-cost.md`.
+- **Keep conversation history append-only.** On Claude Fable 5.1, Opus 5.5, and Sonnet 5.5 this is now a correctness requirement, not just a caching optimization — editing earlier turns invalidates replayed thinking blocks, which returns a 400 where the check is enforced (accounts created on or after 2026-08-31). See `caching-and-cost.md`.
