@@ -16,7 +16,7 @@ Sources:
 | Model | Use it when |
 |---|---|
 | `gpt-live-transcribe` | Default for realtime transcription. Returns transcript deltas as speech arrives and a final transcript when the audio turn is committed. |
-| `gpt-transcribe` | Transcription should begin after a committed audio turn, or you need detected-language output (its completion events include a `languages` array). It also uses earlier transcribed turns as context automatically. |
+| `gpt-transcribe` | Only when transcription must begin after a committed audio turn, or you need detected-language output. Requires a WebSocket connection. It uses earlier transcribed turns as context automatically. |
 
 **`gpt-live-transcribe` does not return word-level timestamps, speaker labels, or confidence scores.** If the application needs them, use a compatible file transcription model or an application-level fallback. Settle this before writing anything else; no prompt adds them.
 
@@ -27,8 +27,8 @@ Set them in a `session.update` event on a `type: "transcription"` session. Send 
 | Field | What goes in it | Notes |
 |---|---|---|
 | `prompt` | A description of the recording or its setting | Describe the situation, don't give instructions |
-| `keywords` | Product names, acronyms, and other literal terms that may appear in the audio | "Keywords are hints, not required output" |
-| `languages` | Expected input languages as ISO 639-1 or 639-3 codes; regional Chinese codes `zh-cn`, `zh-tw`, `zh-hk` | Plural. `gpt-live-transcribe` uses `languages`, not the singular `language` field |
+| `keywords` | Product names, acronyms, and other literal terms that may appear in the audio | "Keywords are hints, not required output." One keyword per line; no `<`, `>`, carriage return, or line feed, or the session update is rejected |
+| `languages` | Expected input languages: ISO 639-1 codes (`en`, `es`, `fr`), selected ISO 639-3 codes (`eng`, `spa`, `yue`, `cmn`), regional codes `zh-cn`, `zh-tw`, `zh-hk` | Plural. `gpt-live-transcribe` uses `languages` instead of the singular `language` field; don't send both. Bad codes are rejected |
 
 OpenAI's example values (shown flat here; they sit in the transcription configuration of the `session.update` event):
 
@@ -36,13 +36,14 @@ OpenAI's example values (shown flat here; they sit in the transcription configur
 {
   "prompt": "A customer support call about a premium plan and account AC-42.",
   "keywords": ["premium plan", "AC-42", "billing"],
-  "languages": ["en", "fr"]
+  "languages": ["en", "fr"],
+  "delay": "low"
 }
 ```
 
 Add context when the audio contains specialized vocabulary or more than one expected language. Writing guidance:
 
-- Keep `prompt` to a sentence about who is speaking and about what. It is context, so an instruction like "transcribe accurately" adds nothing.
+- Keep `prompt` to a sentence about who is speaking and about what; an over-long prompt is rejected. It is context, so an instruction like "transcribe accurately" adds nothing.
 - Put the exact spellings you need in `keywords`: account ID formats, product names, people's names, acronyms.
 - List only languages you expect. Test each one.
 
@@ -62,7 +63,8 @@ Don't choose from synthetic audio alone. Test with representative microphones, t
 
 ## Session mechanics that affect design
 
-- Audio format `audio/pcm` at 24 kHz; `turn_detection: null` on transcription sessions.
+- Audio format `audio/pcm` at 24 kHz. On `gpt-live-transcribe` sessions omit `turn_detection` or set it to `null`; the model doesn't support `server_vad`.
+- The exact delay in milliseconds varies by model configuration, so benchmark rather than assume a fixed value.
 - Append audio with `input_audio_buffer.append`; commit a turn with `input_audio_buffer.commit` to get the final transcript.
 - Delta events carry incremental text; completion events carry the full `transcript`. Later deltas can correct earlier text, so decide how the UI revises partials.
 - Use `item_id` to order and reconcile final transcripts across turns.

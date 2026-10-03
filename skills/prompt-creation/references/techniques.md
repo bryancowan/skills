@@ -37,7 +37,7 @@ Most current frontier models reason internally. Adding "think step by step" or a
 | Claude Fable 5.1 / Fable 5 / Opus 5.5 / Opus 5 / Sonnet 5.5 / Sonnet 5 | Adaptive thinking, on by default. **Always on** for Fable 5, Fable 5.1, and Opus 5.5; on Sonnet 5.5 the lowest setting is `between_tools` (at `high` effort or below). `effort`: `low`…`max`, default `high` — **except Opus 5.5, which defaults to `medium`**. Manual `budget_tokens` returns a 400 error. |
 | Claude Opus 4.8 / 4.7 | Adaptive thinking, **off** unless `thinking: {type: "adaptive"}`. Same `effort` scale. |
 | GPT-6 Astra / GPT-6.1 Sol | `reasoning.effort`: `low`, `medium` (default), `high`, `xhigh`, `max` — **no `none`**; they always reason. Effort can be changed mid-conversation with a `configuration_update` item **without invalidating the cache**. |
-| GPT-6 Luna / GPT-6 Sol | Same scale plus `none`. `minimal` is gone across GPT-6. |
+| GPT-6 Luna / GPT-6 Sol | Same scale plus `none`. For requests that used `minimal`, OpenAI says to start at `low`. |
 | GPT-5.6 / 5.5 / 5.4 (previous generation) | `reasoning.effort`: `none`, `low`, `medium`, `high`, `xhigh`, `max`. Plus `reasoning.mode: "pro"` on 5.6. |
 | Gemini 3.x | Thinking built in; Gemini 3.1 Flash Image exposes `minimal` / `high` thinking levels |
 | GLM-5.3 / 5.3-Flash | `thinking: {type: "enabled"}` is **mandatory** — disabling is no longer supported. `reasoning_effort`: `low` / `high` / `max`, **default `max`**. |

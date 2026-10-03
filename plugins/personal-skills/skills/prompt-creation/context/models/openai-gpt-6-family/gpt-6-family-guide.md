@@ -52,8 +52,8 @@ OpenAI's guidance: experiment with different models and reasoning settings on th
 
 `reasoning.effort` (Responses) or `reasoning_effort` (Chat Completions): `low`, `medium` (default), `high`, `xhigh`, `max`.
 
-- **`minimal` is no longer supported** on any GPT-6 model. Start comparisons at `low`.
 - **`none`** exists only on GPT-6 Sol and GPT-6 Luna. On Astra and 6.1 Sol, use `low`.
+- **`minimal`:** OpenAI states that 6.1 Sol supports neither `none` nor `minimal`, and its migration note for the family is "If your existing request uses `minimal`, start with `low` and compare results on representative tasks."
 - When migrating, OpenAI says to preserve your current effective reasoning effort where supported, then tune. Level names still don't transfer between models, so re-sweep against evals.
 - **Change effort mid-conversation with a `configuration_update` input item.** It adjusts reasoning effort without rewriting the prompt prefix, so the cache survives, and the new level applies until the next override. Run a conversation at `low` and step up for the turns that need it.
 
@@ -66,7 +66,7 @@ OpenAI's guidance: experiment with different models and reasoning settings on th
 | Cache TTL | Replace `prompt_cache_retention` with `prompt_cache_options.ttl` set to `"30m"` when migrating from GPT-5.5 or earlier. |
 | Reading output | Don't assume text is at `output[0].content[0].text`; the `output` array can hold tool calls and reasoning items. Use the SDK's `output_text`. |
 | Reasoning items | Chat Completions never carries reasoning items across turns, which degrades multi-call performance and raises reasoning token use. Use Responses with `previous_response_id` or pass reasoning items back. |
-| Data residency | Fast mode is unavailable with EU data residency. Ultrafast mode runs with US data residency and global processing only. Fast mode on Astra has no latency SLA. |
+| Data residency | Fast mode is not available with EU data residency for GPT-6 Astra, GPT-6 Sol, or GPT-6 Luna. Ultrafast mode supports US data residency and global processing only. |
 | Prompt objects | `v1/prompts` shuts down 2026-11-30. Keep prompt builders in code near the feature, with typed arguments and tests. |
 | Snapshots | Pin production to a specific snapshot and re-run evals when you change it. |
 
@@ -187,7 +187,7 @@ OpenAI's lean-prompt finding (eval scores up roughly 10–15%, tokens down 41–
 ## Migrating a prompt from GPT-5.x
 
 1. Move tool-calling workloads to Responses if the target is Astra or 6.1 Sol.
-2. Replace `none` and `minimal` effort where the target doesn't support them.
+2. Replace `none` (on Astra and 6.1 Sol) and `minimal` with `low`, then compare on representative tasks.
 3. Remove `temperature`, `top_p`, and logprobs parameters unless running at `none`.
 4. Swap `prompt_cache_retention` for `prompt_cache_options.ttl`.
 5. Re-run the effort sweep and your evals. Then trim the prompt.

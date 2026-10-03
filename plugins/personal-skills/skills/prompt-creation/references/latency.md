@@ -38,7 +38,7 @@ On models that think before answering, TTFT includes the thinking. A slow start 
 
 ## Stale advice to skip
 
-Anthropic's latency page still suggests experimenting with `temperature`. On current Claude models (Fable 5 / 5.1, Opus 5 / 5.5, Sonnet 5) setting it returns a 400, and Sonnet 5.5 rejects non-default values. GPT-6 rejects it whenever reasoning is on. Don't recommend it as a latency lever.
+Anthropic's latency page still suggests experimenting with `temperature`. On current Claude models (Fable 5 / 5.1, Opus 5 / 5.5, Sonnet 5 / 5.5) a non-default value returns a 400. GPT-6 rejects it whenever reasoning is on. Don't recommend it as a latency lever.
 
 ## Voice and realtime
 

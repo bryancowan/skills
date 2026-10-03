@@ -64,13 +64,14 @@ Fastest and most reliable first. Use the cheapest method that captures the crite
 | Privacy | **LLM-graded binary classification** | Whether a response contains protected information | 500 queries, some with explicit, implicit, or hypothetical PHI |
 | Context utilization | **LLM-graded ordinal scale** (1–5) | How well a response builds on earlier turns | 100 multi-turn conversations with context-dependent questions |
 
-Code-based grading (exact match, string match) is the fastest and most reliable. Human grading is the most flexible and the slowest; avoid it where you can. LLM grading sits between and needs testing before you trust it at scale.
+Anthropic's ranking: **code-based grading** (exact match, string match) is the fastest, most reliable, and most scalable, but lacks nuance. **Human grading** is the most flexible and highest quality, but slow and expensive; avoid it if possible. **LLM-based grading** is fast, flexible, and suited to complex judgment; test it for reliability first, then scale.
 
 ### Writing an LLM grader
 
 - **Use a different model to grade than the one that generated the output.** Anthropic calls this general best practice.
-- Give the rubric explicitly: what a 1 is, what a 5 is.
-- Constrain the output so it can be parsed: "Output only the number" or a boolean via structured outputs.
+- **Detailed, clear rubrics.** "The answer should always mention 'Acme Inc.' in the first sentence. If it does not, the answer is automatically graded as 'incorrect.'" One use case may need several rubrics.
+- **Empirical or specific output.** Have the grader output only 'correct' or 'incorrect', or a 1–5 score. Purely qualitative evaluations are hard to assess at scale.
+- **Let the grader reason, in its thinking.** Anthropic's current advice is to run the grader with thinking on so it reasons before producing a score; this helps most on complex judgments. Older versions of this advice asked the grader to write its reasoning in the response before the verdict — on current Claude models use thinking instead.
 - Wrap the output being graded in tags.
 
 ```text
@@ -81,7 +82,7 @@ Rate this customer service response on a scale of 1-5 for being {target_tone}:
 Output only the number.
 ```
 
-Anthropic's example graders ask for the number only. On a judge that can't be told to write out reasoning (current Claude models may decline that), read the grader's rationale from summarized thinking blocks when you need to audit a score.
+To audit why a grader gave a score, read its summarized thinking blocks (`display: "summarized"`).
 
 ## 4. Using an eval when iterating on a prompt
 
