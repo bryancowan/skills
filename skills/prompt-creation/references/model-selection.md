@@ -52,8 +52,10 @@ Claude bills its 1M window at flat rates — a 900k request costs the same per t
 | Vendor | Model | Input | Output | Notes |
 |---|---|---|---|---|
 | Anthropic | Claude Fable 5.1 | $10 | $50 | Current top of range; thinking always on; **cache hits bill at 0.025× ($0.25/MTok)**, 4× cheaper than every other Claude model |
-| Anthropic | Claude Opus 5 | $5 | $25 | Complex agentic coding, enterprise work |
-| Anthropic | Claude Sonnet 5 | $2 | $10 | Best speed-to-intelligence ratio. The scheduled 2026-09-01 rise to $3/$15 was **cancelled** |
+| Anthropic | Claude Opus 5.5 | $4 | $20 | Current Opus: complex agentic coding, enterprise work; effort defaults to `medium` |
+| Anthropic | Claude Opus 5 | $5 | $25 | Superseded by Opus 5.5 |
+| Anthropic | Claude Sonnet 5.5 | $2 | $10 | Current Sonnet; best speed-to-intelligence ratio |
+| Anthropic | Claude Sonnet 5 | $2 | $10 | Superseded by Sonnet 5.5. The scheduled 2026-09-01 rise to $3/$15 was **cancelled** |
 | Anthropic | Claude Haiku 4.5 | $1 | $5 | Fastest; 200k context |
 | OpenAI | `gpt-6-astra` | $10 | $50 | **Flagship.** 1.05M context. **2× input / 1.5× output above 272K input tokens** |
 | OpenAI | `gpt-5.6-cyber` | $12.50 | $75 | Security specialist. **The most expensive model in this table** — above Astra, not a cost tier |
