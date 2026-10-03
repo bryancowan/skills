@@ -63,7 +63,7 @@ Break-even is **one read** for the 5-minute cache, **two reads** for the 1-hour 
 
 ### Append-only history is now a correctness requirement, not just a cache optimization
 
-On Claude Fable 5.1, Opus 5.5, and Sonnet 5.5, the edits that break the cache also **break the request**. Changing the top-level `effort` value between requests also invalidates the cache on these models; use the per-message effort change (beta) instead. For accounts created on or after 2026-08-31, replaying a thinking block after its prefix changed returns a **400** (or silently drops the block if you opt into `thinking.block_binding.prefix_mismatch_behavior: "drop_block"`).
+On Claude Fable 5.1, Opus 5.5, and Sonnet 5.5, the edits that break the cache can also **break the request** where the prefix check is enforced. Changing the top-level `effort` value between requests also invalidates the cache on these models; use the per-message effort change (beta) instead. For accounts created on or after 2026-08-31, replaying a thinking block after its prefix changed returns a **400** (or silently drops the block if you opt into `thinking.block_binding.prefix_mismatch_behavior: "drop_block"`).
 
 So the list below is no longer a cost list on that model — it's a correctness list:
 

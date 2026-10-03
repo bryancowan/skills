@@ -7,7 +7,7 @@ The current Claude lineup is **Claude Fable 5.1**, **Claude Mythos 5.1**, **Clau
 Two prompting shifts define this generation:
 
 1. **`effort` replaced thinking budgets, sampling parameters were removed, and prefill is gone.** Several instructions that *helped* Claude 4.x now actively hurt — see "Instructions to delete" below.
-2. **Conversation history is now append-only.** On Fable 5.1, Opus 5.5, and Sonnet 5.5, editing earlier turns between requests is an error, not just a cache miss. See "Append-only history" below. This is the single most common way an existing harness breaks on these models.
+2. **Conversation history is now append-only.** On Fable 5.1, Opus 5.5, and Sonnet 5.5, editing earlier turns between requests invalidates replayed thinking blocks. Where the check is enforced (accounts created on or after 2026-08-31), that is a 400 or a dropped block, not just a cache miss. See "Append-only history" below. This is the single most common way an existing harness breaks on these models.
 
 Prompts written for Fable 5 generally run well on Fable 5.1 without changes. The behavioral deltas that matter are in "Fable 5.1 behavioral deltas".
 
