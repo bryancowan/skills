@@ -2,7 +2,7 @@
 
 Prompting patterns for agents that gather information and have to show their work. Covers OpenAI's deep research models, the web search tool, and citation formatting — the mechanics are OpenAI-specific but the prompting patterns port.
 
-Sourced: 2026-07-26
+Sourced: 2026-10-03 (citation formatting and web-search model support re-read; the deep research section was last checked 2026-07-26)
 
 Sources:
 - https://developers.openai.com/api/docs/guides/deep-research
@@ -28,7 +28,7 @@ Without background mode, set client timeouts high (3600s). Background mode is in
 
 ChatGPT's Deep Research runs a pipeline the API **does not** implement for you. If you want comparable quality, build it:
 
-1. **Clarify** — a fast cheap model (`gpt-4.1`, `gpt-5.6-luna`) asks qualifying questions until the brief is complete.
+1. **Clarify** — a fast cheap model (`gpt-6-luna`) asks qualifying questions until the brief is complete.
 2. **Rewrite** — expand the user's request into detailed researcher instructions.
 3. **Research** — pass the enriched prompt to the deep research model.
 
@@ -64,7 +64,7 @@ Deep research agents read untrusted content by design — this is the indirect p
 | `user_location` | `country` (ISO), `city`, `region`, `timezone` |
 | `external_web_access` | `false` for cached-only |
 
-**Supported:** Responses API on `gpt-5.6`, `gpt-5.5`, `gpt-5.4`, `gpt-4.1`, `gpt-4.1-mini`. Chat Completions via `gpt-5-search-api` (200k context); `gpt-4o-search-preview` is deprecated (sunset 2026-07-23).
+**Supported:** the Responses API tool is `{ "type": "web_search" }` (`web_search_preview` remains for legacy integrations); OpenAI's current examples use `gpt-6-astra`. Chat Completions uses `gpt-5-search-api` (200k context). `gpt-4o-search-preview` and `gpt-4o-mini-search-preview` shut down 2026-07-23; `o4-mini` shuts down 2026-10-23. The page gives no full per-model support list, so check the target model's page.
 
 **Limits:** search context caps at **128k regardless of the model's window**; 100 domains per filter list; no image search or user location on deep research models.
 
@@ -80,10 +80,28 @@ Output: a `web_search_call` item (action `search`, `open_page`, or `find_in_page
 - **Match `search_context_size` to the task.** `low` for a fact lookup, `high` for synthesis across sources. It is a direct cost multiplier.
 - **Name the recency requirement explicitly.** "Prioritize sources from the last 12 months; note the publication date of each source you cite."
 - **Ask for conflicting viewpoints** where they exist, rather than a single synthesized narrative that hides disagreement.
+- **Remove language that discourages tool use.** "Only use tools when strictly necessary" makes Claude Sonnet 5.5 answer from stale training knowledge. Its guide has Anthropic's replacement snippet; Fable 5.1 at `low` effort has a similar one for unfamiliar names.
+- **Summaries that lift source wording unmarked** (Fable 5.1): fix with one complete worked example plus a rationale, in `context/models/anthropic-claude/claude-5-family-guide.md`.
 
 ---
 
 ## Citation formatting
+
+### Decide what can be cited before writing the prompt
+
+| Citable unit | Precision | Notes |
+|---|---|---|
+| Document | Least | Easy for the model, hard for a reader to verify |
+| **Block / chunk** | Middle | **OpenAI's recommended default** |
+| Line range | Most | Hardest for the model to get right |
+
+A good unit keeps the **same ID across runs**, is readable in context by a person, and is large enough to make sense but small enough to stay precise.
+
+**The model can't cite what it wasn't shown clearly.** Each source needs a stable ID (`file1`, `block1`), readable text, and optional metadata (URL, title, timestamp).
+
+**Use a format the model already knows.** OpenAI warns that custom or unfamiliar citation formats raise citation errors, especially at low reasoning effort and on complex tasks where the reasoning budget goes to the task itself. If citations are wrong at `low`, raise effort or simplify the format before rewording the instructions.
+
+### Marker format
 
 Citations are emitted as markers embedded in the response text:
 
@@ -103,12 +121,79 @@ With an optional locator:
 
 ### Rules to state in the prompt
 
-- Place citations at the end of the sentence, or inline for longer passages — always **after** punctuation.
-- Never write a source ID verbatim in the response text outside a citation marker.
-- Never cite anything outside the provided sources.
-- Cite multiple supporting sources when more than one applies.
-- Keep citations diverse and relevant — don't cite the same source for every sentence.
-- Prioritize trustworthy sources; represent conflicting viewpoints; make sure each citation actually supports the sentence it's attached to.
+OpenAI publishes two templates. Pick by where the sources come from.
+
+**Sources returned by a tool** (IDs like `turn0file0`; replace `tool_1` with your tool's name):
+
+```md
+## Citations
+
+Results are returned by "tool_1". Each message from `tool_1` is called a "source" and identified by its reference ID, which is the first occurrence of `turn\\d+file\\d+` (for example, `turn0file0` or `turn2file1`). In this example, the string `turn0file0` would be the source reference ID.
+
+Citations are references to `tool_1` sources. Citations may be used to refer to either a single source or multiple sources.
+
+A citation to a single source must be written as:
+{CITATION_START}cite{CITATION_DELIMITER}turn\d+file\d+{CITATION_STOP}
+
+If line-level citations are supported, a citation to a specific line range must be written as:
+{CITATION_START}cite{CITATION_DELIMITER}turn\d+file\d+{CITATION_DELIMITER}L\d+-L\d+{CITATION_STOP}
+
+Citations to multiple sources must be written by emitting multiple citation markers, one for each supporting source.
+
+You must NOT write reference IDs like `turn0file0` verbatim in the response text without putting them between {CITATION_START}...{CITATION_STOP}.
+
+- Place citations at the end of the supported sentence, or inline if the sentence is long and contains multiple supported clauses.
+- Citations must be placed after punctuation.
+- Cite only retrieved sources that directly support the cited text.
+- Never invent source IDs, line ranges, or block locators that were not returned by the tool.
+- If multiple retrieved sources materially support a proposition, cite all of them.
+- If the retrieved sources disagree, cite the conflicting sources and describe the disagreement accurately.
+```
+
+**Sources injected into the prompt** (wrap each in `<BLOCK id="block5"> ... </BLOCK>`; no `turn#` prefix needed, but the marker must match the injected ID exactly):
+
+```md
+## Citations
+
+Supporting context is provided directly in the prompt as citable units. Each citable unit is identified by the value of its `id` attribute in the first occurrence of a tag such as `<BLOCK id="block5"> ... </BLOCK>`. In this example, `block5` would be the source reference ID.
+
+Citations are references to these provided citable units. Citations may be used to refer to either a single source or multiple sources.
+
+A citation to a single source must be written as:
+{CITATION_START}cite{CITATION_DELIMITER}<block_id>{CITATION_STOP}
+
+Citations to multiple sources must be written by emitting multiple citation markers, one for each supporting block.
+
+You must NOT write block IDs verbatim in the response text without putting them between {CITATION_START}...{CITATION_STOP}.
+
+- Place citations at the end of the supported sentence, or inline if the sentence is long and contains multiple supported clauses.
+- Citations must be placed after punctuation.
+- Cite only blocks that appear in the provided context.
+- Never invent new block IDs.
+- Never cite outside knowledge or outside authorities.
+- If multiple blocks materially support a proposition, cite all of them.
+- If the provided blocks conflict, cite the conflicting blocks and describe the conflict accurately.
+```
+
+**Optional source-quality block** for web research, where relevance and balance matter:
+
+```xml
+<extra_considerations_for_citations>
+- **Relevance:** Include only search results and citations that support the cited response text. Irrelevant sources permanently degrade user trust.
+- **Diversity:** You must base your answer on sources from diverse domains, and cite accordingly.
+- **Trustworthiness:** To produce a credible response, you must rely on high quality domains, and ignore information from less reputable domains unless they are the only source.
+- **Accurate Representation:** Each citation must accurately reflect the source content. Selective interpretation of the source content is not allowed.
+
+Remember, the quality of a domain/source depends on the context.
+- When multiple viewpoints exist, cite sources covering the spectrum of opinions to ensure balance and comprehensiveness.
+- When reliable sources disagree, cite at least one high-quality source for each major viewpoint.
+- Ensure more than half of citations come from widely recognized authoritative outlets on the topic.
+- For debated topics, cite at least one reliable source representing each major viewpoint.
+- Do not ignore the content of a relevant source because it is low quality.
+</extra_considerations_for_citations>
+```
+
+The injected-context template is abridged by one paragraph and one example line from OpenAI's page; the rules are complete.
 
 ### Parsing
 

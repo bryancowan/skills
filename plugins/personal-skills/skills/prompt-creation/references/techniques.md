@@ -2,7 +2,7 @@
 
 Quick-lookup guide for selecting the right prompting technique based on task type and complexity.
 
-Sourced: 2026-09-12
+Sourced: 2026-10-03 (Claude and OpenAI rows re-verified; other vendors' rows last checked 2026-09-12)
  Read the full comprehensive guide at `context/Comprehensive Guide to Prompt Engineering Techniques  Claude - 2026-03-28T181003-0500.md` for detailed explanations and examples.
 
 ---
@@ -34,10 +34,11 @@ Most current frontier models reason internally. Adding "think step by step" or a
 
 | Family | How reasoning is controlled |
 |---|---|
-| Claude Fable 5.1 / Fable 5 / Opus 5 / Sonnet 5 | Adaptive thinking, on by default (always on, not disableable, for Fable 5 and 5.1). `effort`: `low`…`max`, default `high`. Manual `budget_tokens` returns a 400 error. |
+| Claude Fable 5.1 / Fable 5 / Opus 5.5 / Opus 5 / Sonnet 5.5 / Sonnet 5 | Adaptive thinking, on by default. **Always on** for Fable 5, Fable 5.1, and Opus 5.5; on Sonnet 5.5 the lowest setting is `between_tools` (at `high` effort or below). `effort`: `low`…`max`, default `high` — **except Opus 5.5, which defaults to `medium`**. Manual `budget_tokens` returns a 400 error. |
 | Claude Opus 4.8 / 4.7 | Adaptive thinking, **off** unless `thinking: {type: "adaptive"}`. Same `effort` scale. |
-| GPT-6 Astra | `reasoning.effort`: `low`, `medium`, `high`, `xhigh`, `max` — **no `none`**; it always reasons. Effort can be changed mid-conversation **without invalidating the cache**. |
-| GPT-5.6 / 5.5 / 5.4 | `reasoning.effort`: `none`, `low`, `medium`, `high`, `xhigh`, `max`. Plus `reasoning.mode: "pro"` on 5.6. |
+| GPT-6 Astra / GPT-6.1 Sol | `reasoning.effort`: `low`, `medium` (default), `high`, `xhigh`, `max` — **no `none`**; they always reason. Effort can be changed mid-conversation with a `configuration_update` item **without invalidating the cache**. |
+| GPT-6 Luna / GPT-6 Sol | Same scale plus `none`. `minimal` is gone across GPT-6. |
+| GPT-5.6 / 5.5 / 5.4 (previous generation) | `reasoning.effort`: `none`, `low`, `medium`, `high`, `xhigh`, `max`. Plus `reasoning.mode: "pro"` on 5.6. |
 | Gemini 3.x | Thinking built in; Gemini 3.1 Flash Image exposes `minimal` / `high` thinking levels |
 | GLM-5.3 / 5.3-Flash | `thinking: {type: "enabled"}` is **mandatory** — disabling is no longer supported. `reasoning_effort`: `low` / `high` / `max`, **default `max`**. |
 | Qwen3 (3.6+) | `thinking: true`; `/think` and `/no_think` in chat UIs |
@@ -45,19 +46,20 @@ Most current frontier models reason internally. Adding "think step by step" or a
 | Kimi K2.5 / K2.6 / K2-Thinking | Thinking enabled; `tool_choice` restricted to `auto`/`none` while thinking |
 | o3 / o4-mini / DeepSeek-R1 | Legacy reasoning models; same rule |
 
-**When CoT still helps:** non-thinking models, and thinking-capable models running with thinking *disabled* (`reasoning.effort: "none"` on GPT-5.6 and below, `thinking: {type: "disabled"}` on Claude Opus 5 at `high` effort or below, `/no_think` on Qwen). There it remains a real 10–30% accuracy lever on reasoning tasks.
+**When CoT still helps:** non-thinking models, and thinking-capable models running with thinking *disabled* (`reasoning.effort: "none"` on GPT-6 Luna, GPT-6 Sol, and GPT-5.6 and below; `thinking: {type: "disabled"}` on Claude Opus 5 at `high` effort or below; `/no_think` on Qwen). There it remains a real 10–30% accuracy lever on reasoning tasks. **On current Claude models, don't use the visible-reasoning form even then**: Anthropic says to rely on thinking at a lower effort instead, because a prompt asking the model to write out its reasoning (for example in `<thinking>` tags) may be declined.
 
-**Two models can no longer be put in that state at all:** GPT-6 Astra (no `none` level) and GLM-5.3 (thinking is mandatory). On those, CoT scaffolding is always wasted tokens — there is no configuration where it helps.
+**Some models can no longer be put in that state at all:** GPT-6 Astra and GPT-6.1 Sol (no `none` level), Claude Fable 5.x and Opus 5.5 (thinking always on), and GLM-5.3 (thinking is mandatory). On those, CoT scaffolding is always wasted tokens — there is no configuration where it helps.
 
 > **Effort level names are not comparable across models.** `high` on one model is not `high` on another, even within a family — Anthropic says this explicitly about Fable 5 → Fable 5.1. Re-run your effort sweep against real evals on every model change.
 
 **Raise effort instead of prompting around shallow reasoning.** Every vendor says this. Adding "think harder" to a `low`-effort request is worse than setting the parameter.
 
 **Corollaries for current models:**
-- Don't instruct a model to reproduce or explain its internal reasoning as response text — on Claude Fable 5 this can trigger a `reasoning_extraction` refusal. Read the structured `thinking` blocks instead.
-- Don't add "double-check your answer" or "include a verification step" to Claude Opus 5 — it self-verifies, and these instructions cause over-verification at real token cost.
-- Changing the reasoning-effort parameter invalidates prompt caches on OpenAI models **through GPT-5.6** — pick a level and hold it. **GPT-6 Astra reverses this:** effort can be adjusted mid-conversation while preserving the cache, so run low and step up for the turns that need it.
-- Don't add "verify your work" or "double-check" to Claude Fable 5.1 or Opus 5, and don't add anti-laziness scaffolding to any current model. See `context-engineering.md`.
+- Don't instruct a model to reproduce or explain its internal reasoning as response text — on Claude Fable 5 / 5.1, Opus 5 / 5.5, and Sonnet 5.5 this can trigger a `reasoning_extraction` refusal. Read summarized `thinking` blocks instead. A short explanation of the answer, or a summary of actions taken, is still fine to ask for.
+- **Asking a model to think is not the same as asking it to show its thinking.** Anthropic recommends "Think the problem through before you answer." for Sonnet 5.5 on JSON tasks that need working out, where the model otherwise skips thinking at `low`/`medium`. That is a narrow, measured exception, not a license for CoT scaffolding.
+- Don't add "double-check your answer" or "include a verification step" to Claude Opus 5 — it self-verifies, and these instructions cause over-verification at real token cost. Anthropic scopes this to Opus 5; "verify your answer against [test criteria]" is still its general advice, and Sonnet 5.5 at `low` effort needs an explicit run-a-real-check paragraph.
+- Changing the reasoning-effort parameter invalidates prompt caches on OpenAI models **through GPT-5.6** — pick a level and hold it. **GPT-6 reverses this** with `configuration_update`. On Claude, changing the top-level `effort` invalidates the cache but the per-message effort change (beta) does not. Either way: run low and step up for the turns that need it.
+- Don't add anti-laziness scaffolding ("be thorough", "CRITICAL: you MUST") to any current model. See `context-engineering.md`.
 
 See `model-selection.md` for what else changes when switching families.
 

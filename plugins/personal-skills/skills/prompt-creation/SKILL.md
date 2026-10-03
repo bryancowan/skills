@@ -22,18 +22,18 @@ This skill helps create effective prompts for any LLM task — from simple one-s
 
 These rules apply across every mode. Violating any of them produces worse output than no prompt at all.
 
-- **Never add Chain-of-Thought to reasoning-native models.** Claude 5.x (adaptive thinking), GPT-6 Astra, GPT-5.x with reasoning on, Gemini 3.x, GLM-5.3, Qwen3 thinking mode, Gemma 4 thinking, and the o-series all reason internally. "Think step by step" wastes tokens and degrades output. State the goal and desired format, nothing more. Full matrix in `references/techniques.md`. **Raise the effort parameter instead of prompting around shallow reasoning** — every vendor says this. Two models can't even be put in a non-thinking state: GPT-6 Astra (no `none` level) and GLM-5.3 (thinking mandatory).
+- **Never add Chain-of-Thought to reasoning-native models.** Claude 5.x (adaptive thinking), the GPT-6 family, GPT-5.x with reasoning on, Gemini 3.x, GLM-5.3, Qwen3 thinking mode, Gemma 4 thinking, and the o-series all reason internally. "Think step by step" wastes tokens and degrades output. State the goal and desired format, nothing more. Full matrix in `references/techniques.md`. **Raise the effort parameter instead of prompting around shallow reasoning** — every vendor says this. Several models can't even be put in a non-thinking state: GPT-6 Astra and GPT-6.1 Sol (no `none` level), Claude Fable 5.x and Opus 5.5 (thinking always on), and GLM-5.3 (thinking mandatory). **On current Claude models, don't ask for visible reasoning either** ("show your reasoning", `<thinking>` tags in the response): it can be declined as `reasoning_extraction`. Ask for a short explanation of the answer instead.
 - **Never embed fabrication-prone techniques in a single prompt.** Mixture of Experts, Tree of Thought, Graph of Thought, Universal Self-Consistency, and deep prompt chaining all require multi-pass orchestration or external infrastructure. When forced into a single forward pass, the model role-plays the structure and fabricates the content. Use these only when the user has real orchestration (e.g., agent SDK, LangChain, multi-call pipeline).
 - **Delete instructions that current models made obsolete — but check whose model you're targeting.** These findings are vendor-specific and do not transfer:
-  - **Claude 5.x**: drop "double-check your answer", forced progress summaries, "CRITICAL: you MUST use this tool", tool-call examples, and prescriptive style rules — they cause over-verification and tool overtriggering. Replace rules with judgment framings the model can generalize. Anthropic cut >80% of Claude Code's system prompt with no eval loss. Prefill, `temperature`/`top_p`/`top_k`, and thinking `budget_tokens` additionally return **400 errors**.
-  - **GPT-6 Astra / GPT-5.6**: delete *redundancy*, not specificity — lean prompts are the measured win. OpenAI still prescribes **concrete examples of how to invoke commands** for coding, so don't strip tool-call examples here.
+  - **Claude 5.x**: drop forced progress summaries, "CRITICAL: you MUST use this tool", tool-call examples, and prescriptive style rules — they cause tool overtriggering. Drop "double-check your answer" on **Opus 5**, where Anthropic measured over-verification; it does not say the same of every model. Replace rules with judgment framings the model can generalize. Anthropic cut >80% of Claude Code's system prompt with no eval loss. Prefill, `temperature`/`top_p`/`top_k`, and thinking `budget_tokens` additionally return **400 errors**.
+  - **GPT-6 family / GPT-5.6**: delete *redundancy*, not specificity — lean prompts were the measured win on GPT-5.6. OpenAI still prescribes **concrete examples of how to invoke commands** for coding, so don't strip tool-call examples here.
   - **GLM-5.3**: keep the structure. Z.ai's documented prompt shapes *enumerate deliverables* and bake in a verification step; stripping them works against the vendor's own guidance.
-  - **Don't confuse two different things called "verification".** Telling Claude to *re-check its own reasoning* is redundant (it self-verifies). Telling any model to *run the build and report results* is a deliverable, not scaffolding — keep it everywhere.
+  - **Don't confuse two different things called "verification".** Telling Opus 5 to *re-check its own reasoning* is redundant (it self-verifies). Telling any model to *run the build and report results* is a deliverable, not scaffolding — keep it everywhere, and on Sonnet 5.5 at `low` effort add Anthropic's run-a-real-check paragraph.
 
   Full context: `references/context-engineering.md`; per-model delete list in `context/models/anthropic-claude/claude-5-family-guide.md`.
-- **Effort level names are not comparable across models.** `high` buys a different amount of thinking on every model — including between point releases of the same family. Never port a prompt at "the same effort level" and call it a comparison; re-sweep against real evals. Defaults also run in different directions: Claude and OpenAI default mid-range and you step up, **GLM-5.3 defaults to `max`** and you step down.
+- **Effort level names are not comparable across models.** `high` buys a different amount of thinking on every model — including between point releases of the same family. Never port a prompt at "the same effort level" and call it a comparison; re-sweep against real evals. Defaults differ too: Claude Opus 5.5 and GPT-6 default to `medium`, Sonnet 5.5 and Fable 5.1 to `high`, and **GLM-5.3 defaults to `max`** so you step down.
 - **Agent conversation history must be append-only.** On Claude Fable 5.1, Opus 5.5, and Sonnet 5.5, editing earlier turns between requests returns a 400 — not just a cache miss. Injecting/removing per-turn reminders, summarizing in place, and rebuilding `system` or `tools` mid-session are all now correctness bugs. If you are writing an agent-loop prompt, read the append-only section of the Claude 5 guide before anything else.
-- **Scope guards are still needed, but the wording changed.** Claude Opus 5, Opus 5.5, Fable 5, and Fable 5.1 expand scope and over-tidy at high effort; use the current snippets in the Claude 5 guide rather than the old Opus 4.x boilerplate.
+- **Scope guards are still needed, but the wording is per-model.** Claude Opus 5, Fable 5, and Fable 5.1 expand scope and over-tidy at high effort; Sonnet 5.5 adds unrequested tests and docs and self-starts review rounds at `xhigh`/`max`. Use the vendor snippet for the model in question (Claude 5 family guide, Sonnet 5.5 guide) rather than the old Opus 4.x boilerplate.
 - **Check the vendor docs before quoting a model name, price, or parameter.** This skill's guides carry a `Sourced:` date; model generations have turned over in under two months. If the user is choosing a model or budgeting, verify rather than reciting.
 - **Cap clarifying questions at 3.** Lead with the 1–2 most important based on context; fold the rest in later. Endless clarification frustrates users and pushes the prompt off-topic.
 - **Never output a prompt without confirming the target tool/model when ambiguous.** Different tools and models need different syntax — guessing produces a worse first-shot result than asking.
@@ -63,7 +63,7 @@ Then gather the key details. Ask targeted follow-up questions for anything missi
 ### What to ask about
 
 - **Task**: What should the LLM accomplish? What does a good output look like?
-- **Target model**: Which model will run this? (Claude Fable 5.1 / Opus 5.5 / Sonnet 5.5, GPT-6 Astra, GPT-5.6, Gemini 3.x, Codex, GLM-5.3, etc.) Different models respond differently to the same prompt. **Family-level ("Claude", "GPT") is usually not specific enough** — effort defaults, verbosity, and cost differ sharply within a family. Ask for the tier when it would change the prompt.
+- **Target model**: Which model will run this? (Claude Fable 5.1 / Opus 5.5 / Sonnet 5.5, GPT-6 Astra / 6.1 Sol / Luna, Gemini 3.x, Codex, GLM-5.3, etc.) Different models respond differently to the same prompt. **Family-level ("Claude", "GPT") is usually not specific enough** — effort defaults, verbosity, and cost differ sharply within a family. Ask for the tier when it would change the prompt.
 - **Output type**: Text, code, image generation prompt, text-to-speech script, video prompt, structured data, or something else?
 - **Tool or service**: Will this run in a specific tool? (Lovable, Figma, ElevenLabs, OpenClaw, Claude Code, ChatGPT, etc.)
 - **Audience & tone**: Who sees the output? What personality should the LLM adopt?
@@ -110,9 +110,12 @@ If the user specifies a model (or you can infer one), load the relevant model-sp
 | Model Family | Reference Path |
 |---|---|
 | **Anthropic Claude 5.x** (Fable 5.1 / Mythos 5.1 / Opus 5.5 / Sonnet 5.5 / Haiku 4.5; Fable 5, Opus 5, Sonnet 5 superseded) | `context/models/anthropic-claude/claude-5-family-guide.md` — model selection, `effort`, adaptive thinking, **append-only history**, the Opus 5.5 / Sonnet 5.5 API deltas, the Fable 5.1 behavioral deltas, verbosity, scope control, agentic patterns, and the delete list |
+| **Claude Opus 5.5** — read with the family guide | `context/models/anthropic-claude/claude-opus-5-5-guide.md` — effort (`medium` default), unattended runs that stop after a progress report, progress updates, multi-app exploration, time budgets for agent teams, `<pasted_content>` marking, refusals |
+| **Claude Sonnet 5.5** — read with the family guide | `context/models/anthropic-claude/claude-sonnet-5-5-guide.md` — effort, initiative and scope snippets, `between_tools`, reasoning tasks with JSON output, search triggering, mid-turn user messages, coding verification at `low` effort |
 | Anthropic Claude Opus 4.8 (prior gen) | `context/models/anthropic-claude/claude-opus-4-8-guide.md` |
-| **OpenAI GPT-6 Astra** (`gpt-6-astra`) | `context/models/openai-gpt-6-family/gpt-6-astra-guide.md` — spec, effort (no `none`), the 272K pricing cliff, async tool calling, mid-turn steering, dynamic reasoning config, `instructions` vs roles, `prompt` object retirement |
-| **OpenAI GPT-5.6** (`sol` / `terra` / `luna` / `cyber`) — cost tier below Astra | `context/models/openai-gpt-5-family/gpt-5-6-guide.md` — lean prompts, autonomy boundaries, programmatic tool calling, persisted reasoning, explicit caching |
+| **OpenAI GPT-6 family** (`gpt-6-astra` / `gpt-6.1-sol` / `gpt-6-luna`; `gpt-6-sol` superseded) | `context/models/openai-gpt-6-family/gpt-6-family-guide.md` — lineup and pricing, effort (which models have `none`), Responses-vs-Chat-Completions tool constraints, `configuration_update`, OpenAI's GPT-6 prompt snippets, migration from GPT-5.x |
+| OpenAI GPT-6 Astra specifics | `context/models/openai-gpt-6-family/gpt-6-astra-guide.md` — async tool calling, mid-turn steering, misalignment monitoring, `instructions` vs roles |
+| OpenAI GPT-5.6 (`sol` / `terra` / `luna` / `cyber`) — previous generation | `context/models/openai-gpt-5-family/gpt-5-6-guide.md` — lean prompts, autonomy boundaries, programmatic tool calling, persisted reasoning, explicit caching |
 | OpenAI GPT-5.5 | `context/models/openai-gpt-5-family/gpt-5-5-guide.md` |
 | OpenAI frontend/UI generation | `context/models/openai-gpt-5-family/gpt-5_frontend` |
 | OpenAI — prompt isn't working and you don't know why | `context/models/openai-gpt-5-family/gpt-5-toubleshooting-guide` (filename typo is in the repo, not here) |
@@ -130,8 +133,8 @@ If the user specifies a model (or you can infer one), load the relevant model-sp
 Superseded guides live in `archive/` subfolders under each model directory — load them only when the user is explicitly targeting a legacy model.
 
 Key model differences to keep in mind:
-- **Claude 5.x**: XML tags for structure; explanations of *why* a rule exists generalize well; `effort` is the main cost/quality dial; **no sampling parameters, no prefill**; **history must be append-only on Fable 5.1, Opus 5.5, and Sonnet 5.5**; **forced `tool_choice` (`any`/`tool`) returns a 400 on those three**; Opus 5.5 defaults to `medium` effort, so set it explicitly. Opus 5 runs verbose and needs an explicit brevity instruction. **Fable 5.1 inverts two old habits**: it *under*-formats in chat and *under*-narrates during tool calls, so anti-bullet and "save it for the summary" rules ported from older prompts make things worse.
-- **GPT-6 Astra / GPT-5.6**: Lean prompts measurably outperform padded ones; state each instruction once; put tool guidance in tool descriptions. On Astra, match register to effort — precise logic and data at `low`/`medium`, goal-and-constraints at `high`+.
+- **Claude 5.x**: XML tags for structure; explanations of *why* a rule exists generalize well; `effort` is the main cost/quality dial; **no sampling parameters, no prefill**; **history must be append-only on Fable 5.1, Opus 5.5, and Sonnet 5.5**; **forced `tool_choice` (`any`/`tool`) returns a 400 on those three**; Opus 5.5 defaults to `medium` effort, so set it explicitly, and in unattended loops its progress reports can end the turn before the task is done. Sonnet 5.5 skips thinking on JSON reasoning tasks and skips verification at `low` effort. Opus 5 runs verbose and needs an explicit brevity instruction. **Fable 5.1 inverts two old habits**: it *under*-formats in chat and *under*-narrates during tool calls, so anti-bullet and "save it for the summary" rules ported from older prompts make things worse.
+- **GPT-6 family**: State each instruction once; put tool guidance in tool descriptions. Match register to effort — precise logic and data at `low`/`medium`, goal-and-constraints at `high`+. Astra and 6.1 Sol need the Responses API for tool calling and have no `none` effort; Luna is the high-volume tier. OpenAI's current snippets push toward acting without asking, prose over lists, and fewer tests.
 - **Gemini 3.x**: Defaults to *concise* output — ask for detail; Google now **strongly** recommends leaving sampling params at default despite accepting them; Google recommends few-shot examples in nearly every prompt (the opposite of OpenAI's lean-prompt guidance). Don't port either belief blindly.
 - **Open-weight models** (Gemma, Qwen, GLM, Kimi): benefit from more explicit structure and few-shot examples than the frontier hosted models; Gemma 4 needs literal chat-template control tokens. GLM rewards **enumerating the deliverables** you want back.
 
@@ -148,6 +151,7 @@ Different output modalities need different prompting strategies. Load the releva
 | **Vision / document input** | `context/vision-and-documents/document-understanding-tips.md`; `context/models/openai-gpt-5-family/openai-vision-guide.md`; Gemini: `context/models/google-gemini/gemini-file-prompting.md` | **Check the settings before rewriting the prompt** — `detail`, verbosity, and reasoning effort dominate wording here. Name the operation, not the object. Extract before interpreting. Tell the model to write "unreadable" rather than guess. State the bounding-box coordinate contract explicitly. |
 | **Speech-to-speech (Realtime)** | `context/speech-to-speech/gpt-realtime-prompting-guide` — `gpt-realtime-2.1` / `1.5` | Voice agents need different prompting than text. Use the 8-section structure (Role, Personality, Context, Pronunciations, Tools, Rules, Conversation Flow, Safety). Prefer bullets, pin language, add Variety rule, define explicit conversation states with exit criteria. Preambles: one short sentence. |
 | **Live voice with backend delegation** | `context/speech-to-speech/gpt-live-prompting-guide.md` — `gpt-live-1` | Different model *and* different prompt shape: the prompt is mostly a **delegation policy**. Personality + backchannel policy + interruption policy + delegation policy. "Delegate before answering; don't guess while waiting." Not interchangeable with gpt-realtime prompts. |
+| **Realtime transcription (speech-to-text)** | `context/speech-to-speech/gpt-realtime-transcription-guide.md` — `gpt-live-transcribe` / `gpt-transcribe` | Not a voice agent: the prompt is three context fields. `prompt` describes the recording, `keywords` lists literal terms, `languages` lists expected languages; `delay` trades latency for accuracy. No timestamps, speaker labels, or confidence scores. |
 | **Text-to-speech** | `context/text-to-speech/` | Normalize text (expand numbers, abbreviations). Use SSML break tags for pauses. Control pacing through narrative styling. |
 | **Video generation** | `context/video-generation/` — OpenAI Sora: `openai-video-generation-guide.md`; Google Veo: `google-veo-prompt-guide.md` | Name shot type, subject, action, setting, and lighting. One action beat per generation; chain beats with the extend endpoint. Describe the camera, not just the scene. |
 | **Code** | `context/coding/` — includes `codex-goals.md` (persistent `/goal` objectives) and `codex-full-guide.md` (full OpenAI Codex agentic-coding source) | Specify language, framework, patterns. Include example signatures. Define error handling expectations. For long-running work with an unknown path, reach for a Codex Goal instead of a prompt. |
@@ -211,7 +215,7 @@ These apply in every mode. Load the reference file when the concern is live; don
 
 `references/model-selection.md` — cross-vendor pricing, task-shape recommendations, and **what breaks when you switch families** (sampling params, prefill, few-shot philosophy, effort semantics, verbosity defaults, tokenizer changes).
 
-Two rules worth applying by default: optimize for accuracy against a real eval set before optimizing for cost, and **tune the effort parameter before switching models** — on Claude 5 and GPT-5.6 the effort range is wider than the gap between adjacent models. If the user is choosing a model or complaining about cost, read this file.
+Two rules worth applying by default: optimize for accuracy against a real eval set before optimizing for cost, and **tune the effort parameter before switching models** — on Claude 5 and GPT-6 the effort range is wider than the gap between adjacent models. If the user is choosing a model or complaining about cost, read this file.
 
 ### Context engineering — read this when reviewing any long prompt
 
@@ -223,7 +227,13 @@ Two rules worth applying by default: optimize for accuracy against a real eval s
 
 `references/guardrails.md` — hallucination reduction, output consistency, jailbreak and prompt-injection defense, and prompt-leak mitigation, with copyable snippets.
 
-Reach for it whenever the prompt will (a) make factual claims from supplied documents, (b) run in production against untrusted users, or (c) process third-party content — web pages, emails, tool results, OCR. **Any agent that reads content it didn't author needs the indirect-injection section**, and that need is easy to miss.
+Reach for it whenever the prompt will (a) make factual claims from supplied documents, (b) run in production against untrusted users, or (c) process third-party content — web pages, emails, tool results, OCR. **Any agent that reads content it didn't author needs the indirect-injection section**, and that need is easy to miss. So does any chat product where users paste in emails or web pages: that case has its own pattern (`<pasted_content>` marking).
+
+### Evaluation and latency
+
+`references/evaluation.md` — writing measurable success criteria, eval design, and which grading method fits which criterion. Read it when the user is taking a prompt to production, comparing versions or models, or has only "it seems better" as evidence.
+
+`references/latency.md` — what to try, in order, when a prompt is too slow. Effort is the first lever on current models, not prompt length.
 
 ### Cost and caching
 
@@ -341,12 +351,18 @@ When the user's prompt is producing unsatisfactory outputs, diagnose the root ca
 | Symptom | Likely Cause | Fix |
 |---|---|---|
 | Output too verbose | No length constraints; exploratory personality | Add explicit length limits; switch to Efficient personality; add "Be concise" |
-| Output too short / shallow | Insufficient context; no instruction to elaborate; effort set too low | **Raise effort first** — that is the intended lever on every current model. Then add "Provide detailed analysis with reasoning". Add Chain-of-Thought only on non-thinking models. |
+| Output too short / shallow | Insufficient context; no instruction to elaborate; effort set too low | **Raise effort first** — that is the intended lever on every current model. Then ask for the depth and detail the reader needs. Add Chain-of-Thought only on non-thinking models. |
+| Slow replies / slow first token | Effort too high for the task; "think carefully" lines; long prompt | `references/latency.md` — lower effort before trimming the prompt |
 | Wrong format | No format specification or examples | Add explicit format template; add 2-3 few-shot examples |
 | Hallucinating facts | No grounding instruction; no source material | Add "Only use information from the provided context"; add Fact-Based personality |
 | Ignoring instructions | Instructions buried in long prompt; contradictory rules | Restructure with headers; move critical instructions to the top; resolve contradictions; **cut length** — dilution is as common a cause as burial |
 | Over-verifying, over-tidying, expanding scope | Anti-laziness scaffolding written for older models | Delete "double-check"/"be thorough"/"CRITICAL: you MUST"; add the current scope-control snippet from the Claude 5 guide |
-| Agent goes silent during long tool runs (Claude) | Fable 5.1 narrates less; client may not be requesting updates at all | Set `thinking.display: "updates"`; delete "hold findings for the final response" lines |
+| Agent goes silent during long tool runs (Claude) | Fable 5.1 narrates less; on Fable 5.1, Opus 5.5, and Sonnet 5.5 the notes arrive as `thinking` blocks the client may not be requesting | Set `thinking.display: "updates"`; delete "hold findings for the final response" lines; then a harness reminder after ~5 silent steps |
+| Unattended agent stops after a progress summary (Opus 5.5) | A text-only turn end was treated as completion | Checklist plus a continuation message, capped at 2–3; Anthropic's standing-instruction paragraph in the Opus 5.5 guide. Not "be persistent" |
+| JSON answers wrong on tasks that need working out (Sonnet 5.5) | Model skips thinking at `low`/`medium` | Structured outputs plus "Think the problem through before you answer.", or raise effort; treat `max_tokens` stops as failures |
+| Code reported done with no test or build run (Sonnet 5.5 at `low`) | Verification skipped at low effort | Anthropic's run-a-real-check paragraph in the Sonnet 5.5 guide, or raise effort |
+| Model obeys instructions inside text the user pasted | Pasted content is indistinguishable from the user's own words | `<pasted_content id>` wrapping by the application plus the system note — `references/guardrails.md` §4 |
+| Model calls a real mid-task user message an injection (Sonnet 5.5) | User text placed in or right after a `tool_result`; per-step harness text | Put the user's words in a text block after the last `tool_result`; drop per-step countdowns |
 | Agent request fails with a 400 mid-conversation (Claude) | History was edited between requests | Make history append-only; move reminders to turn-scoped system messages |
 | Inconsistent outputs | No examples; ambiguous instructions | Add few-shot examples; tighten constraints. Self-Consistency is an option **only if they can make multiple runs and aggregate** — it is not a prompt instruction. |
 | Off-topic tangents | Scope not defined; no guardrails | Add explicit scope ("Focus only on X"); add "If the question is outside [scope], say so" |
@@ -368,6 +384,9 @@ If the user is optimizing a prompt for production use (high volume, consistent q
 - Run the same inputs through both versions
 - Compare outputs on the specific dimension that matters (accuracy, tone, format, etc.)
 - Test on edge cases, not just typical inputs
+- Grade with a different model than the one that generated the output
+
+`references/evaluation.md` has the success-criteria template and grading methods.
 
 ---
 

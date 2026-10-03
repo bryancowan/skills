@@ -8,7 +8,7 @@ The benchmark number worth quoting to users: **Anthropic removed over 80% of Cla
 
 So when reviewing a long system prompt, the default hypothesis is *this is too long*, not *this is missing a rule*.
 
-Sourced: 2026-09-12
+Sourced: 2026-09-12; scope table re-checked 2026-10-03
 
 Sources:
 - https://claude.com/blog/the-new-rules-of-context-engineering-for-claude-5-generation-models/
@@ -17,10 +17,10 @@ Sources:
 
 **Scope — read this before applying any of it.** The *direction* is generational: every frontier model is more capable of judgment than its 2024 predecessor, so scaffolding written for weaker models is dead weight. But the **specific deletions below are Anthropic's findings, measured on Claude**, and two of them invert on other vendors:
 
-| | Claude 5.x | GPT-6 Astra / GPT-5.6 | GLM-5.3 |
+| | Claude 5.x | GPT-6 family / GPT-5.6 | GLM-5.3 |
 |---|---|---|---|
 | Tool-call examples | **Delete** — they constrain exploration | **Keep** — OpenAI prescribes concrete examples of how to invoke commands for coding | Keep |
-| Enumerated deliverables + verification step | Trim — it self-verifies | Fine | **Keep** — this *is* Z.ai's documented prompt shape |
+| Enumerated deliverables + verification step | Trim on **Opus 5** (it self-verifies). Keep a run-a-real-check instruction on Sonnet 5.5 at `low` effort. | Fine, but OpenAI now says not to write tests for low-impact changes | **Keep** — this *is* Z.ai's documented prompt shape |
 | Redundancy, repeated instructions | Delete | Delete (the measured lean-prompt win) | Delete |
 | Prescriptive rules → judgment framings | Yes | Yes | Partially — GLM rewards explicit invariants |
 

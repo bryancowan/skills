@@ -11,11 +11,17 @@ Two prompting shifts define this generation:
 
 Prompts written for Fable 5 generally run well on Fable 5.1 without changes. The behavioral deltas that matter are in "Fable 5.1 behavioral deltas".
 
-Sourced: 2026-09-12. Opus 5.5 / Sonnet 5.5 rows and deltas added 2026-10-03 from the Claude Code bundled `claude-api` skill (model table cached 2026-09-25); Anthropic's per-model prompting pages for those two were not consulted.
+**Per-model deltas live in their own files.** If the user names Opus 5.5 or Sonnet 5.5, read that file as well as this one:
+- `claude-opus-5-5-guide.md` — effort calibration, unattended runs that stop early, progress updates, multi-app exploration, time budgets, pasted-text marking, refusals
+- `claude-sonnet-5-5-guide.md` — effort calibration, initiative and scope, `between_tools`, reasoning tasks with JSON output, search triggering, mid-turn user messages, coding verification
+
+Sourced: 2026-10-03 (Opus 5.5, Sonnet 5.5, Fable 5.1, and best-practices pages re-read). Pricing and the Fable 5 / Opus 5 / Sonnet 5 sections were last checked 2026-09-12.
 
 Sources:
 - https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
 - https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5-1
+- https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5-5
+- https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-sonnet-5-5
 - https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5
 - https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5
 - https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-sonnet-5
@@ -47,7 +53,7 @@ Model IDs from the 4.6 generation onward are dateless but still **pinned snapsho
 
 Two viable starting strategies: start efficiency-first with Haiku 4.5 and upgrade only on a measured capability gap, or start capability-first with Opus 5.5, tune the prompt, then optimize downward via `effort` before switching models. **Tuning effort is usually a better lever than switching models.**
 
-Anthropic maintains a separate prompting page per model (Fable 5.1, Fable 5, Sonnet 5, Opus 5, Opus 4.8). If the user names a specific model, read that page's deltas rather than assuming the family defaults apply.
+Anthropic maintains a separate prompting page per model (Fable 5.1, Fable 5, Opus 5.5, Opus 5, Sonnet 5.5, Sonnet 5, Opus 4.8), and says a technique that names a model should be treated as measured on that model and re-checked before it's applied to another. If the user names a specific model, read that model's deltas rather than assuming the family defaults apply.
 
 ---
 
@@ -70,14 +76,15 @@ Behavior notes that change how you prompt:
 - **Effort is respected strictly at the low end.** At `low` and `medium` the model scopes work to exactly what was asked. Good for cost, but risks under-thinking on moderately complex tasks.
 - **On Opus 5, `low` and `medium` produce strong quality at a fraction of the tokens.** Use them liberally as the primary cost/latency control wherever quality holds.
 - **On Fable 5.1, capability gains over Fable 5 show up at every level and are largest at the high end.** At `medium`, 5.1 roughly matches Fable 5 at lower cost — step down where your evals show quality holds. At `low`, 5.1 is often competitive with Opus and Sonnet models on cost per task while scoring higher, so include it in the comparison anywhere you'd otherwise reach for a smaller model at higher effort.
-- **Sonnet 5.5's levels are recalibrated from Sonnet 5.** Re-run the sweep; start at `medium` for agentic coding and multistep tool use, `low` for chat.
+- **Sonnet 5.5's levels are recalibrated from Sonnet 5.** Re-run the sweep; start at `high` (the default) for general work, `medium` for well-specified agentic coding and multistep tool use, `medium` or `low` for chat. From `medium` up it thinks briefly before almost every reply, and asking it in the prompt to think less doesn't reliably work — lower effort instead.
+- **Opus 5.5 at `medium` matches or exceeds Opus 5 at `high`** on Anthropic's coding and knowledge-work evals, and it thinks more per turn than Opus 5 at the same level, especially `xhigh` and `max`. Don't carry the Opus 5 setting over.
 - Rough Sonnet mapping when migrating: Sonnet 5 at `medium` ≈ Sonnet 4.6 at `high`; Sonnet 5 at `high` ≈ Sonnet 4.6 at `max`.
-- If you see shallow reasoning, **raise effort rather than prompting around it.** If you must stay at `low`:
+- If you see shallow reasoning, **raise effort rather than prompting around it.** If you must stay at `low` (Sonnet 5 / Opus 4.8 guidance; for Sonnet 5.5 JSON tasks see its guide):
   ```text
   This task involves multistep reasoning. Think carefully through the problem before responding.
   ```
-- At `high`/`xhigh`/`max`, leave `max_tokens` headroom — thinking counts against it. Start at 64k. A tight budget produces an answer that is almost all thinking followed by a truncation with `stop_reason: "max_tokens"`.
-- Effort can be **changed mid-conversation**. When only some turns need depth — e.g. a retrieval-heavy turn that needs to actually search — raise it for those turns rather than for the whole session.
+- At `high`/`xhigh`/`max`, leave `max_tokens` headroom — thinking counts against it. Start at 64k; for agentic coding on Opus 5.5 and Sonnet 5.5, Anthropic uses the 128k maximum. A tight budget produces an answer that is almost all thinking followed by a truncation with `stop_reason: "max_tokens"`.
+- Effort can be **changed mid-conversation**. When only some turns need depth — e.g. a retrieval-heavy turn that needs to actually search — raise it for those turns rather than for the whole session. Use the per-message effort change (beta): changing the top-level `effort` value between requests invalidates the prompt cache.
 
 ### Thinking
 
@@ -128,8 +135,10 @@ These break requests that ran on Opus 5 or Sonnet 5. Fable 5.1 shares the first 
 - **Forced tool use returns a 400.** `tool_choice: {type: "any"}` and `{type: "tool", name: ...}` are rejected. Use `{type: "auto"}` plus a prompt instruction naming the tool, `strict: true` on the tool for schema-valid arguments, or structured outputs when the forced call only existed to get JSON back.
 - **Text between tool calls comes back as `thinking` blocks**, empty by default. A client that renders only `text` blocks looks silent. Set `thinking.display: "updates"` before adding narration instructions.
 - **Computer use goes through `computer_toolset_20260801`** on the Claude API and Google Cloud; `computer_20251124` returns a 400 there.
-- **Sonnet 5.5 follows tool-use discouragement literally.** Delete "only use tools when strictly necessary" and "minimize tool calls"; where the product should prefer connected sources, say when to check them.
-- **Sonnet 5.5: deliver a user's mid-task message as a text block after the last `tool_result`**, not inside a tool result or as a system message right after one, or the model may read it as a prompt injection.
+- **Read responses by block type.** A response may begin with a `thinking` block; don't assume the first content block is text.
+- **Safety classifiers can return `stop_reason: "refusal"`** with a category in `stop_details`. A prompt that asks the model to write out its reasoning in the response invites the `reasoning_extraction` category.
+
+Behavior deltas and vendor snippets for each model: `claude-opus-5-5-guide.md`, `claude-sonnet-5-5-guide.md`.
 
 ---
 
@@ -291,16 +300,19 @@ These helped Claude 4.x and now cause measurable harm:
 
 | Delete | Why |
 |---|---|
-| "Include a final verification step" / "use a subagent to verify" | Opus 5 verifies its own work already; these cause over-verification and wasted tokens with no quality gain. |
-| "Double-check your answer" / "re-verify before responding" | Same — compounds with built-in self-correction. |
+| "Include a final verification step" / "use a subagent to verify" | **Opus 5 specifically.** It verifies its own work already; these cause over-verification and wasted tokens with no quality gain. Anthropic still recommends "verify your answer against [test criteria]" on other models, and Sonnet 5.5 at `low` effort needs a run-a-real-check paragraph (see its guide). |
+| "Double-check your answer" / "re-verify before responding" | Same scope — compounds with Opus 5's built-in self-correction. |
 | "After every 3 tool calls, summarize progress" | Opus 4.8+ and Sonnet 5 already give regular high-quality updates. |
 | "CRITICAL: You MUST use this tool when…" | Causes overtriggering. Plain "Use this tool when…" is enough. |
 | "If in doubt, use [tool]" / "Default to using [tool]" | Overtriggers. Use "Use [tool] when it would enhance your understanding of the problem." |
 | Assistant-message prefill | Returns 400 on 4.6+ models. Use structured outputs, tool enums, or a direct system instruction instead. |
-| `temperature` / `top_p` / `top_k` | Return 400 on Opus 5, Opus 5.5, Sonnet 5, Fable 5, and Fable 5.1; Sonnet 5.5 rejects non-default values. Steer tone and variety through the prompt. |
-| "Echo / transcribe / explain your internal reasoning as your response" | On Fable 5 this can trigger the `reasoning_extraction` refusal category and elevated fallbacks. Read the structured `thinking` blocks instead. |
+| `temperature` / `top_p` / `top_k` | Non-default values return 400 on Opus 5, Opus 5.5, Sonnet 5, Sonnet 5.5, Fable 5, and Fable 5.1. Steer tone and variety through the prompt. |
+| "Echo / transcribe / explain your internal reasoning as your response", "show your reasoning in `<thinking>` tags" | On Fable 5 / 5.1, Opus 5 / 5.5, and Sonnet 5.5 this can be declined with the `reasoning_extraction` refusal category. Read summarized `thinking` blocks (`display: "summarized"`) instead. Asking for a short explanation of the answer or a summary of actions taken is still fine. |
+| "Think carefully before answering" in a chat system prompt | Opus 5.5 decides how much to think; the line delays the first token with no clear quality gain. Effort is the control. |
+| "Only use tools when strictly necessary" / "minimize tool calls" | Sonnet 5.5 follows these literally and answers from stale training knowledge. Say when to check instead. |
+| A token or budget countdown appended after every tool result | Sonnet 5.5 can read harness text arriving right after tool results as a prompt injection. Fable 5 may suggest a new session. |
 | Forced `tool_choice` (`any` / `tool`) | Returns 400 on Fable 5.1, Opus 5.5, and Sonnet 5.5. Use `auto` plus an instruction naming the tool. |
-| "Don't think" / "answer without deliberating" | Can't be followed on Opus 5.5 or Fable 5.x, where thinking is always on. Lower `effort` instead. |
+| "Don't think" rules | Can't be followed on Opus 5.5 or Fable 5.x, where thinking is always on, and on Sonnet 5.5 with `between_tools` they make internal XML tags leak into output. Lower `effort` instead. (Anthropic does allow "Answer directly without deliberating." on Opus 5.5 at `low` as a last resort for time to first token — measure quality.) |
 | "Hold all findings for the final response" | Written for models that over-narrated. Fable 5.1 under-narrates; this makes the silence worse. |
 | Anti-formatting rules ("no bullets", "no bold", "no headers") | Same inversion. Fable 5.1 under-formats. Replace with a conditional rule (see the formatting delta above). |
 | Prescriptive style guardrails ("Never write multi-paragraph docstrings") | Replace with judgment framings the model can generalize: "Write code that reads like the surrounding code: match its comment density, naming, and idiom." |
