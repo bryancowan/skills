@@ -83,12 +83,12 @@ Cached-input rates run 0.1× (Anthropic, OpenAI) — see `caching-and-cost.md`. 
 
 | Task | Reach for | Why |
 |---|---|---|
-| Multiday autonomous agent runs | Claude Fable 5 | Built for long-horizon autonomy; sustains parallel subagents |
-| Complex agentic coding, large refactors | Claude Opus 5, `gpt-5.6-sol` | Both target this directly |
+| Multiday autonomous agent runs | Claude Fable 5.1 | Built for long-horizon autonomy; sustains parallel subagents |
+| Complex agentic coding, large refactors | Claude Opus 5.5, `gpt-5.6-sol` | Both target this directly |
 | High-volume classification / extraction | Haiku 4.5, `gpt-5.6-luna`, `gemini-2.5-flash-lite`, `mistral-small-2603` | 10–50× cheaper, usually sufficient |
 | Very long context at volume | Gemini 3.x Flash, Claude (1M at flat rate) | Avoid 2.5 Pro's 200k price step |
 | Document OCR with layout | `mistral-ocr-4-0` | Paragraph-level bounding boxes and structural block labels |
-| Vision-heavy inspection | Claude Opus 5, GPT-5.6 with `detail: original` | Both strong; give the model a crop tool |
+| Vision-heavy inspection | Claude Opus 5.5, GPT-5.6 with `detail: original` | Both strong; give the model a crop tool |
 | Image generation with legible text | Nano Banana Pro, `gpt-image-2` | |
 | Cheap one-shot image render | Imagen 4 ($0.02–$0.06/image) | |
 | Self-consistency voting | Mistral (`N > 1`) | Input billed once for multiple completions |
@@ -123,7 +123,7 @@ Switching model families is not a slug change. The things that most often break:
 
 | Difference | Affected |
 |---|---|
-| **Sampling parameters removed** | Claude 5 / 5.1 and Sonnet 5 reject `temperature`/`top_p`/`top_k` (400 error). Gemini, Mistral, GLM, Qwen all still accept them — though Google now *strongly* recommends leaving them at default on Gemini 3.x. Any behavior you got from temperature must become an instruction. |
+| **Sampling parameters removed** | Claude Fable 5 / 5.1, Opus 5 / 5.5, and Sonnet 5 reject `temperature`/`top_p`/`top_k` (400 error); Sonnet 5.5 rejects non-default values. Gemini, Mistral, GLM, Qwen all still accept them — though Google now *strongly* recommends leaving them at default on Gemini 3.x. Any behavior you got from temperature must become an instruction. |
 | **Prefill removed** | Claude 4.6+ rejects assistant prefill. Use structured outputs. |
 | **Few-shot philosophy** | Google says always include few-shot examples; OpenAI's GPT-5.6 guidance says remove examples unless they encode a product requirement. Don't port either belief blindly. |
 | **CoT scaffolding** | Actively harmful on reasoning-native models (GPT-6 Astra and GPT-5.6 with reasoning on, Claude with adaptive thinking, GLM-5.3, Qwen3 thinking mode, Gemma 4 thinking). Still a 10–30% lever on non-thinking models. **Cannot be turned off at all** on GPT-6 Astra (no `none`) or GLM-5.3 (thinking mandatory). |

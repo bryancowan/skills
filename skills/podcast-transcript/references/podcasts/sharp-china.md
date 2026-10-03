@@ -135,7 +135,7 @@ fix list. Append new ones here as you find them so the profile improves over tim
 | "Dmitry Sevastopolo" | "Demetri Sevastopulo" (Financial Times Washington bureau chief) |
 | "David Sachs" | "David Sacks" (White House AI & crypto czar) |
 | "Craig Mundy" | "Craig Mundie" (ex-Microsoft Chief Research and Strategy Officer) |
-| "Turnus" | "Ternus" (John Ternus, Apple SVP, rumored Tim Cook successor) |
+| "Turnus" | "Ternus" (John Ternus, Apple CEO; succeeded Tim Cook on September 1, 2026) |
 | "Steve Song and Olivia Chung" | "Steve Tsang and Olivia Cheung" (authors, "China's Global Strategy under Xi Jinping") |
 | "Tin Xia" | "Tianxia" (Chinese philosophical concept, "all under heaven") |
 | "Guangju Biennial" / "ASA Society" / "Asian Society" | "Gwangju Biennale" / "Asia Society" |

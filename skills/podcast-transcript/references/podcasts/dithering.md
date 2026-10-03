@@ -23,7 +23,7 @@ in person, Daring Fireball readership).
 
 | Heard as | Correct |
 |----------|---------|
-| "Turnus" / "Turnus era" | "Ternus" (John Ternus, Apple SVP, rumored/actual Tim Cook successor) |
+| "Turnus" / "Turnus era" | "Ternus" (John Ternus, Apple CEO; succeeded Tim Cook on September 1, 2026) |
 | "Bryce Terang" | "Brice Turang" (Milwaukee Brewers second baseman) |
 | "Sheshekari" | "Stratechery" |
 | "Joe Pachar Passarchic" | "Joe Pisarcik" (1978 Eagles–Giants fumble) |
