@@ -133,6 +133,21 @@ improves over time.
 | "Toby" (re: Shopify "rebels") | "Tobi" (Tobi Lütke) |
 | "views" (re: Meta's agent, mid-sentence) | "Muse" |
 | "Nat Freedman" | "Nat Friedman" (already listed; recurred) |
+| "dots" / "dot" (OpenAI product) | "Dots" (OpenAI's always-on personal agents, announced at DevDay Sep 29, 2026; confirmed by web search). Singular "a Dot" is fine; not an artifact |
+| "Kimmy Antonelli" (F1 context) | "Kimi Antonelli" (Mercedes F1 driver) — F1 context overrides the "Kimmy → Kimi (Moonshot)" rows |
+| "Sonofsky" / "Sinasi" / "Sinowski" | "Sinofsky" (Steven Sinofsky; Clippy-origin article Ben quotes in "Enterprise Philosophy and the First Wave of AI") |
+| "Simco" / "Horace Edgew" | "Asymco" / "Horace Dediu" (Ben's example of an ideal made-up site name) |
+| "Stratecry" / "Sheckery" / "Strategari" | "Stratechery" (additional variants; "Strategery" is Andrew's deliberate joke, leave it) |
+| "Mark German" | "Mark Gurman" (Bloomberg Apple reporter) |
+| "John Turnus" | "John Ternus" (Apple CEO; also in dithering profile) |
+| "01" (reasoning-model context) | "o1" (OpenAI reasoning model, Oct 2024) |
+| "Mustafa Suleiman" | "Mustafa Suleyman" (Microsoft AI CEO) |
+| "Mew" / "Mew's" | "Muse" / "Muse's" (Meta's agent) |
+| "Dario Amade" / "Daro Amade" / "Darry Amadi" / "Daryl Amade" / "Darrell Ramade" | "Dario Amodei" (more variants beyond the existing row) |
+| "Thomas Curian" | "Thomas Kurian" (recurred) |
+| "Dick Sporting Goods" | "Dick's Sporting Goods" |
+| "Gecko" / "GeckoBot" / "Gecko bot" | Not an artifact — Ben's own personal agent/server setup; keep "Gecko" |
+| "Tamagucchi" / "Tamaguchi" | Ben's mispronunciation of "Tamagotchi" is a running joke ("Tamagucchi" episode). Keep "Tamagucchi" where Ben/Andrew are riffing on it; use "Tamagotchi" in emailers' text and the product itself |
 
 > Role note: hosting can flip. In the "Doom Debates Go Mainstream" episode, Ben
 > jokingly takes the host chair and interviews Andrew about his Sharp Text
