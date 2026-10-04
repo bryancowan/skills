@@ -169,6 +169,20 @@ fix list. Append new ones here as you find them so the profile improves over tim
 | "Dhaman Rangula" / "Dummin Rangula" | "Daman Rangoola" (Stratechery colleague; moderate confidence) |
 | "Stratekari" | "Stratechery" (variant of "techary") |
 | "Z dotai" | "Z.ai" |
+| "Jim Kramer" | "Jim Cramer" |
+| "Purdue" (ambassador context) | "Perdue" (David Perdue, US Ambassador to China) |
+| "Ryan Haas" | "Ryan Hass" (Brookings China analyst) |
+| "Teresa Fallon" | "Theresa Fallon" (Brussels-based China analyst) |
+| "Apex" (Shenzhen summit context) | "APEC" |
+| "Le Miserables" | "Les Misérables" |
+| "Jiangqing" | "Jiang Qing" |
+| "Li Chong" | "Li Chenggang" (PRC International Trade Representative, lead trade negotiator) |
+| "best in career" | "Bessent, Greer" |
+| "Bussan" | "Busan" |
+| "Holy Fung" / "ho Lifung" | "He Lifeng" (variant of "Holi Fong" above) |
+| "off cycle" heard as "auto cycle" | "off-cycle" (as in the off-cycle Politburo meeting, Sept 2024) |
+| "teacher not teacher" / "YU Tozila" | "Teacher Li Is Not Your Teacher" / "whyyoutouzhele" (Li Ying's X account surfacing protest videos) |
+| "Red Bing" | "red bean" (mooncake context) |
 
 > The "she" → "Xi" fix needs judgment — only correct it where the context is
 > clearly about the Chinese leader, not an actual female referent. Leave the
