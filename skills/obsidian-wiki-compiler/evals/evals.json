@@ -31,6 +31,14 @@
         "/Users/bryan/repos/skills-workspace/obsidian-wiki/test-vault/Reading List/Running Agents in Production.md",
         "/Users/bryan/repos/skills-workspace/obsidian-wiki/test-vault/30-39 Knowledge Management & Reading/31 Technology (Development, AI, Security, Privacy)/31.09 Archive for category 31/2026-05-10/_manifest.md",
         "/Users/bryan/repos/skills-workspace/obsidian-wiki/test-vault/30-39 Knowledge Management & Reading/31 Technology (Development, AI, Security, Privacy)/31.09 Archive for category 31/2026-05-10/Testing Agents Against Production Traces - 2026-05-11T093012-0500.md"
+      ],
+      "expectations": [
+        "New article is moved or copied into the existing flat bucket '31.09 Archive for category 31/2026-05-10/' (Sunday-of-week for 2026-05-12)",
+        "No duplicate or wrapper folder is created: the only subfolder of '31.09 Archive for category 31/' is still '2026-05-10'",
+        "The bucket's existing _manifest.md keeps 31.12's original row and gains a new row for 'Running Agents in Production' (2 rows total, none overwritten)",
+        "The pre-existing 31.12 source note in the bucket is left intact",
+        "A 31.16 index exists and its '## Sources' section lists the 2026-05-10 bucket annotated as a shared bucket also cited by 31.12, with a link to 31.12's index page (31.12 has no 'Wiki Index' file in this fixture, only _index.md)",
+        "A dated entry is appended to the Vault Change Log describing the ingest"
       ]
     }
   ]
