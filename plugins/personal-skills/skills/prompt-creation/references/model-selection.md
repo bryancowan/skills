@@ -2,14 +2,14 @@
 
 Choosing the model is part of writing the prompt. A prompt tuned for a frontier model often works on a model a tier down at a fraction of the cost — and a prompt that fails on a small model sometimes just needs a bigger one rather than more instructions.
 
-Sourced: 2026-09-12
+Sourced: 2026-10-03 (Anthropic and OpenAI rows re-verified; Google, Mistral, and Cerebras rows last checked 2026-09-12)
 
 Sources:
 - https://platform.claude.com/docs/en/about-claude/models/choosing-a-model
 - https://platform.claude.com/docs/en/about-claude/pricing
 - https://developers.openai.com/api/docs/guides/model-selection
 - https://developers.openai.com/api/docs/guides/latest-model
-- https://developers.openai.com/api/docs/models/gpt-6-astra
+- https://developers.openai.com/api/docs/models (plus the `gpt-6-astra`, `gpt-6.1-sol`, `gpt-6-luna`, `gpt-6-sol` pages)
 - https://docs.z.ai/guides/llm/glm-5.3
 - https://developers.openai.com/api/docs/pricing
 - https://ai.google.dev/gemini-api/docs/models
@@ -30,7 +30,7 @@ Sources:
 
 Anthropic offers the mirror-image option: **start efficiency-first** with Haiku 4.5, test thoroughly, and upgrade only where a specific capability gap shows up. Use this when you're prototyping, latency-bound, or running high volume on straightforward tasks.
 
-**Tune effort before switching models.** On Claude 5 and the GPT-5.6/GPT-6 families the effort parameter spans a wider quality-cost range than the gap between adjacent models. Anthropic states this explicitly: "Tuning effort is often a better lever than switching models."
+**Tune effort before switching models.** On Claude 5 and the GPT-6 family the effort parameter spans a wider quality-cost range than the gap between adjacent models. Anthropic states this explicitly: "Tuning effort is often a better lever than switching models."
 
 **But re-sweep effort on every model change** — level names are not comparable across models, not even between point releases in the same family. A prompt ported at the same effort level is not a controlled comparison.
 
@@ -40,7 +40,7 @@ Both are step functions, not gradients, and both are easy to cross without notic
 
 | Model | Threshold | Penalty |
 |---|---|---|
-| `gpt-6-astra` | 272K input tokens | 2× input and cache rates, 1.5× output |
+| Every GPT-6 model (`astra`, `6.1-sol`, `sol`, `luna`) and GPT-5.6 | 272K input tokens | 2× input and cache rates, 1.5× output, **for the full request** |
 | `gemini-2.5-pro` | 200K tokens | Input $1.25 → $2.50, output $10 → $15 |
 
 Claude bills its 1M window at flat rates — a 900k request costs the same per token as a 9k one. If you are doing long-context work at volume and hovering near either threshold, that flat pricing may beat a cheaper headline rate.
@@ -52,14 +52,17 @@ Claude bills its 1M window at flat rates — a 900k request costs the same per t
 | Vendor | Model | Input | Output | Notes |
 |---|---|---|---|---|
 | Anthropic | Claude Fable 5.1 | $10 | $50 | Current top of range; thinking always on; **cache hits bill at 0.025× ($0.25/MTok)**, 4× cheaper than every other Claude model |
-| Anthropic | Claude Opus 5 | $5 | $25 | Complex agentic coding, enterprise work |
-| Anthropic | Claude Sonnet 5 | $2 | $10 | Best speed-to-intelligence ratio. The scheduled 2026-09-01 rise to $3/$15 was **cancelled** |
+| Anthropic | Claude Opus 5.5 | $4 | $20 | Current Opus: complex agentic coding, enterprise work; effort defaults to `medium` |
+| Anthropic | Claude Opus 5 | $5 | $25 | Superseded by Opus 5.5 |
+| Anthropic | Claude Sonnet 5.5 | $2 | $10 | Current Sonnet; best speed-to-intelligence ratio |
+| Anthropic | Claude Sonnet 5 | $2 | $10 | Superseded by Sonnet 5.5. The scheduled 2026-09-01 rise to $3/$15 was **cancelled** |
 | Anthropic | Claude Haiku 4.5 | $1 | $5 | Fastest; 200k context |
 | OpenAI | `gpt-6-astra` | $10 | $50 | **Flagship.** 1.05M context. **2× input / 1.5× output above 272K input tokens** |
-| OpenAI | `gpt-5.6-cyber` | $12.50 | $75 | Security specialist. **The most expensive model in this table** — above Astra, not a cost tier |
-| OpenAI | `gpt-5.6-sol` | $4 | $20 | Top of the 5.6 family; `gpt-5.6` alias resolves here |
-| OpenAI | `gpt-5.6-terra` | $2 | $12 | OpenAI's documented "smaller option" vs Astra |
-| OpenAI | `gpt-5.6-luna` | $0.20 | $1.20 | High-volume, efficient — cheapest OpenAI text model |
+| OpenAI | `gpt-6.1-sol` | $2 | $10 | "Near-Astra performance for complex work at a lower cost." Cached input $0.10. **No `none` effort; tool calling needs the Responses API** |
+| OpenAI | `gpt-6-luna` | $0.10 | $0.50 | Focused, high-volume tasks — cheapest OpenAI text model. Supports `none` |
+| OpenAI | `gpt-6-sol` | $2 | $10 | Superseded by 6.1 Sol at the same price. Cached input $0.20. Supports `none` |
+| OpenAI | `gpt-5.6-cyber` | $12.50 | $75 | Cybersecurity specialist, still listed. Price last checked 2026-09-12 |
+| OpenAI | `gpt-5.6-sol` / `terra` / `luna` | $4 / $2 / $0.20 | $20 / $12 / $1.20 | **Previous generation**: off the models overview, still priced. Each is undercut by its GPT-6 counterpart |
 | OpenAI | `gpt-5.3-codex` | $1.75 | $14 | Agentic coding harnesses |
 | Google | `gemini-3.8-flash` | $0.75 | $3.75 | **Gemini flagship**; long-horizon software engineering |
 | Google | `gemini-3.7-flash` | $0.75 | $3.75 | |
@@ -81,12 +84,13 @@ Cached-input rates run 0.1× (Anthropic, OpenAI) — see `caching-and-cost.md`. 
 
 | Task | Reach for | Why |
 |---|---|---|
-| Multiday autonomous agent runs | Claude Fable 5 | Built for long-horizon autonomy; sustains parallel subagents |
-| Complex agentic coding, large refactors | Claude Opus 5, `gpt-5.6-sol` | Both target this directly |
-| High-volume classification / extraction | Haiku 4.5, `gpt-5.6-luna`, `gemini-2.5-flash-lite`, `mistral-small-2603` | 10–50× cheaper, usually sufficient |
+| Multiday autonomous agent runs | Claude Fable 5.1 | Built for long-horizon autonomy; sustains parallel subagents |
+| Complex agentic coding, large refactors | Claude Opus 5.5, `gpt-6.1-sol` | Both target this directly |
+| Unattended long runs on a mid-priced model | Claude Opus 5.5 with a continuation harness | Its progress reports can end a turn; see its guide |
+| High-volume classification / extraction | Haiku 4.5, `gpt-6-luna`, `gemini-2.5-flash-lite`, `mistral-small-2603` | 10–50× cheaper, usually sufficient |
 | Very long context at volume | Gemini 3.x Flash, Claude (1M at flat rate) | Avoid 2.5 Pro's 200k price step |
 | Document OCR with layout | `mistral-ocr-4-0` | Paragraph-level bounding boxes and structural block labels |
-| Vision-heavy inspection | Claude Opus 5, GPT-5.6 with `detail: original` | Both strong; give the model a crop tool |
+| Vision-heavy inspection | Claude Opus 5.5, GPT-6 with `detail: original` | Both strong. Opus 5.5 reads charts well without tools; on Sonnet 5.5 a crop tool helps charts more than raising effort |
 | Image generation with legible text | Nano Banana Pro, `gpt-image-2` | |
 | Cheap one-shot image render | Imagen 4 ($0.02–$0.06/image) | |
 | Self-consistency voting | Mistral (`N > 1`) | Input billed once for multiple completions |
@@ -121,15 +125,17 @@ Switching model families is not a slug change. The things that most often break:
 
 | Difference | Affected |
 |---|---|
-| **Sampling parameters removed** | Claude 5 / 5.1 and Sonnet 5 reject `temperature`/`top_p`/`top_k` (400 error). Gemini, Mistral, GLM, Qwen all still accept them — though Google now *strongly* recommends leaving them at default on Gemini 3.x. Any behavior you got from temperature must become an instruction. |
+| **Sampling parameters removed** | Claude Fable 5 / 5.1, Opus 5 / 5.5, and Sonnet 5 / 5.5 reject non-default `temperature`/`top_p`/`top_k` values (400 error). Gemini, Mistral, GLM, Qwen all still accept them — though Google now *strongly* recommends leaving them at default on Gemini 3.x. Any behavior you got from temperature must become an instruction. |
 | **Prefill removed** | Claude 4.6+ rejects assistant prefill. Use structured outputs. |
-| **Few-shot philosophy** | Google says always include few-shot examples; OpenAI's GPT-5.6 guidance says remove examples unless they encode a product requirement. Don't port either belief blindly. |
-| **CoT scaffolding** | Actively harmful on reasoning-native models (GPT-6 Astra and GPT-5.6 with reasoning on, Claude with adaptive thinking, GLM-5.3, Qwen3 thinking mode, Gemma 4 thinking). Still a 10–30% lever on non-thinking models. **Cannot be turned off at all** on GPT-6 Astra (no `none`) or GLM-5.3 (thinking mandatory). |
+| **Few-shot philosophy** | Google says always include few-shot examples; OpenAI's GPT-5.6 guidance says remove examples unless they encode a product requirement, and its current page says try zero-shot first. Don't port either belief blindly. |
+| **CoT scaffolding** | Actively harmful on reasoning-native models (GPT-6 and GPT-5.6 with reasoning on, Claude with adaptive thinking, GLM-5.3, Qwen3 thinking mode, Gemma 4 thinking). Still a 10–30% lever on non-thinking models. **Cannot be turned off at all** on GPT-6 Astra and 6.1 Sol (no `none`), Claude Fable 5.x and Opus 5.5 (thinking always on), or GLM-5.3 (thinking mandatory). On current Claude models, asking for *visible* reasoning can also be refused (`reasoning_extraction`). |
 | **Effort semantics** | Claude and OpenAI both have real graduated effort, but **level names don't transfer between models** — re-sweep every time. Defaults differ in direction too: Claude and OpenAI default mid-range and you step up; **GLM-5.3 defaults to `max`** and you step down. **Gemma 4's `low`/`medium`/`high` are currently equivalent** — don't build cost tiers on them. |
 | **Verbosity defaults** | Gemini 3 defaults concise (ask for detail); Claude Opus 5 defaults long (ask for brevity). Opposite corrections. |
 | **Formatting defaults** | Claude Fable 5.1 *under*-formats in chat — the reverse of every model before it. Anti-bullet rules ported from older prompts make it worse. |
-| **History mutability** | Claude Fable 5.1 requires **append-only** conversation history; editing earlier turns returns a 400. Harnesses that inject/remove per-turn reminders or summarize in place must be reworked before porting. |
-| **Effort/cache interaction** | Changing effort mid-conversation invalidates the cache on OpenAI **through GPT-5.6**, but **preserves it on GPT-6 Astra**. |
+| **History mutability** | Claude Fable 5.1, Opus 5.5, and Sonnet 5.5 need **append-only** conversation history: a replayed thinking block is accepted only while the `system` prompt, `tools`, and earlier messages before it are unchanged. Where the check is enforced (accounts created on or after 2026-08-31, or any request that sets `thinking.block_binding.prefix_mismatch_behavior`), an edited prefix returns a 400, or drops the block under `"drop_block"`. Harnesses that inject/remove per-turn reminders or summarize in place must be reworked before porting. |
+| **Effort/cache interaction** | Changing effort mid-conversation invalidates the cache on OpenAI **through GPT-5.6**, but **preserves it on GPT-6** (`configuration_update`). On Claude, the top-level `effort` change invalidates it; the per-message change (beta) doesn't. |
+| **API surface for tools** | GPT-6 Astra and 6.1 Sol need the Responses API for tool calling; Luna and Sol allow Chat Completions function calling only at `reasoning_effort: "none"`. Claude Fable 5.1, Opus 5.5, and Sonnet 5.5 reject forced `tool_choice`. |
+| **Effort defaults** | Claude Opus 5.5 defaults to `medium`; Sonnet 5.5, Fable 5.1, and Opus 5 default to `high`; GPT-6 defaults to `medium`. A port that omits the parameter changes effort silently. |
 | **Prompt format** | Gemma 4 needs literal control tokens (`<|turn>`, roles `system`/`user`/`model`). Hosted models don't. |
 | **Structured output** | Available on all major vendors, but the parameter names differ. Prefer it over prompt-engineering a JSON format wherever it exists. |
 | **Tokenizer** | Claude 4.7+ ≈ 30% more tokens. Re-baseline `max_tokens` or expect truncation. |

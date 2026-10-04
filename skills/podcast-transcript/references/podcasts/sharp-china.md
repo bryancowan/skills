@@ -135,7 +135,7 @@ fix list. Append new ones here as you find them so the profile improves over tim
 | "Dmitry Sevastopolo" | "Demetri Sevastopulo" (Financial Times Washington bureau chief) |
 | "David Sachs" | "David Sacks" (White House AI & crypto czar) |
 | "Craig Mundy" | "Craig Mundie" (ex-Microsoft Chief Research and Strategy Officer) |
-| "Turnus" | "Ternus" (John Ternus, Apple SVP, rumored Tim Cook successor) |
+| "Turnus" | "Ternus" (John Ternus, Apple CEO; succeeded Tim Cook on September 1, 2026) |
 | "Steve Song and Olivia Chung" | "Steve Tsang and Olivia Cheung" (authors, "China's Global Strategy under Xi Jinping") |
 | "Tin Xia" | "Tianxia" (Chinese philosophical concept, "all under heaven") |
 | "Guangju Biennial" / "ASA Society" / "Asian Society" | "Gwangju Biennale" / "Asia Society" |
@@ -143,6 +143,32 @@ fix list. Append new ones here as you find them so the profile improves over tim
 | "Cledontrol Applications Act" | "Controlled Applications Act" (Protecting Americans from Foreign Adversary Controlled Applications Act) |
 | "my Kylash" | "Mount Kailash" |
 | "the Corps" (pilgrimage context) | "the Kora" (circumambulation of Mount Kailash) |
+| "Holi Fong" / "Holy Career" (trade talks context) | "He Lifeng" (PRC Vice Premier) / "Greer" (USTR; the "Holy Career" reading is low-confidence) |
+| "Lena Khan" | "Lina Khan" (former FTC chair) |
+| "Dario Amade" | "Dario Amodei" |
+| "John Osof" | "Jon Ossoff" (Sen., D-GA) |
+| "Ten Cent" / "Ten Sen" | "Tencent" |
+| "Manaus" / "Mis" (controversy context) | "Manus" (AI agent startup; talent-leakage controversy) |
+| "seed dance" / "bite dance" | "Seedance" / "ByteDance" |
+| "Gary Reichel from Chi Ming" | "Gary Rieschel from Qiming" (Qiming Venture Partners) |
+| "Ren Zheng Fei" | "Ren Zhengfei" (Huawei founder) |
+| "Mofcom" | "MOFCOM" (PRC Ministry of Commerce) |
+| "Billy" (Chinese video site) / "Red Note, Doyen" | "Bilibili" / "RedNote, Douyin" |
+| "Shatakurian" | "Stratechery" (variant of "techary") |
+| "Dumerism" | "doomerism" |
+| "Takeichi" | "Takaichi" (Japanese PM Sanae Takaichi) |
+| "Brett Bear" | "Bret Baier" (Fox News anchor) |
+| "Sundar Pachai" / "Jane Frazier" | "Sundar Pichai" / "Jane Fraser" |
+| "Chirpool" | "Zhipu" (Chinese AI lab) |
+| "Michael Kovring and Michael Spaver" | "Michael Kovrig and Michael Spavor" |
+| "Emily Fung" | "Emily Feng" (NPR) |
+| "call she" (prediction-market context) | "Kalshi" |
+| "fleshing protests" | "Flushing protests" (Queens, NYC) |
+| "Brick Summit" | "BRICS Summit" |
+| "straight home moves" | "Strait of Hormuz" |
+| "Dhaman Rangula" / "Dummin Rangula" | "Daman Rangoola" (Stratechery colleague; moderate confidence) |
+| "Stratekari" | "Stratechery" (variant of "techary") |
+| "Z dotai" | "Z.ai" |
 
 > The "she" → "Xi" fix needs judgment — only correct it where the context is
 > clearly about the Chinese leader, not an actual female referent. Leave the

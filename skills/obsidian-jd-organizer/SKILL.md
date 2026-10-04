@@ -1,6 +1,6 @@
 ---
 name: obsidian-jd-organizer
-description: Use this skill for any Obsidian vault file organization task. This includes: moving or filing notes into folders, triaging items out of inboxes or reading/watch lists, figuring out where a note belongs, assigning the next ID number in a numbered category, creating or expanding folder structures, cleaning up a messy vault, or auditing what's out of place. Especially relevant when the user's vault follows Johnny Decimal (JD) conventions with numbered areas, categories, and AC.ID patterns — but trigger for any "organize my vault" or "sort these notes" or "where should this file go" request. Do NOT use for: summarizing content, building wikis, creating templates, plugin development, dataview queries, or vault backups.
+description: "Use this skill for any Obsidian vault file organization task. This includes: moving or filing notes into folders, triaging items out of inboxes or reading/watch lists, figuring out where a note belongs, assigning the next ID number in a numbered category, creating or expanding folder structures, cleaning up a messy vault, or auditing what's out of place. Especially relevant when the user's vault follows Johnny Decimal (JD) conventions with numbered areas, categories, and AC.ID patterns — but trigger for any \"organize my vault\" or \"sort these notes\" or \"where should this file go\" request. Do NOT use for: summarizing content, building wikis, creating templates, plugin development, dataview queries, or vault backups."
 ---
 
 # Obsidian JD Organizer

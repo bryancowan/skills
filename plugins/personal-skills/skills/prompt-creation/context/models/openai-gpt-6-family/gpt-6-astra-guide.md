@@ -2,11 +2,11 @@
 
 ## Overview
 
-`gpt-6-astra` is OpenAI's current flagship. It supersedes the GPT-5.6 family at the top of the range, but **does not retire it** — `gpt-5.6-sol`/`terra`/`luna` remain current and run 2.5–50× cheaper (`gpt-5.6-cyber` is the exception: a security specialist priced *above* Astra at $12.50/$75). Treat Astra as the capability ceiling and GPT-5.6 as the cost tier beneath it (`context/models/openai-gpt-5-family/gpt-5-6-guide.md`).
+`gpt-6-astra` is OpenAI's current flagship and the capability ceiling of the GPT-6 family. The cost tiers beneath it are now **`gpt-6.1-sol`** ($2 / $10) and **`gpt-6-luna`** ($0.10 / $0.50); selection, effort, API constraints, and OpenAI's GPT-6 prompt snippets are in `gpt-6-family-guide.md`. Read that file first. This one covers what is specific to Astra. GPT-5.6 is previous generation (`context/models/openai-gpt-5-family/gpt-5-6-guide.md`).
 
 The four capabilities that are genuinely new — and that change how you architect around the model rather than just how you word the prompt — are **async tool calling**, **mid-turn steering**, **dynamic reasoning configuration**, and **misalignment monitoring**.
 
-Sourced: 2026-09-12
+Sourced: 2026-10-03 (lineup, pricing, and effort re-verified; the architecture sections were last checked 2026-09-12)
 
 Sources:
 - https://developers.openai.com/api/docs/models/gpt-6-astra
@@ -30,7 +30,7 @@ Sources:
 | Endpoints | **Responses** (`v1/responses`), Chat Completions, Batch. Not supported: Realtime, Live, Assistants, fine-tuning, embeddings, image generation, audio. |
 | Reasoning effort | `low`, `medium`, `high`, `xhigh`, `max` — **no `none`** |
 
-**Long-context cost cliff:** requests above **272K input tokens** are billed at **2× input and cache rates, 1.5× output rates**. This is a hard step, not a gradient. If you are anywhere near that boundary, measure your actual input size — trimming a prompt from 280K to 270K halves its input cost. (Claude bills its 1M window at flat rates; Gemini 2.5 Pro has a similar step at 200K. See `references/model-selection.md`.)
+**Long-context cost cliff:** requests above **272K input tokens** are billed at **2× input and cache rates, 1.5× output rates**, for the full request. The same rule applies to 6.1 Sol, Sol, and Luna. This is a hard step, not a gradient. If you are anywhere near that boundary, measure your actual input size — trimming a prompt from 280K to 270K halves its input cost. (Claude bills its 1M window at flat rates; Gemini 2.5 Pro has a similar step at 200K. See `references/model-selection.md`.)
 
 Supported features: streaming, structured outputs, function calling, file search, image input, web search, prompt caching.
 Supported hosted tools: web search, file search, image generation, code interpreter, hosted shell, apply patch, skills, computer use, MCP, tool search — reached **through the Responses API**.
@@ -48,7 +48,7 @@ Tools can run in parallel **while the model continues reasoning**, rather than b
 A correction or changed requirement can be sent over WebSocket **during** a turn without discarding the work already done. Design your product around this instead of around cancel-and-restart: the user's "actually, make it Postgres not MySQL" no longer costs the whole turn.
 
 ### Dynamic reasoning configuration
-Reasoning effort can be adjusted **mid-conversation while preserving the cache**. This is a real break from prior OpenAI models, where changing effort invalidated the prompt cache and the standing advice was "pick a level and hold it." On Astra you can run a conversation at `low` and step up to `high` for the two turns that need it. Update any prompt or harness note that still says effort changes are cache-destroying — that rule is now Astra-specific in the other direction.
+Reasoning effort can be adjusted **mid-conversation while preserving the cache**, by adding a `configuration_update` input item; the new level applies until the next override. This is a real break from prior OpenAI models, where changing effort invalidated the prompt cache and the standing advice was "pick a level and hold it." On Astra you can run a conversation at `low` and step up to `high` for the two turns that need it. Update any prompt or harness note that still says effort changes are cache-destroying — that rule is now Astra-specific in the other direction.
 
 ### Misalignment monitoring
 A safeguard layer that detects model misalignment. Budget for the same class of false positives you'd handle on any classifier-fronted model: if benign requests get blocked, rephrase away from the pattern rather than arguing with it in the prompt.
@@ -74,7 +74,7 @@ OpenAI's own prompt-engineering guide is thinner on Astra than the GPT-5.6 mater
 Either way, **never add chain-of-thought scaffolding.** "Think step by step" on a model that always reasons internally is pure token cost. Raise effort instead.
 
 ### Lean prompts
-The GPT-5.6 finding still applies and OpenAI has not retracted it: leaner system prompts improved eval scores ~10–15% while cutting tokens 41–66% and cost 33–67%. State each instruction once. Deleting redundancy remains the highest-value edit when migrating an older prompt.
+The lean-prompt finding (eval scores up ~10–15%, tokens down 41–66%, cost down 33–67%) was measured on GPT-5.6; OpenAI has not retracted it or restated it for GPT-6. State each instruction once. Deleting redundancy remains the safest edit when migrating an older prompt.
 
 ### Message roles and `instructions`
 Authority runs `instructions` → `developer` → `user` → `assistant`.
@@ -93,25 +93,26 @@ If you are reading an older guide (including this skill's GPT-5.6 file before it
 
 ---
 
-## Choosing between Astra and GPT-5.6
+## Choosing between Astra and the rest of the family
 
-OpenAI's stated method: set a concrete accuracy target, build a labeled eval set, **start with `gpt-6-astra`**, then find the cheapest model that still hits the target — `gpt-5.6-terra` is the documented "smaller option" to compare against.
+OpenAI's current method: experiment with different models and reasoning settings on the same inputs and keep the lightest setting that meets your quality bar. `gpt-6.1-sol` is the documented model to compare Astra against "for complex projects where cost matters."
 
-Astra carries higher per-token pricing but OpenAI claims **lower estimated API cost per task**, because it needs fewer tokens and fewer retries. That claim is only checkable against your own workload — measure cost per completed task, not cost per token.
+Astra carries 5× the per-token price of 6.1 Sol. Whether it costs more per completed task depends on token use and retries on your workload — measure cost per completed task, not cost per token.
 
 | Situation | Pick |
 |---|---|
 | Hardest reasoning, long-horizon agentic runs, unsolved problems | `gpt-6-astra` |
-| Need async tools or mid-turn steering | `gpt-6-astra` (5.6 doesn't have them) |
-| High volume, well-specified, latency-sensitive | `gpt-5.6-luna` or `terra` |
+| Complex work where cost matters | `gpt-6.1-sol`, compared against Astra on the same task |
+| High volume, well-specified, latency-sensitive | `gpt-6-luna` |
 | Agentic coding in a Codex harness | `gpt-5.3-codex` — see `context/models/openai-codex/codex-prompting-guide` |
-| Needs `reasoning.effort: "none"` | Not Astra. Use GPT-5.6. |
+| Needs `reasoning.effort: "none"` | Not Astra or 6.1 Sol. Use `gpt-6-luna` or `gpt-6-sol`. |
 
 ---
 
 ## Cross-references
 
-- Cost tier below Astra: `context/models/openai-gpt-5-family/gpt-5-6-guide.md`
+- Family-wide selection, effort, API constraints, snippets: `gpt-6-family-guide.md`
+- Previous generation: `context/models/openai-gpt-5-family/gpt-5-6-guide.md`
 - Codex agentic coding + Goals: `context/models/openai-codex/codex-prompting-guide`, `context/coding/codex-goals.md`
 - Document and image input: `context/vision-and-documents/document-understanding-tips.md`
 - Cross-vendor pricing and switching costs: `references/model-selection.md`

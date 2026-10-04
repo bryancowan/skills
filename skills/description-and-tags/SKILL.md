@@ -135,13 +135,13 @@ Enrich Obsidian web-clipping notes by generating description, note summary, tags
 > - Use a dash or comma instead of a colon. Use single quotes instead of double quotes if quoting is necessary.
 > - Use sentence case, not title case.
 
-## Output Formatting — CRITICAL
+## Output Formatting
 
 Incorrect formatting is the most common failure. Follow these rules exactly.
 
 ### Tags
 
-The tags prompt outputs `#tag1 #tag2 #tag3` format. You MUST strip the `#` prefix before writing to YAML.
+The tags prompt outputs `#tag1 #tag2 #tag3` format. Strip the `#` prefix before writing to YAML; a leading `#` forces a quoted string and breaks the tag in Obsidian.
 
 **Preserve existing tags.** When the note already has tags (e.g. `clippings`, `stratechery`), keep them all and append only the new ones. Do not remove or replace existing tags.
 
@@ -168,7 +168,7 @@ tags:
 
 ### Note
 
-The note MUST use `|-` block scalar syntax. Do NOT use a quoted string with `\n` escape sequences.
+Write the note with `|-` block scalar syntax, not a quoted string with `\n` escape sequences.
 
 **Correct:**
 ```yaml

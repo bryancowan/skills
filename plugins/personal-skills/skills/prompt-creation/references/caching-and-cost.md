@@ -2,7 +2,7 @@
 
 Caching is a **prompt structure** decision, not just an API flag — which is why it belongs in a prompting skill. Getting the ordering right is usually worth more than any wording change you'll make.
 
-Sourced: 2026-09-12
+Sourced: 2026-09-12; GPT-6 and Claude effort/cache lines re-checked 2026-10-03
 
 Sources:
 - https://developers.openai.com/api/docs/guides/prompt-caching
@@ -41,7 +41,7 @@ This conflicts with nothing else in prompt design — Anthropic's "long document
 - Any system prompt modification
 - Timestamps or dynamic metadata early in the prompt
 - Context truncation from conversation management
-- Changing the reasoning effort parameter (**through GPT-5.6 only** — GPT-6 Astra preserves the cache across mid-conversation effort changes)
+- Changing the reasoning effort parameter (**through GPT-5.6 only** — on GPT-6, a `configuration_update` input item changes effort mid-conversation and preserves the cache)
 - Using Chat Completions with reasoning models (chain-of-thought tokens aren't persisted)
 - Changing `allowed_tools` — keep the full toolkit static in `tools` instead
 
@@ -63,7 +63,7 @@ Break-even is **one read** for the 5-minute cache, **two reads** for the 1-hour 
 
 ### Append-only history is now a correctness requirement, not just a cache optimization
 
-On Claude Fable 5.1, the edits that break the cache also **break the request**. For accounts created on or after 2026-08-31, replaying a thinking block after its prefix changed returns a **400** (or silently drops the block if you opt into `thinking.block_binding.prefix_mismatch_behavior: "drop_block"`).
+On Claude Fable 5.1, Opus 5.5, and Sonnet 5.5, the edits that break the cache can also **break the request** where the prefix check is enforced. Changing the top-level `effort` value between requests also invalidates the cache on these models; use the per-message effort change (beta) instead. For accounts created on or after 2026-08-31, replaying a thinking block after its prefix changed returns a **400** (or silently drops the block if you opt into `thinking.block_binding.prefix_mismatch_behavior: "drop_block"`).
 
 So the list below is no longer a cost list on that model — it's a correctness list:
 
@@ -124,7 +124,7 @@ Then:
 ## Beyond caching
 
 - **Model tiering** — route easy work to a small model and hard work to a frontier one. Often a larger saving than any caching work.
-- **Effort / reasoning-effort tuning** — on Claude 5 and GPT-5.6, dropping one level frequently holds quality. Test one level below your current setting when migrating.
+- **Effort / reasoning-effort tuning** — on Claude 5 and GPT-6, dropping one level frequently holds quality (Opus 5.5 at `medium` matches Opus 5 at `high` in Anthropic's testing). Test one level below your current setting when migrating.
 - **Batch APIs** — 50% off on Anthropic, reduced rates on OpenAI, for anything not latency-sensitive.
 - **`N > 1` on Mistral** bills input once for multiple completions, making self-consistency cheap there specifically.
 - **Prune the prompt.** OpenAI measured leaner system prompts improving eval scores **10–15%** while cutting tokens **41–66%** and cost **33–67%**. Redundancy costs money *and* quality.

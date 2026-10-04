@@ -76,7 +76,7 @@ improves over time.
 | "cerebrus chip" | "Cerebras" (AI inference chip company) |
 | "Open Code" | "OpenCode" (open source coding agent harness) |
 | "Fable" | Not an artifact — a real current Claude model name (Fable 5); do not "correct" it |
-| "Soul" (compared against "Fable") | Uncertain — possibly "Sonnet," but left as heard; low confidence |
+| "Soul" / "Seoul" (re: an LLM, e.g. computer use, compared against "Fable") | "Sol" (OpenAI's GPT-5.6-Sol, confirmed) |
 | "Alex Carp" | "Alex Karp" (Palantir CEO) |
 | "Dorkesh" / "Dwarkeshart Patel" | "Dwarkesh Patel" (Dwarkesh Podcast host) |
 | "quad" / "Quad" (lowercase, mid-sentence, re: AI coding assistants alongside Codex) | "Claude" (additional variant beyond "Quad Equerry") |
@@ -101,9 +101,44 @@ improves over time.
 | "Lisa Rodkowski" | "Eliezer Yudkowsky" (author of *If Anyone Builds It, Everyone Dies*; wrote the Time op-ed re: bombing data centers) |
 | "Toby Ludke" | "Tobi Lütke" (Shopify CEO) |
 | "Dorkesh Patel" / "Dorcas" | "Dwarkesh Patel" (additional variants beyond existing "Dwarkeshart Patel" entry) |
-| "Seoul" (re: a model doing computer use, alongside "Soul") | "Soul" — same uncertain term as existing "Soul" entry, just a different STT spelling pass; low confidence, possibly "Sonnet" |
 | "Shachech" / "shitekari" / "Shitechari" / "Shakeri" / "Shotech" (context: "readers ... listeners") | "Stratechery" (additional variants beyond existing entries) — but "Sharp Tech" itself is sometimes rendered as "Shotech" too ("your personal vibe coding adventures on Sharp Tech" was heard correctly); disambiguate by context (readers → Stratechery, listeners-only → Sharp Tech) |
 | "Dummin" / "Dumman" / "Dummen" / "Dumm and" / "dumb and" | "Daman" (Ben's human personal assistant, confirmed spelling) |
+| "Sharf Tech" | "Sharp Tech" |
+| "Dudario Amade" / "Amade's" | "Dario Amodei" / "Amodei's" (Anthropic CEO) |
+| "Chucky Plus" | "Stratechery Plus" (subscription bundle) |
+| "Ben Culliver" | "Ben Golliver" (Washington Post NBA writer, Greatest of All Talk co-host) |
+| "Derek Moray" / "Daryl" (basketball context) | "Daryl Morey" (NBA exec) — not Dario; "Derek" may be a real slip in the banter |
+| "Easy Pass" | "E-ZPass" |
+| "Ruby Goubert" | "Rudy Gobert" (NBA player, mic-wiping COVID moment) |
+| "Mark Bettyoff" / "Dream Force" | "Marc Benioff" / "Dreamforce" |
+| "Ursa van Leiner" | "Ursula von der Leyen" |
+| "meter" (re: AI safety evals) | "METR" (already in report row; also spoken as "meter or M-E-T-R") |
+| "Kimmy" (re: Llama comparison) | "Kimi" (already listed; confirmed again) |
+| "currency ended" (re: Walmart payments) | "CurrentC ended" (the MCX/Walmart-backed payment app) |
+| "Chip Wars" | "Chip War" (Chris Miller's book) |
+| "less wrong" | "LessWrong" |
+| "stucksnet" | "Stuxnet" |
+| "Rezi" | "Resy" |
+| "Shaw Shank Redemption" | "The Shawshank Redemption" |
+| "the whole bud experience" | "the whole Bud experience" (Mike Budenholzer, Bucks) — low confidence |
+| "T V PN" / "TVPN" | "TBPN" (tech talk show Ben appeared on) |
+| "Allen Dye" | "Alan Dye" (ex-Apple design head, now at Meta) |
+| "Carl Anthony Towns" / "OG Ananobi" / "Mikhail Bridges" / "Clay Thompson" | "Karl-Anthony Towns" / "OG Anunoby" / "Mikal Bridges" / "Klay Thompson" |
+| "Tamaguchi" | "Tamagotchi" |
+| "Sun OS" | "SunOS" |
+| "Metaconnect" / "Pass Connect" | "Meta Connect" |
+| "newsmania" (re: Muse launch) | "Muse mania" — low confidence |
+| "Pac Roshanisty" | "Patrick O'Shaughnessy" (Invest Like the Best host) — low confidence |
+| "Ezra Kwine" | "Ezra Klein" |
+| "Toby" (re: Shopify "rebels") | "Tobi" (Tobi Lütke) |
+| "views" (re: Meta's agent, mid-sentence) | "Muse" |
+| "Nat Freedman" | "Nat Friedman" (already listed; recurred) |
+
+> Role note: hosting can flip. In the "Doom Debates Go Mainstream" episode, Ben
+> jokingly takes the host chair and interviews Andrew about his Sharp Text
+> article, but Andrew still reads the listener emails. When attributing, prefer
+> content cues (Ben: Wisconsin/Madison, Packers, Brewers, Bucks, Taipei, Stratechery;
+> Andrew: DC, basketball/GOAT Talk, Sharp Text pieces) over the usual host/analyst roles.
 
 > Recurring listener/emailer names are inherently unverifiable — spell them
 > consistently within an episode rather than guessing a "correct" form. E.g.
