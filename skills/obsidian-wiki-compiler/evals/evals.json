@@ -27,7 +27,11 @@
       "id": 4,
       "prompt": "I have a second wiki, '31.16 Practical AI & LLM Implementation', in the same category as the existing '31.12 AI Agents Wiki'. Ingest this clipped article into it: /Users/bryan/repos/skills-workspace/obsidian-wiki/test-vault/Reading List/Running Agents in Production.md — it has frontmatter 'created: 2026-05-12'. Note that 31.12's archive bucket for the week of 2026-05-10 already exists at '31.09 Archive for category 31/2026-05-10/' with its own '_manifest.md'.",
       "expected_output": "Should recognize the Sunday-of-week for 2026-05-12 is 2026-05-10, and that '31.09 Archive for category 31/2026-05-10/' already exists (created by 31.12's earlier ingest). Should NOT create a duplicate or wiki-scoped wrapper folder — instead append the new article into the existing flat bucket and add a new row to the existing '_manifest.md' alongside 31.12's rows. When 31.16's Wiki Index is created or updated, its '## Sources' section should list this bucket and annotate it as shared, e.g. '— shared bucket, also cited by [[31.12 Wiki Index|31.12]]'. If 31.12's Wiki Index already exists, its own '## Sources' entry for this bucket should likewise be updated to note it's now also cited by 31.16.",
-      "files": []
+      "files": [
+        "/Users/bryan/repos/skills-workspace/obsidian-wiki/test-vault/Reading List/Running Agents in Production.md",
+        "/Users/bryan/repos/skills-workspace/obsidian-wiki/test-vault/30-39 Knowledge Management & Reading/31 Technology (Development, AI, Security, Privacy)/31.09 Archive for category 31/2026-05-10/_manifest.md",
+        "/Users/bryan/repos/skills-workspace/obsidian-wiki/test-vault/30-39 Knowledge Management & Reading/31 Technology (Development, AI, Security, Privacy)/31.09 Archive for category 31/2026-05-10/Testing Agents Against Production Traces - 2026-05-11T093012-0500.md"
+      ]
     }
   ]
 }
