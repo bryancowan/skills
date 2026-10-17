@@ -3,6 +3,8 @@
 Run from the repo root:  python3 -m unittest tests/test_sync_typewhisper.py
 """
 
+import contextlib
+import io
 import json
 import sys
 import tempfile
@@ -231,6 +233,37 @@ class ClientTests(unittest.TestCase):
         dead = sync.TypeWhisperClient(1, None)
         with self.assertRaises(sync.ApiUnavailable):
             dead.terms()
+
+
+class ApplyFailureTests(unittest.TestCase):
+    """main() must not traceback when the API fails after the planning reads succeed."""
+
+    def run_main(self, failure):
+        class Flaky:
+            def terms(self):
+                return ["RAG"]
+
+            def corrections(self):
+                return {}
+
+            def add_terms(self, terms):
+                raise failure
+
+            put_correction = add_terms
+
+        original, sync.TypeWhisperClient.discover = sync.TypeWhisperClient.discover, classmethod(lambda cls: Flaky())
+        argv, sys.argv = sys.argv, ["sync_typewhisper.py", "--apply"]
+        try:
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                return sync.main()
+        finally:
+            sync.TypeWhisperClient.discover, sys.argv = original, argv
+
+    def test_server_vanishing_mid_apply_exits_zero(self):
+        self.assertEqual(self.run_main(sync.ApiUnavailable("connection refused")), 0)
+
+    def test_http_error_mid_apply_exits_nonzero(self):
+        self.assertEqual(self.run_main(RuntimeError("PUT /v1/dictionary/terms failed: HTTP 500")), 1)
 
 
 class RealProfileTests(unittest.TestCase):

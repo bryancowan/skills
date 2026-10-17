@@ -31,6 +31,8 @@ Importable functions:
     plan_corrections(accepted, existing) → (to_add, present, conflicts)
 """
 
+from __future__ import annotations
+
 import argparse
 import json
 import os
@@ -350,12 +352,20 @@ def main() -> int:
         _show("Corrections skipped as unsafe", skipped, limit=15)
 
     if args.apply:
-        if terms_to_add:
-            client.add_terms(terms_to_add)
-        for original, replacement in corr_to_add:
-            client.put_correction(original, replacement)
-        have_terms = {t.lower() for t in client.terms()}
-        have_corr = {k.lower() for k in client.corrections()}
+        try:
+            if terms_to_add:
+                client.add_terms(terms_to_add)
+            for original, replacement in corr_to_add:
+                client.put_correction(original, replacement)
+            have_terms = {t.lower() for t in client.terms()}
+            have_corr = {k.lower() for k in client.corrections()}
+        except ApiUnavailable:
+            # Writes are add-only and idempotent, so the next run fills any gap.
+            print("TypeWhisper API server went away mid-sync; the next run will catch up.")
+            return 0
+        except RuntimeError as exc:
+            print(f"TypeWhisper API error: {exc}", file=sys.stderr)
+            return 1
         missing = [t for t in terms_to_add if t.lower() not in have_terms]
         missing += [o for o, _ in corr_to_add if o.lower() not in have_corr]
         if missing:
