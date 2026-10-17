@@ -24,6 +24,12 @@
       "prompt": "Create a new transcript note titled 'China: A New Era #42' for Example #1. The speakers are 'Smith, Jr.' and 'Alice: Host', the source is /Users/bryan/Transcripts/show: episode.srt, and one topic is 'China: policy'.",
       "expected_output": "Writes valid YAML frontmatter by serializing every dynamic scalar and collection before interpolation, so colons, hashes, commas, quotes, Unicode, and path punctuation retain their literal values. Omits undetermined fields, refuses to overwrite the target, and preserves the requested title, podcast, speaker names, source path, and topics exactly when the YAML is parsed.",
       "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "I just added a few new artifacts to the Sharp China profile. Push the podcast profile fixes into my TypeWhisper dictionary so Parakeet picks them up.",
+      "expected_output": "Runs scripts/sync_typewhisper.py as a dry-run first and shows the summary (terms to add, terms deferred past the 256-term Parakeet cap, corrections to add, corrections skipped as unsafe), then runs it with --apply only after the user is happy. Explains that Terms are what affect the watch-folder Parakeet pass while Corrections are global and not applied to watch-folder SRTs. Never deletes entries, never replaces the dictionary, never sends context-dependent rows such as 'she' -> 'Xi', and does not try to write dictionary.store directly. If TypeWhisper's API server is off, reports that in one line and tells the user to enable Settings > Advanced > API Server instead of failing.",
+      "files": []
     }
   ]
 }

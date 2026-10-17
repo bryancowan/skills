@@ -49,6 +49,8 @@ worked example.
   profile by copying the sharp-china format.
 - **Compounding:** when you confirm a new recurring artifact for a known podcast,
   append it to that profile's artifact table so future runs catch it automatically.
+  Step 7 then pushes it to TypeWhisper so the next Parakeet pass starts closer to
+  correct.
 
 ---
 
@@ -237,6 +239,38 @@ any frontmatter field you can't determine — don't invent values.**
 3. Confirm the transcript ends with the last speaker's sign-off (not truncated).
 4. new-file mode: confirm the YAML frontmatter parses (no stray colons/brackets)
    and only contains fields you could actually determine.
+
+---
+
+### Step 7 — Sync fixes to TypeWhisper (optional)
+
+If the SRT came from TypeWhisper's watch folder with Parakeet, push the profile
+fixes back into its dictionary so the next episode starts cleaner:
+
+```bash
+python scripts/sync_typewhisper.py           # dry-run: shows what would change
+python scripts/sync_typewhisper.py --apply   # write it
+```
+
+Run the dry-run first the first time and show the user the output. After that,
+run `--apply` once at the end of any run that added rows to a profile.
+
+- **Terms** (correct spellings) are what actually improve the Parakeet pass:
+  vocabulary boosting uses them during transcription. Parakeet boosts at most
+  256 terms and silently drops the rest, so the script fills only the free slots,
+  highest-recurrence first, and lists what it deferred. Never push past the cap
+  to "make room"; pruning old terms is the user's call.
+- **Corrections** (heard-as → correct) are a filtered bonus. They are global to
+  all dictation and the watch folder never applies them, so only distinctive
+  garbles are sent: no context-dependent rows ("she" → "Xi"), no ordinary English
+  words, no long one-off phrases, and nothing in
+  `references/typewhisper-denylist.txt`. Add to that file any heard-as form that
+  turns out to be a real name or word.
+- It only adds: it never deletes, replaces the dictionary, or overwrites a
+  correction the user already has.
+- It needs TypeWhisper's API server (Settings > Advanced > API Server). If the
+  server is off the script says so and exits 0; skip the step and mention it in
+  one line. The next run catches up, because the profiles are the source of truth.
 
 ---
 

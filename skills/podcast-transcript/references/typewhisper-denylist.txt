@@ -1,0 +1,16 @@
+# Heard-as forms that sync_typewhisper.py must never send as TypeWhisper corrections.
+# Corrections run on ALL dictation, so list any heard-as form that is itself a real
+# name or word. One per line, case-insensitive. Terms (correct spellings) are unaffected.
+Kratos
+Mustafa Suleiman
+Ryan Haas
+Li Chong
+Zhang Xuan
+Darren Peterson
+David Sachs
+Scott Besson
+Jim Kramer
+Teresa Fallon
+Emile Michael
+Craig Mundy
+Young Hansen
