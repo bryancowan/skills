@@ -148,6 +148,44 @@ improves over time.
 | "Dick Sporting Goods" | "Dick's Sporting Goods" |
 | "Gecko" / "GeckoBot" / "Gecko bot" | Not an artifact — Ben's own personal agent/server setup; keep "Gecko" |
 | "Tamagucchi" / "Tamaguchi" | Ben's mispronunciation of "Tamagotchi" is a running joke ("Tamagucchi" episode). Keep "Tamagucchi" where Ben/Andrew are riffing on it; use "Tamagotchi" in emailers' text and the product itself |
+| "Stratekery" / "Stratekri" / "Stratekry" | "Stratechery" (additional variants) |
+| "Joel Padoni" | "Joel Podolny" (Apple University dean; spelling confirmed) |
+| "David Heimer Hansen" / "Omargy" / "Omarji" | "David Heinemeier Hansson" (DHH) / "Omarchy" (his Linux distro) |
+| "Aswath Damo Daran" | "Aswath Damodaran" (also garbled once as "has atomic RA value reever", re: valuing Uber) |
+| "Dall XPS" | "Dell XPS" |
+| "MPC" / "MPC server" (re: agents/APIs) | "MCP" / "MCP server" (Model Context Protocol) |
+| "Lena Khan" | "Lina Khan" |
+| "Dumerism" | "Doomerism" |
+| "ChatGPD gets computer" | "ChatGPT Gets a Computer" (Ben's 2023 Stratechery article title) |
+| "LMs" / "LM" | "LLMs" / "LLM" (STT drops a letter) |
+| "sharp text" | "Sharp Text" (Andrew's newsletter) |
+| "Zach Barron" | "Zach Baron" (GQ writer who interviewed Ben Affleck) |
+| "Alan Iverson" | "Allen Iverson" |
+| "machine anthologies" | "machine intelligence" (low confidence) |
+| "iphone air" / "the air two" / "the air too" | "iPhone Air" / "the Air 2" |
+| "Golden Gate" | Not an artifact — macOS 27's real name (confirmed by web search) |
+| "iPhone duo" / "duo" | "iPhone Duo" / "Duo" (Apple's first foldable, $1,999; confirmed) |
+| "home view" | "HomeView" (Apple's 7-inch smart home display, announced Oct 13, 2026, $299; confirmed). "Siri AI" is the transcribed product name; keep |
+| "Starling" | "Starlink" |
+| "AT<unk>T" | "AT&T" (parser leaves `<unk>` for the ampersand) |
+| "marking videos" | "marketing videos" |
+| "DAC board" | "DAKboard" (wall calendar/photo display service Ben runs at home) |
+| "ubiquity" (home networking/doorbells) | "Ubiquiti" (already listed under "Unify"/"Ubiquity") |
+| "brew haha" / "breweries baseball" | "brouhaha" / "Brewers baseball" |
+| "far flung microphone" | "far-field microphone" |
+| "uncanny value" | "uncanny valley" |
+| "add this TV to the Matrix" | "add this TV to Matter" (smart home standard) |
+| "mag safe" | "MagSafe" |
+| "fortnight" (gaming) | "Fortnite" |
+| "cloud" (alongside ChatGPT) | "Claude" |
+| "physical motes" | "physical moats" |
+| "Grantlin" | "Grantland" |
+| "Sean Fennessy" / "Tom Pelicero" / "Todd McShea" | "Sean Fennessey" / "Tom Pelissero" / "Todd McShay" (Ringer personalities; confirmed) |
+| "SI race, super superintelligence" (email) | "ASI race (superintelligence)" |
+| "oversassified" | "over-SaaS-ified" — low confidence |
+| "the social reckoning" | "The Social Reckoning" (Social Network sequel); "You can see everything" → "You Can See Everything" (Nathan Fielder/Elizabeth Holmes doc, A24; confirmed) |
+| "tail between their legs" heard as "towel between their legs" | "tail between their legs" |
+| "CVS had the merger" (NFL rights, Paramount) | "Paramount" — low confidence; "paramel" → "Paramount" |
 
 > Role note: hosting can flip. In the "Doom Debates Go Mainstream" episode, Ben
 > jokingly takes the host chair and interviews Andrew about his Sharp Text
