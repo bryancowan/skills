@@ -6,6 +6,7 @@ Usage:
     python sync_typewhisper.py              # dry-run: show what would change
     python sync_typewhisper.py --apply      # write to TypeWhisper
     python sync_typewhisper.py --budget 200 # override the 256-term Parakeet cap
+    python sync_typewhisper.py --corpus ~/vault  # rank by use in finished transcripts
 
 Reads the "Known STT artifacts" tables in references/podcasts/*.md and syncs them
 through TypeWhisper's local HTTP API (Settings > Advanced > API Server):
@@ -13,7 +14,7 @@ through TypeWhisper's local HTTP API (Settings > Advanced > API Server):
 - Terms: the *correct* spellings (proper nouns). Parakeet's vocabulary boosting
   uses these during transcription, so they improve the SRT itself. Parakeet
   boosts at most 256 terms; extras are silently dropped by the app, so this
-  script fills only the free slots, highest-recurrence terms first.
+  script fills only the free slots, best-ranked terms first (see ranking below).
 - Corrections: heard-as -> correct pairs applied after transcription. Corrections
   are GLOBAL (they run on all dictation), so only distinctive garbles are sent;
   ambiguous ones ("she" -> "Xi") are filtered out. Watch-folder SRTs do not get
@@ -27,6 +28,9 @@ Importable functions:
     parse_profiles(directory)          → list of ProfileRow
     term_candidates(rows)              → dict of term → recurrence score
     safe_corrections(rows, words, deny)→ (accepted, skipped)
+    profile_prose(directory)           → profile text before the artifact tables
+    corpus_usage(terms, corpus_dir)    → dict of term → (mentions, episodes)
+    rank_scores(cands, prose, usage)   → dict of term → ranking score
     plan_terms(cands, existing, budget)→ (to_add, present, overflow)
     plan_corrections(accepted, existing) → (to_add, present, conflicts)
 """
@@ -49,6 +53,8 @@ DISCOVERY_FILE = Path.home() / "Library/Application Support/TypeWhisper/api-disc
 PROFILES_DIR = Path(__file__).resolve().parent.parent / "references" / "podcasts"
 DENYLIST_FILE = Path(__file__).resolve().parent.parent / "references" / "typewhisper-denylist.txt"
 SYSTEM_WORDS = Path("/usr/share/dict/words")
+PROSE_BONUS = 2  # a term named in a profile's title or Speakers section counts as this many extra mis-hearings
+_NON_CORPUS_DIRS = {".git", ".obsidian", ".trash"}
 WEAK_EVIDENCE_MAX = 2  # generic single words need more than this many logged mis-hearings
 MAX_CORRECTION_TOKENS = 3  # longer garbles are one-off sentence fragments, not reusable fixes
 _LOWERCASE_CONNECTORS = {"of", "the", "and", "von", "van", "der", "de", "la", "el", "al", "bin"}
@@ -220,10 +226,65 @@ def safe_corrections(
     return accepted, skipped
 
 
+def _count_mentions(term: str, text: str) -> int:
+    return len(re.findall(r"(?<!\w)" + re.escape(term) + r"(?!\w)", text, flags=re.IGNORECASE))
+
+
+def profile_prose(directory: Path) -> str:
+    """Text of each profile before its "Known STT artifacts" section: the title,
+    intro and Speakers section. A term named there is central to the show."""
+    chunks: list[str] = []
+    for path in sorted(Path(directory).glob("*.md")):
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if line.startswith("## Known STT artifacts"):
+                break
+            chunks.append(line)
+    return "\n".join(chunks)
+
+
+def corpus_usage(terms: list[str], corpus: Path) -> dict[str, tuple[int, int]]:
+    """Count each term across finished transcripts: markdown files under `corpus`
+    that contain a "## Transcript" section (what this skill writes). Only the text
+    after that heading counts. Returns {term: (mentions, episodes_containing_it)}."""
+    bodies: list[str] = []
+    for path in Path(corpus).rglob("*.md"):
+        if _NON_CORPUS_DIRS & set(path.parts):
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        if "\n## Transcript" in text:
+            bodies.append(text.split("\n## Transcript", 1)[1])
+    usage: dict[str, tuple[int, int]] = {}
+    for term in terms:
+        counts = [_count_mentions(term, body) for body in bodies]
+        usage[term] = (sum(counts), sum(1 for n in counts if n))
+    return usage
+
+
+def rank_scores(
+    candidates: dict[str, int],
+    prose: str = "",
+    usage: dict[str, tuple[int, int]] | None = None,
+) -> dict[str, int]:
+    """Final ranking score: (mis-hearings + prose bonus) x (1 + episodes using the term).
+
+    Mis-hearings say how often STT gets a term wrong; episodes say how often it comes
+    up at all, so boosting it pays off. Without a corpus every term has one factor of
+    1 and the ranking falls back to mis-hearings plus the prose bonus."""
+    scores: dict[str, int] = {}
+    for term, base in candidates.items():
+        bonus = PROSE_BONUS if prose and _count_mentions(term, prose) else 0
+        episodes = usage[term][1] if usage and term in usage else 0
+        scores[term] = (base + bonus) * (1 + episodes)
+    return scores
+
+
 def plan_terms(
     candidates: dict[str, int], existing: list[str], budget: int = PARAKEET_TERM_CAP
 ) -> tuple[list[str], list[str], list[str]]:
-    """Fill free Parakeet slots by recurrence score, then longer (more specific) terms.
+    """Fill free Parakeet slots by ranking score, then longer (more specific) terms.
     Returns (to_add, present, overflow)."""
     have = {t.lower() for t in existing}
     present = sorted(t for t in candidates if t.lower() in have)
@@ -318,11 +379,23 @@ def main() -> int:
     parser.add_argument("--apply", action="store_true", help="Write changes (default is a dry-run)")
     parser.add_argument("--budget", type=int, default=PARAKEET_TERM_CAP, help="Total term cap (default: 256)")
     parser.add_argument("--profiles", type=Path, default=PROFILES_DIR, help="Directory of podcast profiles")
+    parser.add_argument(
+        "--corpus",
+        type=Path,
+        default=os.environ.get("PODCAST_TRANSCRIPT_CORPUS"),
+        help="Folder of finished transcripts (e.g. an Obsidian vault); ranks terms by how many "
+        "episodes use them. Also read from $PODCAST_TRANSCRIPT_CORPUS",
+    )
     args = parser.parse_args()
+    if args.corpus and not Path(args.corpus).is_dir():
+        print(f"--corpus is not a folder: {args.corpus}", file=sys.stderr)
+        return 2
 
     rows = parse_profiles(args.profiles)
     words = load_system_words()
-    candidates = term_candidates(rows, words)
+    base_scores = term_candidates(rows, words)
+    usage = corpus_usage(list(base_scores), Path(args.corpus)) if args.corpus else None
+    candidates = rank_scores(base_scores, profile_prose(args.profiles), usage)
     accepted, skipped = safe_corrections(rows, words, load_denylist())
 
     client = TypeWhisperClient.discover()
@@ -344,8 +417,9 @@ def main() -> int:
 
     mode = "APPLY" if args.apply else "DRY-RUN"
     print(f"[{mode}] {len(rows)} profile rows, {len(existing_terms)}/{args.budget} term slots used")
-    _show("Terms to add", terms_to_add, limit=len(terms_to_add))
-    _show("Terms deferred (no free Parakeet slot)", terms_overflow)
+    ranked = lambda terms: [f"{t}  [score {candidates[t]}]" for t in terms]  # noqa: E731
+    _show("Terms to add", ranked(terms_to_add), limit=len(terms_to_add))
+    _show("Terms deferred (no free Parakeet slot)", ranked(terms_overflow))
     _show("Corrections to add", corr_to_add)
     _show("Corrections conflicting with an existing entry (left alone)", corr_conflicts)
     if not args.apply:

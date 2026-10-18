@@ -258,8 +258,15 @@ run `--apply` once at the end of any run that added rows to a profile.
 - **Terms** (correct spellings) are what actually improve the Parakeet pass:
   vocabulary boosting uses them during transcription. Parakeet boosts at most
   256 terms and silently drops the rest, so the script fills only the free slots,
-  highest-recurrence first, and lists what it deferred. Never push past the cap
-  to "make room"; pruning old terms is the user's call.
+  best-ranked first, and lists what it deferred with each term's score. Never
+  push past the cap to "make room"; pruning old terms is the user's call.
+- **Ranking:** score = (logged mis-hearings + a small bonus if the profile's title
+  or Speakers section names the term) × (1 + number of finished episodes that use
+  it). The episode factor needs `--corpus <folder>`: a folder of finished
+  transcripts (markdown files with a `## Transcript` section, such as the Obsidian
+  vault this skill writes into). Pass it when the user keeps one; set
+  `PODCAST_TRANSCRIPT_CORPUS` to make it the default. Without it, ranking falls
+  back to mis-hearings plus the profile bonus.
 - **Corrections** (heard-as → correct) are a filtered bonus. They are global to
   all dictation and the watch folder never applies them, so only distinctive
   garbles are sent: no context-dependent rows ("she" → "Xi"), no ordinary English

@@ -235,6 +235,73 @@ class ClientTests(unittest.TestCase):
             dead.terms()
 
 
+class RankingTests(unittest.TestCase):
+    def test_profile_prose_stops_before_the_artifact_tables(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            Path(tmp, "show.md").write_text(
+                "# Podcast Profile: Show\n\n## Speakers\n\n- **Bill** reads his Sinocism newsletter.\n\n"
+                "## Known STT artifacts\n\n| Heard as | Correct |\n| \"x\" | \"Qwen\" |\n",
+                encoding="utf-8",
+            )
+            prose = sync.profile_prose(Path(tmp))
+        self.assertIn("Sinocism", prose)
+        self.assertNotIn("Qwen", prose)
+
+    def test_score_combines_mishearings_prose_bonus_and_episode_spread(self):
+        cands = {"Sinocism": 1, "Qwen": 1, "Busan": 1}
+        usage = {"Sinocism": (15, 9), "Qwen": (0, 0), "Busan": (9, 8)}
+        scores = sync.rank_scores(cands, "reads his Sinocism newsletter", usage)
+        self.assertEqual(scores["Sinocism"], (1 + sync.PROSE_BONUS) * 10)
+        self.assertEqual(scores["Busan"], 9)
+        self.assertEqual(scores["Qwen"], 1)
+
+    def test_without_a_corpus_ranking_is_mishearings_plus_prose_bonus(self):
+        scores = sync.rank_scores({"A Name": 3, "Other": 3}, "about A Name only")
+        self.assertEqual(scores, {"A Name": 3 + sync.PROSE_BONUS, "Other": 3})
+
+    def test_prose_match_respects_word_boundaries(self):
+        self.assertEqual(sync.rank_scores({"Xi": 1}, "Xi Jinping spoke")["Xi"], 1 + sync.PROSE_BONUS)
+        self.assertEqual(sync.rank_scores({"Xi": 1}, "Xinhua only")["Xi"], 1)  # not inside another word
+
+    def test_usage_in_episodes_beats_an_alphabetical_tie(self):
+        # The case that left Sinocism out: every term scored 1 and ties fell to length/alphabet.
+        base = {"Mount Kailash": 1, "Sinocism": 1}
+        scores = sync.rank_scores(base, "", {"Mount Kailash": (2, 1), "Sinocism": (15, 9)})
+        to_add, _, overflow = sync.plan_terms(scores, [], budget=1)
+        self.assertEqual((to_add, overflow), (["Sinocism"], ["Mount Kailash"]))
+
+
+class CorpusTests(unittest.TestCase):
+    def make_corpus(self, tmp):
+        root = Path(tmp)
+        (root / "ep1.md").write_text(
+            "Intro mentions Sinocism before the transcript.\n\n## Transcript\n\nSinocism is great. Xinhua said so. Sinocism!\n",
+            encoding="utf-8",
+        )
+        (root / "ep2.md").write_text("## Notes\n\nno transcript heading here, Sinocism Sinocism\n", encoding="utf-8")
+        (root / "sub").mkdir()
+        (root / "sub" / "ep3.md").write_text("x\n## Transcript\n\nXi Jinping and sinocism again.\n", encoding="utf-8")
+        (root / ".obsidian").mkdir()
+        (root / ".obsidian" / "ep4.md").write_text("x\n## Transcript\n\nSinocism Sinocism Sinocism\n", encoding="utf-8")
+        (root / "binary.md").write_bytes(b"\xff\xfe\x00bad")
+        return root
+
+    def test_counts_only_transcript_sections_and_skips_tool_folders(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            usage = sync.corpus_usage(["Sinocism", "Xi", "Xinhua"], self.make_corpus(tmp))
+        self.assertEqual(usage["Sinocism"], (3, 2))  # ep1 twice + ep3 once; not ep2 (no heading) or .obsidian
+        self.assertEqual(usage["Xinhua"], (1, 1))
+        self.assertEqual(usage["Xi"], (1, 1))  # "Xi Jinping" counts; "Xinhua" does not
+
+    def test_cli_rejects_a_corpus_that_is_not_a_folder(self):
+        argv, sys.argv = sys.argv, ["sync_typewhisper.py", "--corpus", "/definitely/not/a/folder"]
+        try:
+            with contextlib.redirect_stderr(io.StringIO()):
+                self.assertEqual(sync.main(), 2)
+        finally:
+            sys.argv = argv
+
+
 class ApplyFailureTests(unittest.TestCase):
     """main() must not traceback when the API fails after the planning reads succeed."""
 
