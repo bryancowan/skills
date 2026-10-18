@@ -183,6 +183,23 @@ fix list. Append new ones here as you find them so the profile improves over tim
 | "off cycle" heard as "auto cycle" | "off-cycle" (as in the off-cycle Politburo meeting, Sept 2024) |
 | "teacher not teacher" / "YU Tozila" | "Teacher Li Is Not Your Teacher" / "whyyoutouzhele" (Li Ying's X account surfacing protest videos) |
 | "Red Bing" | "red bean" (mooncake context) |
+| "Maros Sefkovych" / "Sefkovich" | "Maroš Šefčovič" (EU trade commissioner) |
+| "Aiken Gump" | "Akin Gump" |
+| "PhDVs" | "PHEVs" (plug-in hybrid electric vehicles) |
+| "Chiangnahai" | "Zhongnanhai" (variant of the "Jul Nun High" artifact above) |
+| "dubbish" | "dovish" |
+| "the metal to address it" | "the mettle to address it" |
+| "terror free" (solar panel deal context) | "tariff-free" |
+| "Stella Lee" | "Stella Li" (BYD executive vice president) |
+| "expung CEO" | "XPeng CEO" |
+| "DSVAS" | "DSV A/S" (freight forwarder, F-35 parts shipment story) |
+| "BYT" | "BYD" |
+| "Jiang Zemmin" | "Jiang Zemin" |
+| "cynicism chat" | "Sinocism chat" (variant of the "cynicism" artifact above) |
+| "Predicted Congress" / "Party of Congress" | "Party Congress" |
+| "Trump won" (trade war context) | "Trump 1.0" |
+| "export curves" | "export curbs" |
+| "your earth's perspective" / "their earths" | "rare earths" |
 
 > The "she" → "Xi" fix needs judgment — only correct it where the context is
 > clearly about the Chinese leader, not an actual female referent. Leave the
