@@ -3,9 +3,11 @@
 
 Usage:
     python3 apply_frontmatter.py "<note.md>" --json '{"description": "...", "note": "...", "add_tags": ["a", "b"]}'
-    python3 apply_frontmatter.py "<note.md>" --json-file values.json [--dry-run]
+    python3 apply_frontmatter.py "<note.md>" --json-file /tmp/values.json [--dry-run]
 
 Every key in the JSON is optional; include only what you generated.
+A --json-file is deleted after a successful write, so no scratch files are
+left behind (pass --keep-json-file to keep it).
 Only the description, note, and tags lines change. Every other line in the
 file, including title, status, source, and related, stays byte-identical.
 """
@@ -94,6 +96,7 @@ def main() -> int:
     src.add_argument("--json", help="JSON object with description / note / add_tags")
     src.add_argument("--json-file", help="path to a file holding that JSON object")
     ap.add_argument("--dry-run", action="store_true", help="print the diff, write nothing")
+    ap.add_argument("--keep-json-file", action="store_true", help="don't delete --json-file after writing")
     ap.add_argument("--force-note", action="store_true", help="allow replacing a non-empty note")
     args = ap.parse_args()
 
@@ -145,6 +148,9 @@ def main() -> int:
         fh.write(new_text)
     os.replace(tmp, path)
     print(f"written: {path}")
+    if args.json_file and not args.keep_json_file:
+        Path(args.json_file).unlink(missing_ok=True)
+        print(f"removed {args.json_file}")
     return 0
 
 

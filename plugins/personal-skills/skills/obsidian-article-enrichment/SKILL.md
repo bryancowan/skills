@@ -66,7 +66,7 @@ python3 "SKILL_DIR/scripts/apply_frontmatter.py" "<note path>" --json '{"note": 
 ```
 
 - `add_tags` takes only the **new** tags. The script merges them with the existing ones, drops duplicates, keeps `clippings` first, and strips `#`.
-- If the text contains single quotes that break shell quoting, write the JSON to a temp file and pass `--json-file <file>` instead.
+- If the text contains single quotes that break shell quoting, write the JSON to a file in the temp folder (e.g. `/tmp/enrich.json`, never next to the note) and pass `--json-file <file>` instead. The script deletes that file after a successful write.
 - The script prints a diff. If it prints `error:`, fix the input and run it again; don't edit the YAML by hand.
 
 ### 6. Decide on the rename

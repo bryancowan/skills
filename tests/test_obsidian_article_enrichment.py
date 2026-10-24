@@ -97,6 +97,13 @@ class ApplyFrontmatter(unittest.TestCase):
         r = run(SCRIPTS / "apply_frontmatter.py", self.path, "--json", '{"add_tags": ["two words"]}')
         self.assertNotEqual(r.returncode, 0)
 
+    def test_json_file_removed_after_write(self):
+        values = Path(self.dir.name) / "values.json"
+        values.write_text('{"add_tags": ["ecommerce"]}', encoding="utf-8")
+        r = run(SCRIPTS / "apply_frontmatter.py", self.path, "--json-file", values)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertFalse(values.exists())
+
     def test_analyze_without_vault(self):
         r = run(SCRIPTS / "analyze_note.py", self.path)
         d = json.loads(r.stdout)
