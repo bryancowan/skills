@@ -94,6 +94,7 @@ class Frontmatter:
 
 
 def unquote(value: str) -> str:
+    """Strip one pair of surrounding YAML quotes, undoing the escapes each quote style uses."""
     value = value.strip()
     if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
         inner = value[1:-1]
@@ -145,6 +146,7 @@ def domain_of(url: str) -> str:
 
 
 def classify(title: str, source: str) -> str:
+    """Format bucket used for rename history: weekly-roundup, interview, non-headline, podcast, update, or article."""
     t = title.strip()
     if re.match(r"^\d{4}\.\d{2}\b", t):
         return "weekly-roundup"

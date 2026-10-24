@@ -31,6 +31,7 @@ YAML_RESERVED = {"true", "false", "yes", "no", "on", "off", "null", "~"}
 
 
 def yaml_scalar(value: str) -> str:
+    """Collapse to one line and double-quote only when plain YAML would misparse it (leading indicator, ': ', ' #', bool or number)."""
     v = " ".join(value.split())  # one line, single spaces
     needs_quotes = (
         not v
@@ -45,6 +46,7 @@ def yaml_scalar(value: str) -> str:
 
 
 def note_block(value: str) -> list[str]:
+    """Render the summary as a `note: |-` block scalar, one reflowed line per paragraph, blank line between."""
     paragraphs = [" ".join(p.split()) for p in re.split(r"\n\s*\n", value.strip()) if p.strip()]
     out = ["note: |-"]
     for i, p in enumerate(paragraphs):
@@ -62,6 +64,7 @@ def clean_tag(tag: str) -> str:
 
 
 def merged_tags(existing: list[str], new: list[str]) -> list[str]:
+    """Existing tags in their order, then new ones; drops case-insensitive duplicates and keeps clippings first."""
     seen = {t.lower() for t in existing}
     out = list(existing)
     for t in new:

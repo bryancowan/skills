@@ -41,6 +41,7 @@ KEEP_RATE = 0.30
 
 
 def description_check(desc: str, title: str, boilerplate: bool) -> tuple[bool, str]:
+    """Return (needs_work, reason). Generic means empty, same as title, a truncated blurb, marketing voice, or site boilerplate."""
     d = desc.strip()
     if not d:
         return True, "empty"
@@ -56,6 +57,7 @@ def description_check(desc: str, title: str, boilerplate: bool) -> tuple[bool, s
 
 
 def bucket_lean(kept: int, renamed: int) -> str | None:
+    """Rename lean for one history bucket: None under 3 notes, else rename (>=70% renamed), keep (<=30%), or unclear."""
     n = kept + renamed
     if n < MIN_HISTORY:
         return None
