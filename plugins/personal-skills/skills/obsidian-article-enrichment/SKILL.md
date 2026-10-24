@@ -26,7 +26,9 @@ The scripts handle every deterministic part: deciding what needs work, writing Y
 - The user gave a path: use it.
 - The user said "this note" or "the current note": run `obsidian file` and take the `path` line. The vault root comes from `obsidian vault info=path`.
 - The user gave part of a title: run `obsidian search query="<words>" limit=5` and confirm with the user if more than one note matches.
-- For a folder or batch ("everything in the inbox"), list the notes and repeat steps 2–6 for each one.
+- For a folder or batch ("everything in the inbox"), list the notes, then take them one at a time: finish steps 2–6 for a note before opening the next one. Don't read all the articles up front.
+
+Work only on the note(s) the user named. Don't search the vault or open other notes for context; `analyze_note.py` already reads Bryan's history.
 
 ### 2. Analyze
 
@@ -98,7 +100,8 @@ For each note, give one short block: which fields were written, which were skipp
 
 | Mistake | Instead |
 |---|---|
-| Writing YAML by hand | Always use `apply_frontmatter.py`; it handles `|-` block scalars, quoting, and tag merging. |
+| Writing YAML by hand | Always use `apply_frontmatter.py`; it handles `|-` block scalars, quoting, and tag merging. Never write a note file directly. |
+| Browsing other vault notes for tag ideas or history | Don't. The tags prompt and `analyze_note.py` cover it. |
 | Tags with `#` or in `SnakeCase`/`kebab` | The prompt outputs `#lowerCamelCase`. Pass the tags as-is; the script strips `#`. |
 | Changing `status` to Read | Leave `status` alone. Bryan sets it himself. |
 | Editing `title` to match the new headline | `title` keeps the original headline. Only the filename changes. |
