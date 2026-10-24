@@ -77,6 +77,8 @@ def main() -> int:
         return 0
 
     vault = Path(args.vault).expanduser().resolve() if args.vault else find_vault_root(old)
+    if vault and not old.is_relative_to(vault):
+        vault = None  # the note isn't in that vault, so the CLI can't reach it
     if vault and shutil.which("obsidian"):
         rel = old.relative_to(vault).as_posix()
         # The CLI exits 0 even on failure, so success is judged by the files on disk.
