@@ -88,6 +88,8 @@ python3 "SKILL_DIR/scripts/rename_note.py" "<note path>" --headline "<new headli
 
 The script cleans the headline for filenames (colon → ` -`, curly quotes → `'`, strips `?*<>|\/$`![]{}` and trailing periods), keeps the timestamp, and renames through the Obsidian CLI so links in other notes follow the rename. If Obsidian isn't running, it renames on disk and lists the notes that still link to the old name; pass that list on to Bryan. Add `--dry-run` to preview.
 
+Bryan's headlines are usually 100–135 characters. A long one is fine now and then, but not every time. The script refuses headlines over 180 characters; when that happens, cut the least essential clause and run it again. Pass `--long-ok` only if every remaining detail is essential.
+
 ### 7. Report
 
 For each note, give one short block: which fields were written, which were skipped and why, and the rename outcome (renamed to X / kept, with the history basis / proposed, waiting for Bryan).

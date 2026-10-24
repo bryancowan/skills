@@ -25,6 +25,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from notelib import find_vault_root, split_stem  # noqa: E402
 
 MAX_NAME_BYTES = 255
+# Bryan's own renamed headlines: median ~119 characters, 11% over 150, 2% over 180.
+LONG_HEADLINE = 180
 
 
 def clean_headline(h: str) -> str:
@@ -48,6 +50,8 @@ def main() -> int:
     ap.add_argument("--headline", required=True)
     ap.add_argument("--vault", help="vault root (default: nearest parent with .obsidian/)")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--long-ok", action="store_true",
+                    help=f"accept a headline over {LONG_HEADLINE} characters when every detail is essential")
     args = ap.parse_args()
 
     old = Path(args.note).expanduser().resolve()
@@ -58,6 +62,11 @@ def main() -> int:
     if not headline:
         print("error: headline is empty after cleaning", file=sys.stderr)
         return 2
+    if len(headline) > LONG_HEADLINE and not args.long_ok:
+        print(f"error: headline is {len(headline)} characters. Bryan's renamed headlines are usually 100-135 and only "
+              f"2% exceed {LONG_HEADLINE}. Cut the least essential clause (often whatever follows a semicolon) and try "
+              f"again, or rerun with --long-ok if every detail is essential.", file=sys.stderr)
+        return 3
     old_stem, ts = split_stem(old.name)
     new_stem = f"{headline} - {ts}" if ts else headline
     new = old.with_name(new_stem + ".md")

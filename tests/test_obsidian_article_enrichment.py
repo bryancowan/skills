@@ -104,6 +104,13 @@ class ApplyFrontmatter(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertFalse(values.exists())
 
+    def test_rename_refuses_very_long_headline(self):
+        long = "Word " * 40
+        r = run(SCRIPTS / "rename_note.py", self.path, "--headline", long, "--dry-run")
+        self.assertEqual(r.returncode, 3)
+        r = run(SCRIPTS / "rename_note.py", self.path, "--headline", long, "--dry-run", "--long-ok")
+        self.assertEqual(r.returncode, 0, r.stderr)
+
     def test_analyze_without_vault(self):
         r = run(SCRIPTS / "analyze_note.py", self.path)
         d = json.loads(r.stdout)
