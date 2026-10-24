@@ -16,7 +16,7 @@
       "strict": false,
       "skills": [
         "./skills/construction-near-me",
-        "./skills/description-and-tags",
+        "./skills/obsidian-article-enrichment",
         "./skills/good-documentation",
         "./skills/obsidian-jd-organizer",
         "./skills/obsidian-wiki-compiler",

@@ -34,7 +34,7 @@ my-skill/
 ## Adding or Editing Skills
 
 - Skills go in `skills/<skill-name>/SKILL.md`. Current skills:
-  - `description-and-tags/` — skill name `obsidian-reading-list-enrichment`; enriches Obsidian web-clipping notes with description, note summary, and tags in YAML frontmatter
+  - `obsidian-article-enrichment/` — enriches clipped Obsidian articles (summary note, tags, author-voice description) and decides from past renames whether to retitle the file with a Techmeme-style headline; prompts in `references/prompts/` are copies of the vault Copilot prompts (`scripts/check_prompt_drift.py` syncs them); regression tests in `tests/test_obsidian_article_enrichment.py`
   - `construction-near-me/` — researches new buildings and businesses proposed, permitted, under construction, or recently opened near a location; discovers each jurisdiction's permit/GIS/agenda sources and caches them as per-jurisdiction profiles in `references/jurisdictions/`
   - `good-documentation/` — writing and reviewing documentation
   - `obsidian-jd-organizer/` — maintains Johnny Decimal vault structure; audits, files notes, updates indexes, expands categories
@@ -53,7 +53,7 @@ Defines the plugin bundle exposed by `/plugin marketplace add bryancowan/skills`
 
 ## Codex marketplace bundle
 
-Make canonical skill edits under `skills/`. The generated Codex marketplace copies are `description-and-tags`, `construction-near-me`, `good-documentation`, `obsidian-jd-organizer`, `obsidian-wiki-compiler`, `podcast-transcript`, and `prompt-creation` under `plugins/personal-skills/skills/`; do not edit those copies directly.
+Make canonical skill edits under `skills/`. The generated Codex marketplace copies are `obsidian-article-enrichment`, `construction-near-me`, `good-documentation`, `obsidian-jd-organizer`, `obsidian-wiki-compiler`, `podcast-transcript`, and `prompt-creation` under `plugins/personal-skills/skills/`; do not edit those copies directly.
 
 The seven canonical and generated skill directories must contain real files and directories only; nested symlinks are unsupported.
 

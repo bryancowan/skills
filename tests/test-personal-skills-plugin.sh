@@ -7,7 +7,7 @@ plugin_root="$repo_root/plugins/personal-skills"
 plugin_file="$plugin_root/plugin.json"
 bundle_root="$plugin_root/skills"
 skill_dirs=(
-  description-and-tags
+  obsidian-article-enrichment
   construction-near-me
   good-documentation
   obsidian-jd-organizer
@@ -199,10 +199,10 @@ run_symlink_regression() (
   make_fixture "$fixture_root"
 
   bundle_fixture="$fixture_root/plugins/personal-skills/skills"
-  external_target="$fixture_root/external-target/description-and-tags"
+  external_target="$fixture_root/external-target/obsidian-article-enrichment"
   mkdir -p "$external_target"
-  cp -a "$fixture_root/skills/description-and-tags/." "$external_target/"
-  ln -s "$external_target" "$bundle_fixture/description-and-tags"
+  cp -a "$fixture_root/skills/obsidian-article-enrichment/." "$external_target/"
+  ln -s "$external_target" "$bundle_fixture/obsidian-article-enrichment"
   printf '%s\n' sentinel > "$external_target/sentinel"
 
   for fixture_skill in "${skill_dirs[@]:1}"; do
@@ -365,7 +365,7 @@ run_symlink_preflight_regression() (
   make_fixture "$fixture_root"
   bash "$fixture_root/scripts/sync-personal-skills-plugin.sh" || return 1
 
-  printf '%s\n' changed >> "$fixture_root/skills/description-and-tags/payload" || return 1
+  printf '%s\n' changed >> "$fixture_root/skills/obsidian-article-enrichment/payload" || return 1
   ln -s payload "$fixture_root/skills/prompt-creation/nested-link" || return 1
   if bash "$fixture_root/scripts/sync-personal-skills-plugin.sh" \
     > "$fixture_root/sync.log" 2>&1; then
@@ -375,8 +375,8 @@ run_symlink_preflight_regression() (
   fi
   grep -F "canonical skill must not contain symlinks" \
     "$fixture_root/sync.log" > /dev/null || return 1
-  if [[ "$(cat "$fixture_root/plugins/personal-skills/skills/description-and-tags/payload")" \
-    != "description-and-tags" ]]; then
+  if [[ "$(cat "$fixture_root/plugins/personal-skills/skills/obsidian-article-enrichment/payload")" \
+    != "obsidian-article-enrichment" ]]; then
     echo "sync modified an earlier skill before symlink preflight completed" >&2
     return 1
   fi
@@ -470,7 +470,7 @@ run_blank_name_regression() (
   trap 'rm -rf "$fixture_root"' EXIT
   make_metadata_fixture "$fixture_root"
 
-  python3 - "$fixture_root/plugins/personal-skills/skills/description-and-tags/SKILL.md" <<'PY_MUTATE'
+  python3 - "$fixture_root/plugins/personal-skills/skills/obsidian-article-enrichment/SKILL.md" <<'PY_MUTATE'
 import pathlib
 import re
 import sys

@@ -3,7 +3,7 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 skill_dirs=(
-  description-and-tags
+  obsidian-article-enrichment
   construction-near-me
   good-documentation
   obsidian-jd-organizer
@@ -56,9 +56,9 @@ git -C "$fixture_root" commit -qm "base package"
 base_revision="$(git -C "$fixture_root" rev-parse HEAD)"
 
 printf '\nVersion policy regression fixture.\n' >> \
-  "$fixture_root/skills/description-and-tags/SKILL.md"
+  "$fixture_root/skills/obsidian-article-enrichment/SKILL.md"
 printf '\nVersion policy regression fixture.\n' >> \
-  "$fixture_root/plugins/personal-skills/skills/description-and-tags/SKILL.md"
+  "$fixture_root/plugins/personal-skills/skills/obsidian-article-enrichment/SKILL.md"
 git -C "$fixture_root" add .
 git -C "$fixture_root" commit -qm "change package without bumping version"
 
