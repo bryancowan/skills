@@ -12,7 +12,7 @@ For background on the skills system, see:
 
 ## Skills in This Repo
 
-- **[description-and-tags](./skills/description-and-tags)** — Enriches Obsidian web-clipping notes with description, summary, and tags for YAML frontmatter. Skill name: `obsidian-reading-list-enrichment`.
+- **[obsidian-article-enrichment](./skills/obsidian-article-enrichment)** — Enriches clipped Obsidian articles with a summary note, tags, and an author-voice description, and decides from your past renames whether to retitle the file with a Techmeme-style headline.
 - **[construction-near-me](./skills/construction-near-me)** — Researches what new buildings and businesses are proposed, approved, permitted, under construction, or recently opened near any US location. Discovers each jurisdiction's open-data/GIS endpoints, planning agendas, and permit portal, cross-references CRE listings and local news to name the actual tenant, and caches the discovery as a reusable jurisdiction profile.
 - **[good-documentation](./skills/good-documentation)** — Writing and reviewing documentation: user guides, READMEs, tutorials, onboarding materials.
 - **[obsidian-jd-organizer](./skills/obsidian-jd-organizer)** — Maintains a Johnny Decimal organizational system in Obsidian: audits structure, files loose notes, updates indexes, expands categories.
@@ -109,7 +109,7 @@ codex plugin marketplace add bryancowan/skills
 codex plugin add personal-skills@bryancowan-skills
 ```
 
-The plugin contains `description-and-tags`, `construction-near-me`, `good-documentation`, `obsidian-jd-organizer`, `obsidian-wiki-compiler`, `podcast-transcript`, and `prompt-creation`. To pick up future plugin updates, run:
+The plugin contains `obsidian-article-enrichment`, `construction-near-me`, `good-documentation`, `obsidian-jd-organizer`, `obsidian-wiki-compiler`, `podcast-transcript`, and `prompt-creation`. To pick up future plugin updates, run:
 
 ```bash
 codex plugin marketplace upgrade bryancowan-skills

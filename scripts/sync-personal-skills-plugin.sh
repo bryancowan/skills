@@ -5,7 +5,7 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 bundle_root="$repo_root/plugins/personal-skills/skills"
 mode="${1:-sync}"
 skill_dirs=(
-  description-and-tags
+  obsidian-article-enrichment
   construction-near-me
   good-documentation
   obsidian-jd-organizer
