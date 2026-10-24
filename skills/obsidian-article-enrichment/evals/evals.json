@@ -1,0 +1,35 @@
+{
+  "skill_name": "obsidian-article-enrichment",
+  "notes": "Copy evals/files/ to a scratch folder before each run; the skill edits notes in place. Pass --vault ~/Obsidian/vault to analyze_note.py so history is available. Fixture bodies are synthetic; titles, authors, and domains match real vault notes.",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Enrich this clipping: evals/files/2026.42 Home At Last - 2026-10-17T094609-0500.md (my vault is ~/Obsidian/vault)",
+      "expected_output": "Runs analyze_note.py. Writes a 1-2 paragraph plain-prose note (no preamble like 'This roundup...'), weighting the highlighted HomeView and SpaceX passages. Adds 3-6 new lowerCamelCase tags without '#', keeping clippings first and stratechery. Leaves the existing description unchanged (real subheading). Does NOT rename: weekly roundups are always kept. Does not touch status (stays Unread) or title. Uses apply_frontmatter.py, not hand-edited YAML.",
+      "files": ["evals/files/2026.42 Home At Last - 2026-10-17T094609-0500.md"]
+    },
+    {
+      "id": 1,
+      "prompt": "do the usual on evals/files/Joe (@joedaroo) on X - 2026-09-28T114749-0500.md, vault is ~/Obsidian/vault",
+      "expected_output": "Writes note, description, and tags. Description is one sentence under 30 words in the author's voice but not first person, no 'This post...' opener. Tags include one content type (likely opinion) and specific topics such as aiSafety or cybersecurity; no source tag for x.com. Renames the file without asking because the title is a non-headline ('Name on X'): new headline is sentence case, names the OpenAI agent-security staffer and his argument, contains no colon, and keeps the ' - 2026-09-28T114749-0500' suffix. Uses rename_note.py. Title field still reads 'Joe (@joedaroo) on X'.",
+      "files": ["evals/files/Joe (@joedaroo) on X - 2026-09-28T114749-0500.md"]
+    },
+    {
+      "id": 2,
+      "prompt": "Can you enrich the Meta GEM note in evals/files? Vault: ~/Obsidian/vault",
+      "expected_output": "Replaces the description because the script flags it as a truncated publisher blurb (ends in an ellipsis, 'We're sharing' voice). Writes the note including the 5% Instagram / 3% Facebook and 23x FLOPs figures. Adds tags (e.g. adTech, recommendationSystems, reference or analysis). Rename lean is 'unclear' (no history): generates a headline, applies the scan test from references/rename-judgment.md, and either renames with a headline that leads with the conversion figures or asks the user with old title, new headline, and history in one line. Must not silently skip the decision.",
+      "files": ["evals/files/Meta's Generative Ads Model (GEM) - The Central Brain Accelerating Ads Recommendation AI Innovation - 2026-01-31T101500-0600.md"]
+    },
+    {
+      "id": 3,
+      "prompt": "Enrich evals/files/An Interview with Colossus EIC Jeremy Stern About Profiling Mark Zuckerberg - 2026-09-26T130831-0500.md (vault ~/Obsidian/vault)",
+      "expected_output": "Only tags need work: adds new tags and keeps clippings and stratechery. Does not overwrite the existing note or description. Does not rename (interviews are always kept) and does not run the headline prompt. Status stays Read because it already was, not because the skill set it. Report says note and description were skipped as already written.",
+      "files": ["evals/files/An Interview with Colossus EIC Jeremy Stern About Profiling Mark Zuckerberg - 2026-09-26T130831-0500.md"]
+    },
+    {
+      "id": 4,
+      "prompt": "Enrich all four notes in evals/files as a batch, don't stop to ask me anything. Vault is ~/Obsidian/vault",
+      "expected_output": "Processes each note independently with analyze -> generate -> apply -> rename decision. Renames the Joe on X note, keeps the weekly roundup and the interview, and for the Meta note either renames (scan test clearly fails) or lists the proposed headline in the final report without renaming, since this is a batch run. Never asks mid-batch. Final report has one short block per note."
+    }
+  ]
+}
