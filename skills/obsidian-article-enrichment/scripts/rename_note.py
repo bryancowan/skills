@@ -91,13 +91,20 @@ def main() -> int:
     if vault and shutil.which("obsidian"):
         rel = old.relative_to(vault).as_posix()
         # The CLI exits 0 even on failure, so success is judged by the files on disk.
-        subprocess.run(["obsidian", "rename", f"path={rel}", f"name={new_stem}"],
-                       capture_output=True, text=True, timeout=30)
+        try:
+            subprocess.run(["obsidian", "rename", f"path={rel}", f"name={new_stem}"],
+                           capture_output=True, text=True, timeout=30)
+        except (subprocess.TimeoutExpired, OSError):
+            pass  # the disk check below decides whether the CLI rename took effect
         if new.exists() and not old.exists():
             print("renamed with the Obsidian CLI; links in other notes were updated")
             return 0
         print("warning: Obsidian CLI rename did not take effect (is Obsidian running?); falling back", file=sys.stderr)
 
+    if not old.exists():
+        # The CLI may still be mid-rename after a timeout; don't guess.
+        print(f"error: {old.name} is gone but {new.name} doesn't exist yet; check the folder before retrying", file=sys.stderr)
+        return 1
     os.rename(old, new)
     print("renamed on disk (links in other notes were NOT updated)")
     if vault:

@@ -107,9 +107,21 @@ def main() -> int:
     except json.JSONDecodeError as e:
         print(f"error: --json is not valid JSON: {e}", file=sys.stderr)
         return 2
+    if not isinstance(values, dict):
+        print('error: JSON must be an object like {"note": "...", "add_tags": ["a", "b"]}', file=sys.stderr)
+        return 2
     unknown = set(values) - {"description", "note", "add_tags"}
     if unknown:
         print(f"error: unsupported keys {sorted(unknown)}; only description, note, add_tags", file=sys.stderr)
+        return 2
+    for key in ("description", "note"):
+        if key in values and not isinstance(values[key], str):
+            print(f"error: {key} must be a string", file=sys.stderr)
+            return 2
+    if "add_tags" in values and not (
+        isinstance(values["add_tags"], list) and all(isinstance(t, str) for t in values["add_tags"])
+    ):
+        print('error: add_tags must be a list of strings, e.g. ["analysis", "antitrust"]', file=sys.stderr)
         return 2
 
     text = path.read_text(encoding="utf-8")

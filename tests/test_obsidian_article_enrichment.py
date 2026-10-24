@@ -97,6 +97,14 @@ class ApplyFrontmatter(unittest.TestCase):
         r = run(SCRIPTS / "apply_frontmatter.py", self.path, "--json", '{"add_tags": ["two words"]}')
         self.assertNotEqual(r.returncode, 0)
 
+    def test_rejects_wrong_json_shapes(self):
+        for payload in ('{"add_tags": "analysis"}', '{"add_tags": [1, 2]}', '{"description": 5}', '["x"]'):
+            r = run(SCRIPTS / "apply_frontmatter.py", self.path, "--json", payload)
+            self.assertEqual(r.returncode, 2, payload)
+            self.assertIn("error:", r.stderr, payload)
+            self.assertNotIn("Traceback", r.stderr, payload)
+        self.assertEqual(self.path.read_text(encoding="utf-8"), NOTE)
+
     def test_json_file_removed_after_write(self):
         values = Path(self.dir.name) / "values.json"
         values.write_text('{"add_tags": ["ecommerce"]}', encoding="utf-8")
