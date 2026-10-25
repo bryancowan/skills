@@ -52,7 +52,7 @@ def describe_links(changes: list[tuple[str, int]]) -> str:
     if not notes:
         return "0 links in 0 notes"
     names = ", ".join(Path(p).stem for p, _ in changes[:5]) + (", ..." if notes > 5 else "")
-    return f"{links} links in {notes} note{'s' if notes != 1 else ''} ({names})"
+    return f"{links} link{'s' if links != 1 else ''} in {notes} note{'s' if notes != 1 else ''} ({names})"
 
 
 def main() -> int:

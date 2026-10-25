@@ -14,7 +14,7 @@ sys.path.insert(0, str(SCRIPTS))
 
 from analyze_note import description_check  # noqa: E402
 from notelib import Frontmatter, classify, is_renamed, rewrite_links, split_stem  # noqa: E402
-from rename_note import clean_headline  # noqa: E402
+from rename_note import clean_headline, describe_links  # noqa: E402
 
 NOTE = """---
 title: "2026.39: Begun, the Aggregator Wars Have"
@@ -211,7 +211,8 @@ class LinkRewrite(unittest.TestCase):
         old = self.vault / "Reading List" / f"{OLD}.md"
         r = run_env(shim_env(self.root), SCRIPTS / "rename_note.py", old, "--headline", "Short new headline", "--dry-run")
         self.assertEqual(r.returncode, 0, r.stderr)
-        self.assertIn("9 links in 1 note", r.stdout)
+        self.assertIn("9 links in 1 note", r.stdout)  # plural
+        self.assertEqual(describe_links([("a.md", 1)]).split(" (")[0], "1 link in 1 note")
         self.assertTrue(old.exists())
 
 
@@ -234,6 +235,12 @@ class Relink(unittest.TestCase):
 
     def audit(self, *flags):
         return run_env(self.env, SCRIPTS / "relink.py", "--vault", self.vault, *flags)
+
+    def test_finds_the_vault_from_the_current_folder_when_no_vault_is_given(self):
+        for cwd in (self.vault, self.vault / "Reading List"):
+            r = subprocess.run([sys.executable, str(SCRIPTS / "relink.py")], capture_output=True, text=True, cwd=cwd, env=self.env)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertIn(f"vault: {self.vault}", r.stdout)
 
     def test_dry_run_reports_everything_and_changes_nothing(self):
         snapshot = {p: p.read_bytes() for p in self.vault.rglob("*.md")}

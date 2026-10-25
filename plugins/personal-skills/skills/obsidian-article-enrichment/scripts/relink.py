@@ -104,7 +104,7 @@ def main() -> int:
     ap.add_argument("--apply", action="store_true", help="rewrite the dead links that have exactly one live match")
     ap.add_argument("--delete-stubs", action="store_true", help="with --apply, remove empty ghost stubs that nothing links to")
     args = ap.parse_args()
-    vault = Path(args.vault).expanduser().resolve() if args.vault else find_vault_root(Path.cwd().resolve())
+    vault = Path(args.vault).expanduser().resolve() if args.vault else find_vault_root(Path.cwd().resolve() / "_")
     if not vault or not vault.is_dir():
         print("error: vault not found; pass --vault <path>", file=sys.stderr)
         return 2
