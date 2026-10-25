@@ -6,8 +6,9 @@ Usage:
 
 Cleans the headline for filenames, then renames through the Obsidian CLI so
 wikilinks in other notes (e.g. `related:`) are updated. If the CLI is
-unavailable or fails, falls back to a plain rename and lists the notes whose
-links now point at the old name.
+unavailable or can't reach Obsidian (as in Codex's sandbox), renames on disk
+and rewrites the links itself, so no note is left pointing at the old name.
+The last line printed is `new_path: <absolute path>`; use it instead of retyping.
 """
 
 from __future__ import annotations
@@ -22,7 +23,7 @@ import unicodedata
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from notelib import find_vault_root, split_stem  # noqa: E402
+from notelib import find_vault_root, rewrite_links, split_stem  # noqa: E402
 
 MAX_NAME_BYTES = 255
 # Bryan's own renamed headlines: median ~119 characters, 11% over 150, 2% over 180.
@@ -42,6 +43,16 @@ def clean_headline(h: str) -> str:
     h = re.sub(r"[?*<>|\\/$`!\[\]{}]", "", h)
     h = re.sub(r"\s+", " ", h).strip()
     return h.rstrip(". ").strip()
+
+
+def describe_links(changes: list[tuple[str, int]]) -> str:
+    """One line for the report: how many links in how many notes, naming up to five of them."""
+    links = sum(n for _, n in changes)
+    notes = len(changes)
+    if not notes:
+        return "0 links in 0 notes"
+    names = ", ".join(Path(p).stem for p, _ in changes[:5]) + (", ..." if notes > 5 else "")
+    return f"{links} links in {notes} note{'s' if notes != 1 else ''} ({names})"
 
 
 def main() -> int:
@@ -80,50 +91,51 @@ def main() -> int:
         print(f"error: a file with that name already exists: {new.name}", file=sys.stderr)
         return 1
 
-    print(f"old: {old.name}\nnew: {new.name}")
-    if args.dry_run:
-        print("(dry run: nothing renamed)")
-        return 0
-
     vault = Path(args.vault).expanduser().resolve() if args.vault else find_vault_root(old)
     if vault and not old.is_relative_to(vault):
         vault = None  # the note isn't in that vault, so the CLI can't reach it
+    old_full = old.name[:-3]  # full stem, timestamp included: what other notes link to
+
+    print(f"old: {old.name}\nnew: {new.name}")
+    if args.dry_run:
+        if vault:
+            print(f"links that would be updated: {describe_links(rewrite_links(vault, old_full, new_stem, apply=False))}")
+        print("(dry run: nothing renamed)")
+        print(f"new_path: {new}")
+        return 0
+
     if vault and shutil.which("obsidian"):
         rel = old.relative_to(vault).as_posix()
         # The CLI exits 0 even on failure, so success is judged by the files on disk.
+        cli_said = ""
         try:
-            subprocess.run(["obsidian", "rename", f"path={rel}", f"name={new_stem}"],
-                           capture_output=True, text=True, timeout=30)
-        except (subprocess.TimeoutExpired, OSError):
-            pass  # the disk check below decides whether the CLI rename took effect
+            res = subprocess.run(["obsidian", "rename", f"path={rel}", f"name={new_stem}"],
+                                 capture_output=True, text=True, timeout=30)
+            cli_said = (res.stdout + res.stderr).strip().splitlines()[0] if (res.stdout + res.stderr).strip() else ""
+        except subprocess.TimeoutExpired:
+            cli_said = "the CLI timed out after 30 seconds"
+        except OSError as e:
+            cli_said = f"the CLI could not start: {e}"
         if new.exists() and not old.exists():
-            print("renamed with the Obsidian CLI; links in other notes were updated")
-            return 0
-        print("warning: Obsidian CLI rename did not take effect (is Obsidian running?); falling back", file=sys.stderr)
+            print("renamed with the Obsidian CLI")
+        else:
+            print(f"warning: Obsidian CLI rename did not take effect ({cli_said or 'no output'}); "
+                  "renaming on disk and fixing links myself", file=sys.stderr)
 
-    if not old.exists():
-        # The CLI may still be mid-rename after a timeout; don't guess.
-        print(f"error: {old.name} is gone but {new.name} doesn't exist yet; check the folder before retrying", file=sys.stderr)
-        return 1
-    os.rename(old, new)
-    print("renamed on disk (links in other notes were NOT updated)")
+    if not new.exists():
+        if not old.exists():
+            # The CLI may still be mid-rename after a timeout; don't guess.
+            print(f"error: {old.name} is gone but {new.name} doesn't exist yet; check the folder before retrying", file=sys.stderr)
+            return 1
+        os.rename(old, new)
+        print("renamed on disk")
     if vault:
-        needle = f"[[{old_stem}{' - ' + ts if ts else ''}"
-        stale = []
-        for root, dirs, files in os.walk(vault):
-            dirs[:] = [d for d in dirs if not d.startswith(".")]
-            for f in files:
-                if f.endswith(".md"):
-                    p = Path(root) / f
-                    try:
-                        if needle in p.read_text(encoding="utf-8"):
-                            stale.append(p.relative_to(vault).as_posix())
-                    except (OSError, UnicodeDecodeError):
-                        pass
-        if stale:
-            print("notes still linking to the old name (tell the user):")
-            for s in stale:
-                print(f"  {s}")
+        # Obsidian updates links itself when IT renames a note; after an on-disk rename (or if the CLI
+        # missed any) the links still point at the old name, and following one creates an empty stub note.
+        print(f"links updated: {describe_links(rewrite_links(vault, old_full, new_stem))}")
+    else:
+        print("links: not checked (the note is outside a vault; pass --vault to fix links in other notes)")
+    print(f"new_path: {new}")
     return 0
 
 

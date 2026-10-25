@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import re
+import tempfile
 import unicodedata
 from pathlib import Path
 
@@ -193,3 +194,48 @@ def iter_clippings(vault: Path, skip: Path | None = None):
             if "clippings" not in [t.lower() for t in fm.items("tags")]:
                 continue
             yield p, fm
+
+
+def iter_markdown(vault: Path):
+    """Yield every .md path in the vault, skipping dot-folders such as .obsidian and .trash."""
+    for root, dirs, files in os.walk(vault):
+        dirs[:] = [d for d in dirs if not d.startswith(".")]
+        for name in files:
+            if name.endswith(".md"):
+                yield Path(root) / name
+
+
+def link_pattern(stem: str) -> re.Pattern:
+    """Match a wikilink or embed to `stem`: [[stem]], [[folder/stem]], [[stem|alias]], [[stem#h]], [[stem^b]], ![[stem]].
+
+    The whole stem must match (a longer name that merely starts with it is left alone), case-insensitively, as Obsidian does.
+    """
+    return re.compile(r"(!?\[\[(?:[^\]|#^\[]*/)?)" + re.escape(stem) + r"((?:\.md)?(?=[\]|#^]))", re.IGNORECASE)
+
+
+def rewrite_links(vault: Path, old_stem: str, new_stem: str, apply: bool = True) -> list[tuple[str, int]]:
+    """Point every wikilink to `old_stem` at `new_stem`, as Obsidian does when it renames a note itself.
+
+    Returns (vault-relative path, links changed) for each note touched. With apply=False nothing is written.
+    Only .md files are edited; folder prefixes, aliases, headings, block ids, and embeds are preserved.
+    """
+    pattern = link_pattern(old_stem)
+    changes = []
+    for path in iter_markdown(vault):
+        try:
+            with open(path, encoding="utf-8", newline="") as fh:  # newline="" keeps CRLF files byte-identical
+                text = fh.read()
+        except (OSError, UnicodeDecodeError):
+            continue
+        if old_stem.lower() not in text.lower():
+            continue
+        new_text, n = pattern.subn(lambda m: m.group(1) + new_stem + m.group(2), text)
+        if not n:
+            continue
+        changes.append((path.relative_to(vault).as_posix(), n))
+        if apply:
+            fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=".relink-", suffix=".md")
+            with os.fdopen(fd, "w", encoding="utf-8", newline="") as fh:
+                fh.write(new_text)
+            os.replace(tmp, path)
+    return sorted(changes)
