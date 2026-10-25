@@ -3,11 +3,15 @@
 
 Usage:
     python3 rename_note.py "<note.md>" --headline "New headline" [--dry-run] [--vault PATH]
+    python3 rename_note.py "<note.md>" --headline-file /tmp/headline.txt
 
 Cleans the headline for filenames, then renames through the Obsidian CLI so
 wikilinks in other notes (e.g. `related:`) are updated. If the CLI is
 unavailable or can't reach Obsidian (as in Codex's sandbox), renames on disk
 and rewrites the links itself, so no note is left pointing at the old name.
+Headlines usually contain an apostrophe or a `$`, both of which the shell mangles
+inside quotes, so --headline-file (a text file holding just the headline) is the
+safe way to pass one. The file is deleted after a successful rename.
 The last line printed is `new_path: <absolute path>`; use it instead of retyping.
 """
 
@@ -58,7 +62,10 @@ def describe_links(changes: list[tuple[str, int]]) -> str:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("note")
-    ap.add_argument("--headline", required=True)
+    src = ap.add_mutually_exclusive_group(required=True)
+    src.add_argument("--headline", help="the new headline (mind shell quoting: apostrophes and $)")
+    src.add_argument("--headline-file", help="text file holding the new headline; no quoting needed")
+    ap.add_argument("--keep-headline-file", action="store_true", help="don't delete --headline-file after renaming")
     ap.add_argument("--vault", help="vault root (default: nearest parent with .obsidian/)")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--long-ok", action="store_true",
@@ -69,7 +76,8 @@ def main() -> int:
     if not old.is_file():
         print(f"error: file not found: {old}", file=sys.stderr)
         return 1
-    headline = clean_headline(args.headline)
+    raw_headline = args.headline if args.headline is not None else Path(args.headline_file).expanduser().read_text(encoding="utf-8")
+    headline = clean_headline(raw_headline)
     if not headline:
         print("error: headline is empty after cleaning", file=sys.stderr)
         return 2
@@ -135,6 +143,8 @@ def main() -> int:
         print(f"links updated: {describe_links(rewrite_links(vault, old_full, new_stem))}")
     else:
         print("links: not checked (the note is outside a vault; pass --vault to fix links in other notes)")
+    if args.headline_file and not args.keep_headline_file:
+        Path(args.headline_file).expanduser().unlink(missing_ok=True)
     print(f"new_path: {new}")
     return 0
 

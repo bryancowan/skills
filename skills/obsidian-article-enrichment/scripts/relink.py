@@ -5,6 +5,7 @@ Usage:
     python3 relink.py [--vault PATH]                          # report only (default)
     python3 relink.py [--vault PATH] --apply                  # rewrite the dead links
     python3 relink.py [--vault PATH] --apply --delete-stubs   # also remove the empty stub notes
+    python3 relink.py --apply --delete-stubs --only "Birth & Rise"   # limit everything to matching names
 
 Clipped notes end in a unique ` - YYYY-MM-DDTHHMMSS-ZZZZ` timestamp that survives a rename, so a link to a
 name that no longer exists can be matched to the one live note with the same timestamp.
@@ -102,6 +103,8 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--vault", help="vault root (default: nearest parent of the current folder with .obsidian/)")
     ap.add_argument("--apply", action="store_true", help="rewrite the dead links that have exactly one live match")
+    ap.add_argument("--only", action="append", metavar="TEXT",
+                    help="only act on dead links and stubs whose name contains TEXT (repeatable, case-insensitive)")
     ap.add_argument("--delete-stubs", action="store_true", help="with --apply, remove empty ghost stubs that nothing links to")
     args = ap.parse_args()
     vault = Path(args.vault).expanduser().resolve() if args.vault else find_vault_root(Path.cwd().resolve() / "_")
@@ -111,6 +114,13 @@ def main() -> int:
 
     found = scan(vault)
     dead, stubs = found["dead"], found["stubs"]
+    if args.only:
+        keep = lambda name: any(o.lower() in name.lower() for o in args.only)  # noqa: E731
+        hidden = len(dead) - sum(keep(d["target"]) for d in dead) + len(stubs) - sum(keep(s.name) for s in stubs)
+        dead = [d for d in dead if keep(d["target"])]
+        stubs = {s: r for s, r in stubs.items() if keep(s.name)}
+        if hidden:
+            print(f"(--only: {hidden} other dead link target(s) or stub(s) not shown and not touched)")
     print(f"vault: {vault}")
     print(f"dead links: {len(dead)} target{'s' if len(dead) != 1 else ''}")
     for d in dead:

@@ -156,7 +156,7 @@ def make_vault(root: Path) -> Path:
 def shim_env(root: Path) -> dict:
     """PATH with a fake `obsidian` first: it behaves like the CLI inside Codex's sandbox (message, exit 0)."""
     bin_dir = root / "bin"
-    bin_dir.mkdir()
+    bin_dir.mkdir(exist_ok=True)
     shim = bin_dir / "obsidian"
     shim.write_text(f"#!/bin/sh\necho '{DEAD_MSG}'\nexit 0\n", encoding="utf-8")
     shim.chmod(0o755)
@@ -206,6 +206,23 @@ class LinkRewrite(unittest.TestCase):
         self.assertEqual(r.stdout.strip().splitlines()[-1], f"new_path: {new}")
         self.assertEqual(sorted(p.name for p in (self.vault / "Reading List").iterdir()),
                          sorted([new.name, "Linker A.md"]))  # no stray files
+
+    def test_headline_file_survives_apostrophes_and_dollar_signs_and_is_removed(self):
+        old = self.vault / "Reading List" / f"{OLD}.md"
+        hf = self.root / "headline.txt"
+        hf.write_text("John Gruber finds Apple's $2,000 iPhone Duo a brilliant tablet and a miserable phone\n", encoding="utf-8")
+        dry = run_env(shim_env(self.root), SCRIPTS / "rename_note.py", old, "--headline-file", hf, "--dry-run")
+        self.assertEqual(dry.returncode, 0, dry.stderr)
+        self.assertTrue(hf.exists())  # a dry run keeps the file
+        r = run_env(shim_env(self.root), SCRIPTS / "rename_note.py", old, "--headline-file", hf)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        new = self.vault / "Reading List" / f"John Gruber finds Apple's 2,000 iPhone Duo a brilliant tablet and a miserable phone - {TS}.md"
+        self.assertTrue(new.exists(), r.stdout)  # apostrophe kept; "$" stripped by the filename rules, "2,000" intact
+        self.assertFalse(hf.exists())
+
+    def test_rename_needs_exactly_one_headline_source(self):
+        old = self.vault / "Reading List" / f"{OLD}.md"
+        self.assertNotEqual(run_env(shim_env(self.root), SCRIPTS / "rename_note.py", old).returncode, 0)
 
     def test_dry_run_rename_previews_link_updates(self):
         old = self.vault / "Reading List" / f"{OLD}.md"
@@ -263,6 +280,15 @@ class Relink(unittest.TestCase):
         self.assertIn("[[Lost - 2026-02-02T020202-0500]]", (self.vault / "Reading List" / "Linker B.md").read_text(encoding="utf-8"))
         self.assertFalse((self.vault / f"{OLD}.md").exists())
         self.assertTrue((self.vault / ".trash" / f"{OLD}.md").exists())
+
+    def test_only_limits_repairs_to_matching_names(self):
+        r = self.audit("--apply", "--delete-stubs", "--only", "Gone Title")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("other dead link target(s) or stub(s) not shown and not touched", r.stdout)
+        b = (self.vault / "Reading List" / "Linker B.md").read_text(encoding="utf-8")
+        self.assertIn("[[Moved On - 2026-01-02T030405-0500]]", b)   # matched: fixed
+        self.assertIn(f"[[{OLD}]]", (self.vault / "Reading List" / "Linker A.md").read_text(encoding="utf-8"))  # not matched: untouched
+        self.assertTrue((self.vault / f"{OLD}.md").exists())         # stub not matched: kept
 
     def test_apply_without_delete_stubs_leaves_the_stub(self):
         self.audit("--apply")
