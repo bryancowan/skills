@@ -57,7 +57,7 @@ def scan(vault: Path) -> dict:
         except (OSError, UnicodeDecodeError):
             continue
         for m in LINK_RE.finditer(text):
-            target = m.group(1).strip().split("/")[-1]
+            target = m.group(1).strip().rstrip("\\").strip().split("/")[-1]  # [[x\|alias]] in a table leaves a "\" on the target
             target = target[:-3] if target.lower().endswith(".md") else target
             tm = TIMESTAMP_RE.search(target)
             if tm and target.lower() not in live_stems:

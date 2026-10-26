@@ -27,7 +27,7 @@ import unicodedata
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from notelib import find_vault_root, rewrite_links, split_stem  # noqa: E402
+from notelib import find_vault_root, iter_markdown, rewrite_links, split_stem  # noqa: E402
 
 MAX_NAME_BYTES = 255
 # Bryan's own renamed headlines: median ~119 characters, 11% over 150, 2% over 180.
@@ -103,11 +103,19 @@ def main() -> int:
     if vault and not old.is_relative_to(vault):
         vault = None  # the note isn't in that vault, so the CLI can't reach it
     old_full = old.name[:-3]  # full stem, timestamp included: what other notes link to
+    only_folder = None
+    if vault:
+        twins = [p for p in iter_markdown(vault) if p != old and p.stem.lower() == old_full.lower()]
+        if twins:  # a bare [[old name]] could mean either note, so only touch links that name the folder
+            only_folder = old.parent.relative_to(vault).as_posix()
+            only_folder = "" if only_folder == "." else only_folder
+            print(f"warning: {len(twins)} other note(s) share the name '{old_full}'; only links that include the "
+                  f"folder '{only_folder or '/'}' will be updated, bare links are left alone", file=sys.stderr)
 
     print(f"old: {old.name}\nnew: {new.name}")
     if args.dry_run:
         if vault:
-            print(f"links that would be updated: {describe_links(rewrite_links(vault, old_full, new_stem, apply=False))}")
+            print(f"links that would be updated: {describe_links(rewrite_links(vault, old_full, new_stem, apply=False, only_folder=only_folder))}")
         print("(dry run: nothing renamed)")
         print(f"new_path: {new}")
         return 0
@@ -140,7 +148,7 @@ def main() -> int:
     if vault:
         # Obsidian updates links itself when IT renames a note; after an on-disk rename (or if the CLI
         # missed any) the links still point at the old name, and following one creates an empty stub note.
-        print(f"links updated: {describe_links(rewrite_links(vault, old_full, new_stem))}")
+        print(f"links updated: {describe_links(rewrite_links(vault, old_full, new_stem, only_folder=only_folder))}")
     else:
         print("links: not checked (the note is outside a vault; pass --vault to fix links in other notes)")
     if args.headline_file and not args.keep_headline_file:

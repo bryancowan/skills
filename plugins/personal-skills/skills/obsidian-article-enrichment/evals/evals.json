@@ -28,7 +28,7 @@
     },
     {
       "id": 4,
-      "prompt": "Enrich all four notes in evals/files as a batch, don't stop to ask me anything. Vault is ~/Obsidian/vault",
+      "prompt": "Enrich these four notes in evals/files as a batch (leave any other note in that folder alone): 2026.42 Home At Last, Joe (@joedaroo) on X, Meta's Generative Ads Model (GEM), and An Interview with Colossus EIC Jeremy Stern About Profiling Mark Zuckerberg. Don't stop to ask me anything. Vault is ~/Obsidian/vault",
       "expected_output": "Processes each note independently with analyze -> generate -> apply -> rename decision. Renames the Joe on X note, keeps the weekly roundup and the interview, and for the Meta note either renames (scan test clearly fails) or lists the proposed headline in the final report without renaming, since this is a batch run. Never asks mid-batch. Final report has one short block per note."
     },
     {

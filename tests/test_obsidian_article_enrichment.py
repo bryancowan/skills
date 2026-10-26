@@ -106,6 +106,12 @@ class ApplyFrontmatter(unittest.TestCase):
             self.assertNotIn("Traceback", r.stderr, payload)
         self.assertEqual(self.path.read_text(encoding="utf-8"), NOTE)
 
+    def test_apply_frontmatter_keeps_the_file_permissions(self):
+        self.path.chmod(0o644)
+        r = run(SCRIPTS / "apply_frontmatter.py", self.path, "--json", '{"add_tags": ["ecommerce"]}')
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(self.path.stat().st_mode & 0o777, 0o644)
+
     def test_json_file_removed_after_write(self):
         values = Path(self.dir.name) / "values.json"
         values.write_text('{"add_tags": ["ecommerce"]}', encoding="utf-8")
@@ -188,6 +194,36 @@ class LinkRewrite(unittest.TestCase):
         self.assertIn(f"[[{OLD}b]]", text)
         self.assertIn(f"[[Other - {TS}]]", text)
 
+    def test_table_escaped_alias_is_rewritten_and_the_backslash_kept(self):
+        # inside a Markdown table Obsidian writes the alias separator as \|
+        table = self.vault / "Table.md"
+        table.write_text(f"| a |\n|---|\n| [[{OLD}\\|the piece]] |\n", encoding="utf-8")
+        self.assertIn(("Table.md", 1), rewrite_links(self.vault, OLD, NEW))
+        self.assertIn(f"| [[{NEW}\\|the piece]] |", table.read_text(encoding="utf-8"))
+
+    def test_crlf_links_are_rewritten_without_newline_conversion(self):
+        note = self.vault / "CRLF.md"
+        note.write_bytes(f"before [[{OLD}]]\r\n".encode("utf-8"))
+        self.assertIn(("CRLF.md", 1), rewrite_links(self.vault, OLD, NEW))
+        data = note.read_bytes()
+        self.assertIn(b"\r\n", data)
+        self.assertNotIn(b"\n", data.replace(b"\r\n", b""))
+
+    def test_rewriting_keeps_the_file_permissions(self):
+        self.linker.chmod(0o644)
+        rewrite_links(self.vault, OLD, NEW)
+        self.assertEqual(self.linker.stat().st_mode & 0o777, 0o644)
+        self.assertEqual([p.name for p in (self.vault / "Reading List").iterdir() if p.name.startswith(".relink-")], [])
+
+    def test_when_another_note_has_the_same_name_only_folder_qualified_links_are_rewritten(self):
+        (self.vault / "Other").mkdir()
+        (self.vault / "Other" / f"{OLD}.md").write_text("a different note, same name\n", encoding="utf-8")
+        dup = self.vault / "Dup.md"
+        dup.write_text(f"[[{OLD}]] [[Reading List/{OLD}]] [[Other/{OLD}]] [[List/{OLD}|partial]]\n", encoding="utf-8")
+        rewrite_links(self.vault, OLD, NEW, only_folder="Reading List")
+        self.assertEqual(dup.read_text(encoding="utf-8"),
+                         f"[[{OLD}]] [[Reading List/{NEW}]] [[Other/{OLD}]] [[List/{OLD}|partial]]\n")
+
     def test_dry_run_reports_but_writes_nothing(self):
         before = self.linker.read_text(encoding="utf-8")
         self.assertEqual(rewrite_links(self.vault, OLD, NEW, apply=False), [("Reading List/Linker A.md", 9)])
@@ -219,6 +255,17 @@ class LinkRewrite(unittest.TestCase):
         new = self.vault / "Reading List" / f"John Gruber finds Apple's 2,000 iPhone Duo a brilliant tablet and a miserable phone - {TS}.md"
         self.assertTrue(new.exists(), r.stdout)  # apostrophe kept; "$" stripped by the filename rules, "2,000" intact
         self.assertFalse(hf.exists())
+
+    def test_rename_leaves_bare_links_alone_when_another_note_shares_the_name(self):
+        (self.vault / "Other").mkdir()
+        (self.vault / "Other" / f"{OLD}.md").write_text("different note, same name\n", encoding="utf-8")
+        (self.vault / "Dup.md").write_text(f"[[{OLD}]] [[Reading List/{OLD}]]\n", encoding="utf-8")
+        old = self.vault / "Reading List" / f"{OLD}.md"
+        r = run_env(shim_env(self.root), SCRIPTS / "rename_note.py", old, "--headline", "Short new headline")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("share the name", r.stdout + r.stderr)
+        self.assertEqual((self.vault / "Dup.md").read_text(encoding="utf-8"),
+                         f"[[{OLD}]] [[Reading List/Short new headline - {TS}]]\n")
 
     def test_rename_needs_exactly_one_headline_source(self):
         old = self.vault / "Reading List" / f"{OLD}.md"
@@ -258,6 +305,13 @@ class Relink(unittest.TestCase):
             r = subprocess.run([sys.executable, str(SCRIPTS / "relink.py")], capture_output=True, text=True, cwd=cwd, env=self.env)
             self.assertEqual(r.returncode, 0, r.stderr)
             self.assertIn(f"vault: {self.vault}", r.stdout)
+
+    def test_dead_table_alias_links_are_detected_and_repaired(self):
+        table = self.vault / "Reading List" / "Table.md"
+        table.write_text(f"| [[{OLD}\\|alias]] |\n", encoding="utf-8")
+        self.assertIn("Table", self.audit().stdout)
+        self.audit("--apply")
+        self.assertEqual(table.read_text(encoding="utf-8"), f"| [[{NEW}\\|alias]] |\n")
 
     def test_dry_run_reports_everything_and_changes_nothing(self):
         snapshot = {p: p.read_bytes() for p in self.vault.rglob("*.md")}
