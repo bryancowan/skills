@@ -17,14 +17,12 @@ from __future__ import annotations
 import argparse
 import difflib
 import json
-import os
 import re
 import sys
-import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from notelib import Frontmatter  # noqa: E402
+from notelib import Frontmatter, write_atomic  # noqa: E402
 
 TAG_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
 YAML_RESERVED = {"true", "false", "yes", "no", "on", "off", "null", "~"}
@@ -158,10 +156,7 @@ def main() -> int:
     if args.dry_run:
         print("(dry run: nothing written)")
         return 0
-    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=".enrich-", suffix=".md")
-    with os.fdopen(fd, "w", encoding="utf-8") as fh:
-        fh.write(new_text)
-    os.replace(tmp, path)
+    write_atomic(path, new_text)
     print(f"written: {path}")
     if args.json_file and not args.keep_json_file:
         Path(args.json_file).unlink(missing_ok=True)

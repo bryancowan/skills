@@ -28,8 +28,14 @@
     },
     {
       "id": 4,
-      "prompt": "Enrich all four notes in evals/files as a batch, don't stop to ask me anything. Vault is ~/Obsidian/vault",
+      "prompt": "Enrich these four notes in evals/files as a batch (leave any other note in that folder alone): 2026.42 Home At Last, Joe (@joedaroo) on X, Meta's Generative Ads Model (GEM), and An Interview with Colossus EIC Jeremy Stern About Profiling Mark Zuckerberg. Don't stop to ask me anything. Vault is ~/Obsidian/vault",
       "expected_output": "Processes each note independently with analyze -> generate -> apply -> rename decision. Renames the Joe on X note, keeps the weekly roundup and the interview, and for the Meta note either renames (scan test clearly fails) or lists the proposed headline in the final report without renaming, since this is a batch run. Never asks mid-batch. Final report has one short block per note."
+    },
+    {
+      "id": 5,
+      "prompt": "Enrich this clipping: evals/files/The iPhone Duo - 2026-10-21T091500-0500.md (my vault is ~/Obsidian/vault)",
+      "expected_output": "Runs analyze_note.py. Writes a 1-2 paragraph plain-prose note covering the closed-versus-open verdict and the missing Face ID, and adds new tags. Keeps the existing description (a real subheading). The title 'The iPhone Duo' names the product but not the argument, and the author's history is mixed, so after the scan test it either renames or asks. If it renames, it does so exactly once, with the headline in single quotes, and the new filename keeps the price as '2,000-dollar' (or '2,000') rather than mangling it: the script strips '$', and a headline written inside double quotes can turn '$2,000' into ',000'. The filename keeps the ' - 2026-10-21T091500-0500' suffix. After the rename the final report states the 'links updated' line, and no other note is left linking to the old name.",
+      "files": ["evals/files/The iPhone Duo - 2026-10-21T091500-0500.md"]
     }
   ]
 }

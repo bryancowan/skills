@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import os
 import re
+import shutil
+import tempfile
 import unicodedata
 from pathlib import Path
 
@@ -193,3 +195,84 @@ def iter_clippings(vault: Path, skip: Path | None = None):
             if "clippings" not in [t.lower() for t in fm.items("tags")]:
                 continue
             yield p, fm
+
+
+def iter_markdown(vault: Path):
+    """Yield every .md path in the vault, skipping dot-folders such as .obsidian and .trash."""
+    for root, dirs, files in os.walk(vault):
+        dirs[:] = [d for d in dirs if not d.startswith(".")]
+        for name in files:
+            if name.endswith(".md"):
+                yield Path(root) / name
+
+
+def link_pattern(stem: str) -> re.Pattern:
+    """Match a wikilink or embed to `stem`: [[stem]], [[folder/stem]], [[stem|alias]], [[stem#h]], [[stem^b]], ![[stem]].
+
+    The whole stem must match (a longer name that merely starts with it is left alone), case-insensitively, as Obsidian does.
+    Inside a Markdown table Obsidian writes the alias separator as `\\|`, so an optional backslash may follow the stem
+    (the lookahead doesn't consume it, so it stays in the note).
+    """
+    return re.compile(r"(!?\[\[(?:[^\]|#^\[]*/)?)" + re.escape(stem) + r"((?:\.md)?(?=\\?[\]|#^]))", re.IGNORECASE)
+
+
+def write_atomic(path: Path, text: str) -> None:
+    """Replace `path` with `text` in one step, keeping its permissions and leaving no temp file behind on failure.
+
+    mkstemp creates files as 0600, so the original mode has to be copied across or every rewritten note loses
+    its group/other read bits.
+    """
+    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=".relink-", suffix=".md")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="") as fh:
+            fh.write(text)
+        shutil.copymode(path, tmp)
+        os.replace(tmp, path)
+    except BaseException:
+        Path(tmp).unlink(missing_ok=True)
+        raise
+
+
+def rewrite_links(vault: Path, old_stem: str, new_stem: str, apply: bool = True,
+                  only_folder: str | None = None) -> list[tuple[str, int]]:
+    """Point every wikilink to `old_stem` at `new_stem`, as Obsidian does when it renames a note itself.
+
+    Returns (vault-relative path, links changed) for each note touched. With apply=False nothing is written.
+    Only .md files are edited; folder prefixes, aliases, headings, block ids, and embeds are preserved.
+
+    If another note shares the old name, a bare [[stem]] could mean either, so pass `only_folder` (the renamed
+    note's vault-relative folder): then only links whose folder path points at that folder are rewritten.
+    """
+    pattern = link_pattern(old_stem)
+
+    def qualifies(prefix: str) -> bool:
+        if only_folder is None:
+            return True
+        path = prefix.lstrip("!")[2:].rstrip("/").lower()  # drop the "[[", and the trailing "/"
+        folder = only_folder.lower()
+        return bool(path) and (folder == path or folder.endswith("/" + path))  # exact or Obsidian's partial path
+    changes = []
+    for path in iter_markdown(vault):
+        try:
+            with open(path, encoding="utf-8", newline="") as fh:  # newline="" keeps CRLF files byte-identical
+                text = fh.read()
+        except (OSError, UnicodeDecodeError):
+            continue
+        if old_stem.lower() not in text.lower():
+            continue
+        count = 0
+
+        def repl(m: re.Match) -> str:
+            nonlocal count
+            if not qualifies(m.group(1)):
+                return m.group(0)
+            count += 1
+            return m.group(1) + new_stem + m.group(2)
+
+        new_text = pattern.sub(repl, text)
+        if not count:
+            continue
+        changes.append((path.relative_to(vault).as_posix(), count))
+        if apply:
+            write_atomic(path, new_text)
+    return sorted(changes)

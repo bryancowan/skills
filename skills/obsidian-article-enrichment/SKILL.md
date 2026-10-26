@@ -82,19 +82,27 @@ Use `rename.lean` from step 2:
 | `rename` | Read `SKILL_DIR/references/prompts/rewrite-headline.md` and apply it to the title and article. If the headline comes back different, rename. If it comes back unchanged, keep. |
 | `unclear` | Generate the headline as above, then apply the scan test in `SKILL_DIR/references/rename-judgment.md`: rename if the title clearly fails, keep if it clearly passes, otherwise **ask Bryan**. Show the old title, the new headline, and the history counts in one line. In batch runs, don't ask; list the proposal in the final report. |
 
-To rename:
+To rename, **once per note, with the final headline**. Write the headline to a file, so no shell quoting is involved:
 
 ```bash
-python3 "SKILL_DIR/scripts/rename_note.py" "<note path>" --headline "<new headline>"
+# 1) write the headline (just the headline, one line) to /tmp/headline.txt with your file-writing tool
+# 2) then:
+python3 "SKILL_DIR/scripts/rename_note.py" "<note path>" --headline-file /tmp/headline.txt
 ```
 
-The script cleans the headline for filenames (colon → ` -`, curly quotes → `'`, strips `?*<>|\/$`![]{}` and trailing periods), keeps the timestamp, and renames through the Obsidian CLI so links in other notes follow the rename. If Obsidian isn't running, it renames on disk and lists the notes that still link to the old name; pass that list on to Bryan. Add `--dry-run` to preview.
+- Don't paste a headline into the command line. Headlines often contain an apostrophe (`Apple's`) or a `$`: an apostrophe breaks single quotes, and inside double quotes the shell turns `$194B` into `B` and `$2,000` into `,000`. The script deletes the file after a successful rename. (A plain headline with neither character may use `--headline '<text>'`.)
+- The script cleans the headline for filenames (colon → ` -`, curly quotes → `'`, strips `?*<>|\/$`![]{}` and trailing periods), so a `$` is dropped: write "194B-dollar" or "2,000-dollar" if the amount matters.
+- It keeps the timestamp and renames through the Obsidian CLI. If the CLI can't reach Obsidian (it can't from a sandbox such as Codex's), it prints the CLI's message, renames on disk, and **rewrites the links in other notes itself**. The line `links updated: N links in M notes (...)` confirms it.
+- Its last line is `new_path: <absolute path>`. Use that path for anything that follows; never retype the filename. If the result isn't right, don't rename again to "improve" it: report it. Each extra rename is another chance to leave something pointing at the wrong name.
+- Add `--dry-run` to preview (it shows how many links would be updated).
+
+If you ever find an **empty (0-byte) note at the vault root** with the old name, it is a stub that Obsidian creates when someone follows a dead link. Don't delete it yourself. Run `python3 "SKILL_DIR/scripts/relink.py"` (report only), show Bryan the output, and let him decide on `--apply --delete-stubs`.
 
 Bryan's headlines are usually 100–135 characters. A long one is fine now and then, but not every time. The script refuses headlines over 180 characters; when that happens, cut the least essential clause and run it again. Pass `--long-ok` only if every remaining detail is essential.
 
 ### 7. Report
 
-For each note, give one short block: which fields were written, which were skipped and why, and the rename outcome (renamed to X / kept, with the history basis / proposed, waiting for Bryan).
+For each note, give one short block: which fields were written, which were skipped and why, and the rename outcome (renamed to X / kept, with the history basis / proposed, waiting for Bryan). For a rename, include the `links updated:` line, and say so plainly if it reports 0 links where you'd expect some or if the script printed an error.
 
 ## Common failures
 
@@ -109,6 +117,9 @@ For each note, give one short block: which fields were written, which were skipp
 | Rewriting a good author subhead | Only replace the description when `fields.description.needs_work` is true. |
 | Starting the summary with "This article…" | The summary prompt forbids preambles. Start with the first fact. |
 | Renaming with `mv` | Use `rename_note.py` so backlinks are updated. |
+| Renaming the same note again to polish the headline | Rename once. Use `new_path` from the script's last line. |
+| Passing a headline with `'` or `$` on the command line | Use `--headline-file`. Quotes break on `Apple's`; double quotes turn `$194B` into `B`. Don't drop the apostrophe to make it parse. |
+| Editing links in other notes by hand | The script already rewrote them. Run `relink.py` (report only) to check. |
 
 ## Maintenance
 
