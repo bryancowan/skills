@@ -200,6 +200,22 @@ fix list. Append new ones here as you find them so the profile improves over tim
 | "Trump won" (trade war context) | "Trump 1.0" |
 | "export curves" | "export curbs" |
 | "your earth's perspective" / "their earths" | "rare earths" |
+| "Mothcom" | "MOFCOM" (variant of the "Mofcom" artifact above) |
+| "Huly Feng" | "He Lifeng" (variant of "Holi Fong" above) |
+| "Chinex" | "ChiNext" (Shenzhen growth-board index) |
+| "Blueberg" | "Bloomberg" |
+| "Finbar Birmingham" | "Finbarr Bermingham" (SCMP Brussels correspondent) |
+| "Ursula Vanderlin" | "Ursula von der Leyen" |
+| "Lin Wei Ding" | "Linwei Ding" (ex-Google engineer convicted of AI chip IP theft) |
+| "Lu Chi" / "Lucy" (Miracle Plus context) | "Qi Lu" (Miracle Plus founder, ex-Microsoft/Baidu) |
+| "Ling Wei" | "Lingling Wei" (WSJ) |
+| "Manis" | "Manus" (variant of "Manaus" above) |
+| "MetaSpark" | "Muse Spark" (Meta's model) |
+| "yes kits" | "SKD kits" (semi-knocked-down; moderate confidence) |
+| "Mao Zhong" / "Maze Dong" / "Mozedon" / "Ma Zedlung" | "Mao Zedong" (variants of the "Mao Zhudong" artifact above) |
+| "Pulp Bureau" / "Politbureau" | "Politburo" |
+| "seizing being thought" / "the CZ being thought" | "Xi Jinping Thought" |
+| "Great glass in case of emergency" | "Break glass in case of emergency" |
 
 > The "she" → "Xi" fix needs judgment — only correct it where the context is
 > clearly about the Chinese leader, not an actual female referent. Leave the

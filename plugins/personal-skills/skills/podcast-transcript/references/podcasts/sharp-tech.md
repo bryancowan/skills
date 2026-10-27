@@ -186,6 +186,18 @@ improves over time.
 | "the social reckoning" | "The Social Reckoning" (Social Network sequel); "You can see everything" → "You Can See Everything" (Nathan Fielder/Elizabeth Holmes doc, A24; confirmed) |
 | "tail between their legs" heard as "towel between their legs" | "tail between their legs" |
 | "CVS had the merger" (NFL rights, Paramount) | "Paramount" — low confidence; "paramel" → "Paramount" |
+| "SS Serandos" | "SS Sarandos" (Ted Sarandos, Netflix) |
+| "Gurgly Orzaz" | "Gergely Orosz" (Pragmatic Engineer) |
+| "Pressible" / "automatic company" | "Pressable" / "Automattic" |
+| "Neil Stevenson" / "Snowcrash" | "Neal Stephenson" / "Snow Crash" |
+| "Patrick Reddenke" | "Patrick Radden Keefe" (author of *London Falling*) |
+| "Mark Orman" (re: Overcast) | "Marco Arment" |
+| "UCAN" | "ICANN" |
+| "chungis" | "chengyu" (Chinese four-character idioms) |
+| "Jolin Ju" / "Jew" (re: Larry Ellison's wife) | "Jolin Zhu" — low confidence |
+| "olive oil rack" / "wreck" | "olive oil rec" (recommendation) |
+| "Glitter" (re: avoiding spoilers online) | "Twitter" |
+| "Stratekry" / "Strateceri" / "Striche" / "Striker" | "Stratechery" (additional variants) |
 
 > Role note: hosting can flip. In the "Doom Debates Go Mainstream" episode, Ben
 > jokingly takes the host chair and interviews Andrew about his Sharp Text
