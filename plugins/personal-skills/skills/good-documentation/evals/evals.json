@@ -55,7 +55,8 @@
         "The review flags 'the cache swallows' and 'the edge case ... bites' as code acting like a person and suggests saying what actually happens",
         "The review flags 'team data you imported' (dropped 'that') or the long gap between 'Users who' and 'can see' as hard to parse",
         "The review does not tell the author to move the opening claim away from the top of the doc",
-        "The review provides at least one concrete rewritten sentence, not just a description of the problem"
+        "The review provides at least one concrete rewritten sentence, not just a description of the problem",
+        "Rewritten sentences do not add cache or filter behavior the author didn't state, and any added fact appears in [brackets]"
       ]
     },
     {
@@ -68,7 +69,9 @@
         "No sentence in the opening carries three or more new terms, numbers, or concepts",
         "The text avoids stacked nouns of three or more words, verbs made from nouns, and code described as acting like a person",
         "Optional function words such as 'that' are kept where dropping them would make the sentence harder to parse",
-        "Section titles are informative sentences, not abstract nouns"
+        "Section titles are informative sentences, not abstract nouns",
+        "Concrete setup commands, paths, and names that the prompt does not supply appear as [bracketed placeholders], not invented values",
+        "A 'To confirm' list near the end names the assumptions the draft relies on"
       ]
     },
     {
@@ -82,7 +85,8 @@
         "The review flags an inanimate subject acting like a person (e.g. 'the dead-letter handler picks it up' or 'the audit trail footnotes') or says what actually happens",
         "The review flags the first sentence as carrying too many ideas or having a long gap between subject and verb, and suggests splitting it",
         "The review keeps the heading and the opening claim at the top rather than moving them",
-        "The review gives at least one concrete rewritten sentence that keeps function words such as 'that' and does not collapse the text into fragments"
+        "The review gives at least one concrete rewritten sentence that keeps function words such as 'that' and does not collapse the text into fragments",
+        "Rewritten sentences keep the retry behavior the author stated (up to five requeues, doubling delay, dead-letter handling after the budget is used) and put any added fact in [brackets]"
       ]
     }
   ]
