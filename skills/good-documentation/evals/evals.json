@@ -43,6 +43,51 @@
         "Section titles, if used, are informative sentences",
         "The doc uses plain language without jargon — avoids terms like 'provision', 'permissioning', etc. without explanation"
       ]
+    },
+    {
+      "id": 4,
+      "prompt": "Review my documentation and tell me how to improve it:\n\n---\n## Smart Filters narrow the dashboard\n\nSmart Filters cut dashboard setup time. Admins configure the filter permission settings once, then calendar the review and ticket any gaps. The cache swallows invalid filters, and the edge case where team data you imported is stale bites during the first sync. Users who, after configuring the saved filter defaults, reload the page can see updated results.\n---",
+      "expected_output": "A review that keeps the answer-first structure but flags the hard-to-read constructions with plain rewrites.",
+      "files": [],
+      "expectations": [
+        "The review flags 'filter permission settings' as a stack of three or more nouns and suggests unpacking it (e.g. 'the permission settings for filters')",
+        "The review flags 'calendar the review' and 'ticket any gaps' as verbs made from nouns on the spot and suggests plain verbs",
+        "The review flags 'the cache swallows' and 'the edge case ... bites' as code acting like a person and suggests saying what actually happens",
+        "The review flags 'team data you imported' (dropped 'that') or the long gap between 'Users who' and 'can see' as hard to parse",
+        "The review does not tell the author to move the opening claim away from the top of the doc",
+        "The review provides at least one concrete rewritten sentence, not just a description of the problem",
+        "Rewritten sentences do not add cache or filter behavior the author didn't state, and any added fact appears in [brackets]"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Write the intro and first section of a README for a command-line tool called 'syncwatch'. It watches a folder and copies new files to a backup drive. The audience is a mix of developers and office staff who set it up once.",
+      "expected_output": "An answer-first README opening in plain, full sentences that does not trade readability for brevity.",
+      "files": [],
+      "expectations": [
+        "The first one to three sentences say what syncwatch does and who it is for, with one idea per sentence",
+        "No sentence in the opening carries three or more new terms, numbers, or concepts",
+        "The text avoids stacked nouns of three or more words, verbs made from nouns, and code described as acting like a person",
+        "Optional function words such as 'that' are kept where dropping them would make the sentence harder to parse",
+        "Section titles are informative sentences, not abstract nouns",
+        "Concrete setup commands, paths, and names that the prompt does not supply appear as [bracketed placeholders], not invented values",
+        "If the draft relies on any assumptions, a 'To confirm' list near the end names them"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "Review this README section and tell me how to improve it. The readers are a mix of engineers and operations staff.\n\n---\n## Retries now back off automatically\n\nFailed jobs get requeued up to five times, the queue worker's retry delay doubling each time, which means transient network blips resolve without paging anyone. The job definition file holds the retry budget; once a job exhausts it, the dead-letter handler picks it up and the incident gets ticketed. Operators with the dashboard permission scope can replay dead-lettered jobs, and the replay audit trail footnotes every manual intervention.\n---",
+      "expected_output": "A review that keeps the answer-first heading and flags the hard-to-read constructions, with plain rewrites that do not compress the text further.",
+      "files": [],
+      "expectations": [
+        "The review flags at least two stacked noun phrases (e.g. 'queue worker's retry delay', 'job definition file', 'dashboard permission scope', 'replay audit trail') and suggests unpacking them",
+        "The review flags 'ticketed' and/or 'footnotes' as verbs made from nouns and suggests plain verbs",
+        "The review flags an inanimate subject acting like a person (e.g. 'the dead-letter handler picks it up' or 'the audit trail footnotes') or says what actually happens",
+        "The review flags the first sentence as carrying too many ideas or having a long gap between subject and verb, and suggests splitting it",
+        "The review keeps the heading and the opening claim at the top rather than moving them",
+        "The review gives at least one concrete rewritten sentence that keeps function words such as 'that' and does not collapse the text into fragments",
+        "Rewritten sentences keep the retry behavior the author stated (up to five requeues, doubling delay, dead-letter handling after the budget is used), put any missing detail in [brackets], and do not add steps, frequencies, or system behavior of their own even in brackets"
+      ]
     }
   ]
 }
