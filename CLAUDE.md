@@ -81,3 +81,8 @@ Increment `plugins/personal-skills/plugin.json` whenever published plugin conten
 ```
 
 To pick up new commits pushed to this repo later: `/plugin marketplace update bryancowan-skills` (or enable auto-update for this marketplace via the `/plugin` UI's Marketplaces tab — third-party marketplaces default to off).
+
+<!-- entire-agent:begin -->
+Read .entire/agent-guide.md for this repository's workflow, source inspection, and verification guidance.
+@.entire/agent-guide.md
+<!-- entire-agent:end -->

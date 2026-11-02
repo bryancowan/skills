@@ -21,3 +21,8 @@ Before committing, run:
 `bash tests/test-personal-skills-plugin-version-policy.sh`
 
 Increment `plugins/personal-skills/plugin.json` whenever published plugin contents or metadata change. Do not change `.claude-plugin/marketplace.json` unless the Claude marketplace itself changes.
+
+<!-- entire-agent:begin -->
+Read .entire/agent-guide.md for this repository's workflow, source inspection, and verification guidance.
+@.entire/agent-guide.md
+<!-- entire-agent:end -->
