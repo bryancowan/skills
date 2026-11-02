@@ -216,6 +216,24 @@ fix list. Append new ones here as you find them so the profile improves over tim
 | "Pulp Bureau" / "Politbureau" | "Politburo" |
 | "seizing being thought" / "the CZ being thought" | "Xi Jinping Thought" |
 | "Great glass in case of emergency" | "Break glass in case of emergency" |
+| "Chisha" | "Qiushi (CCP journal; Xi's pre-plenum article)" |
+| "Sunni conference" | "Zunyi Conference" |
+| "Philip Lemoyne" | "Philippe Lemoine (Twitter commentator)" |
+| "McCrunk" | "Macron" |
+| "Chioshai is that tribes" | "Jiucai — it's chives (retail-investor "chives" joke)" |
+| "TVPN" | "TBPN" |
+| "Cynasis" | "Sinocism (variant of the "cynicism" artifact above)" |
+| "Tang Guo Chiang / Tang Guo Chang" | "Tang Guoqiang (actor known for portraying Mao)" |
+| "laboo boo / labu boo" | "Labubu" |
+| "Who Wan era / WHO era" | "Hu-Wen era / Hu era" |
+| "Dong era" | "Deng era" |
+| "Jipu" | "Zhipu (Chinese AI lab; variant of "Chirpool" above)" |
+| "Guaming Daily" | "Guangming Daily" |
+| "Shira (era context)" | "Xi era" |
+| "Stratekri" | "Stratechery (variant of "techary" above)" |
+| "XGP's / CG&P's perspective" | "CCP's perspective" |
+| "Daryl/Darryl Murray, Maury" | "Daryl Morey, Morey" |
+| "Bapi / Kylian ababe / Mumbape" | "Mbappé" |
 
 > The "she" → "Xi" fix needs judgment — only correct it where the context is
 > clearly about the Chinese leader, not an actual female referent. Leave the

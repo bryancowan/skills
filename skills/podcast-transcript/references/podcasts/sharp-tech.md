@@ -197,6 +197,17 @@ improves over time.
 | "Jolin Ju" / "Jew" (re: Larry Ellison's wife) | "Jolin Zhu" — low confidence |
 | "olive oil rack" / "wreck" | "olive oil rec" (recommendation) |
 | "Glitter" (re: avoiding spoilers online) | "Twitter" |
+| "Rocco's Rocco's basilisk" / "the Rocco basilisk" | "Roko's basilisk" |
+| "Craig Moffitt" / "Moffat" | "Craig Moffett" (analyst; "key question about AI Capex") |
+| "Sham Sankar" / "Shom" / "Shamsakar" | "Shyam Sankar" (Palantir CTO). Ben's running joke "Shams" (NBA's Shams Charania, "Shams bomb") is intentional; keep it |
+| "Star Shield" | "Starshield" (SpaceX's military Starlink offering) |
+| "Andrew is out there" / "the Android stuff" (defense-tech context) | "Anduril" |
+| "Sam baking free" | "Sam Bankman-Fried" |
+| "Trainum" / "use training" (re: Amazon chips) | "Trainium" |
+| "Utkar" / "Utkarsch" / "Ukarsh" / "Ukarst" / "Lukars" (same emailer) | "Utkarsh" (standardized; spelling unverifiable) |
+| "pocket detector" / "placker protector" | "pocket protector" |
+| "pregnant faucets" | "pregnant pauses" |
+| "Dara Amade" / "Daryl Amadai" / "Amadees" | "Dario Amodei" / "the Amodeis" |
 | "Stratekry" / "Strateceri" / "Striche" / "Striker" | "Stratechery" (additional variants) |
 
 > Role note: hosting can flip. In the "Doom Debates Go Mainstream" episode, Ben
