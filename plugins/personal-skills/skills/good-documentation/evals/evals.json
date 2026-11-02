@@ -71,7 +71,7 @@
         "Optional function words such as 'that' are kept where dropping them would make the sentence harder to parse",
         "Section titles are informative sentences, not abstract nouns",
         "Concrete setup commands, paths, and names that the prompt does not supply appear as [bracketed placeholders], not invented values",
-        "A 'To confirm' list near the end names the assumptions the draft relies on"
+        "If the draft relies on any assumptions, a 'To confirm' list near the end names them"
       ]
     },
     {
@@ -86,7 +86,7 @@
         "The review flags the first sentence as carrying too many ideas or having a long gap between subject and verb, and suggests splitting it",
         "The review keeps the heading and the opening claim at the top rather than moving them",
         "The review gives at least one concrete rewritten sentence that keeps function words such as 'that' and does not collapse the text into fragments",
-        "Rewritten sentences keep the retry behavior the author stated (up to five requeues, doubling delay, dead-letter handling after the budget is used) and put any added fact in [brackets]"
+        "Rewritten sentences keep the retry behavior the author stated (up to five requeues, doubling delay, dead-letter handling after the budget is used), put any missing detail in [brackets], and do not add steps, frequencies, or system behavior of their own even in brackets"
       ]
     }
   ]
