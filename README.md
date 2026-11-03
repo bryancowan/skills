@@ -127,6 +127,18 @@ cp -r skills/skills/<skill-name> .codex/skills/          # this project only
 
 Codex loads skill metadata at startup and activates a skill automatically when it matches your request. To force one, type `$<skill-name>` in the prompt, or open the `/skills` selector and pick it from the list.
 
+### OpenCode
+
+Clone this repo, then copy the skill(s) you want into OpenCode's skills directory:
+
+```bash
+git clone https://github.com/bryancowan/skills.git
+cp -r skills/skills/<skill-name> ~/.config/opencode/skills/   # personal, all projects
+cp -r skills/skills/<skill-name> .opencode/skills/            # this project only
+```
+
+OpenCode also reads `.claude/skills/` and `.agents/skills/` (project and home), so skills you've already installed for Claude Code work without copying. OpenCode lists every installed skill's name and description to the agent, which loads one on demand through its native `skill` tool when it matches your request. There's no slash command for skills; to restrict or require approval for a skill, set `permission.skill` rules in `opencode.json`.
+
 ### Cline
 
 Clone this repo, then copy the skill(s) you want into Cline's skills directory:
