@@ -97,6 +97,8 @@ class TypeWhisperSyncReference(unittest.TestCase):
         self.assertIn(f"{sync.DEFAULT_MAX_PRUNE} terms", ref)
         self.assertIn(f"at least {sync.MIN_CORPUS_EPISODES}", ref)
         self.assertTrue(str(sync.BACKUP_DIR).endswith(".podcast-transcript/backups"))
+        self.assertIn("term_entries", ref)
+        self.assertIn("never pruned", ref)
         self.assertIn(".podcast-transcript/backups", ref)
 
     def test_skill_md_points_at_the_reference_and_it_exists(self):

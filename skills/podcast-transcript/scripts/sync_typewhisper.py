@@ -408,18 +408,24 @@ class PruneError(Exception):
     """A prune could not be written safely; the message says what state the dictionary is in."""
 
 
-def _restore(client, before: list[str], backup: Path) -> str:
-    """Put the previous list back and confirm it. Any failure leaves the state unknown, so say so."""
+def _sig(entry: dict) -> str:
+    """Order-independent identity of a whole entry: the term AND its settings."""
+    return json.dumps(entry, sort_keys=True, ensure_ascii=False)
+
+
+def _restore(client, before: list[dict], backup: Path) -> str:
+    """Put the previous entries (settings included) back and confirm it. Any failure leaves the state
+    unknown, so say so."""
     try:
         client.replace_terms(before)
-        now = client.terms()
+        now = client.term_entries()
     except Exception:  # noqa: BLE001 - mid-recovery, ANY failure means we cannot vouch for the state
         now = None
-    if now is not None and set(now) == set(before):
+    if now is not None and {_sig(e) for e in now} == {_sig(e) for e in before}:
         return "the previous dictionary was restored"
-    if now is not None and {_key(t) for t in now} == {_key(t) for t in before}:
-        return (f"the previous dictionary was restored, but TypeWhisper stored some terms with different "
-                f"capitalization or spacing than the originals (exact copy at {backup})")
+    if now is not None and {_key(e["term"]) for e in now} == {_key(e["term"]) for e in before}:
+        return (f"the previous terms were restored, but TypeWhisper stored some with different spelling or "
+                f"per-term settings than the originals (exact copy at {backup})")
     return f"RESTORE FAILED OR COULD NOT BE CONFIRMED: the dictionary state is unknown; full backup at {backup}"
 
 
@@ -427,73 +433,83 @@ def apply_prune(
     client, plan: PrunePlan, expected: list[str], budget: int = PARAKEET_TERM_CAP, backup_dir: Path | None = None
 ) -> tuple[Path, list[str]]:
     """Write a prune plan. The API's only removal path is replacing the whole term list, so every
-    step is defensive. The backup of the planning snapshot is written FIRST so that no filesystem work
-    sits between the final read and the write; that read must still match the plan, the plan must
-    remove exactly the terms it names (look-alike or duplicate entries abort it), the cap is enforced,
-    and after the single write the result is verified. If the write, the verifying read or the
-    verification itself fails, the previous list is restored (the write may or may not have landed).
-    Returns (backup path, notes).
+    step is defensive. Terms travel as the API's own `term_entries` objects, verbatim, so per-term
+    settings (e.g. ctc_min_similarity) of the terms that stay are preserved, and verification checks
+    the settings, not just the names. The backup of the planning snapshot is written FIRST so that no
+    filesystem work sits between the final read and the write; that read must still match the snapshot
+    exactly, the plan must remove exactly the terms it names (look-alike or duplicate entries abort it),
+    the cap is enforced, and after the single write the result is verified. If the write, the verifying
+    read or the verification itself fails, the previous entries are restored (the write may or may not
+    have landed). Returns (backup path, notes).
 
     Residual risk, because the API has no conditional write: a term added in the TypeWhisper app in the
     instant between the final read and the write is overwritten and cannot be detected. Don't edit the
     dictionary while a sync runs."""
+    snapshot = client.term_entries()
+    if {_key(e["term"]) for e in snapshot} != {_key(t) for t in expected}:
+        raise PruneError("the TypeWhisper dictionary changed while this plan was being made; nothing was "
+                         "written. Re-run to plan against the current dictionary.")
     try:
-        backup = _write_backup(backup_dir or BACKUP_DIR, list(expected), [t for t, _ in plan.removals],
+        backup = _write_backup(backup_dir or BACKUP_DIR, snapshot, [t for t, _ in plan.removals],
                                [t for t, _ in plan.additions])
     except OSError as exc:
         raise PruneError(f"could not write the backup ({exc}); nothing was written.") from exc
 
-    before = client.terms()  # the final read: nothing slow happens between here and the write
-    if {_key(t) for t in before} != {_key(t) for t in expected}:
-        raise PruneError("the TypeWhisper dictionary changed while this plan was being made; nothing was "
-                         "written. Re-run to plan against the current dictionary.")
+    before = client.term_entries()  # the final read: nothing slow happens between here and the write
+    if {_sig(e) for e in before} != {_sig(e) for e in snapshot}:
+        raise PruneError("the TypeWhisper dictionary (or a term's settings) changed just before the write; "
+                         "nothing was written. Re-run.")
     removed = {_key(t) for t, _ in plan.removals}
-    dropped = [t for t in before if _key(t) in removed]
+    dropped = [e["term"] for e in before if _key(e["term"]) in removed]
     if len(dropped) != len(plan.removals):
         raise PruneError(f"the plan names {len(plan.removals)} terms to remove but {len(dropped)} dictionary "
                          f"entries match them ({dropped[:5]}): duplicates or look-alike spellings. "
                          "Nothing was written.")
-    kept = [t for t in before if _key(t) not in removed]
-    kept_keys = {_key(t) for t in kept}
-    added = [t for t, _ in plan.additions if _key(t) not in kept_keys]
-    new_list = kept + added
-    if len(new_list) > budget:
-        raise PruneError(f"refusing to write {len(new_list)} terms (cap {budget}); nothing was written.")
-    if len({_key(t) for t in new_list}) != len(new_list):
+    kept = [e for e in before if _key(e["term"]) not in removed]
+    kept_keys = {_key(e["term"]) for e in kept}
+    added = [{"term": t} for t, _ in plan.additions if _key(t) not in kept_keys]
+    new_entries = kept + added
+    if len(new_entries) > budget:
+        raise PruneError(f"refusing to write {len(new_entries)} terms (cap {budget}); nothing was written.")
+    if len({_key(e["term"]) for e in new_entries}) != len(new_entries):
         raise PruneError("the new term list has duplicates; nothing was written.")
 
     try:
-        client.replace_terms(new_list)
-        after = client.terms()
+        client.replace_terms(new_entries)
+        after = client.term_entries()
     except Exception as exc:  # noqa: BLE001 - once the write has started, any failure leaves the state uncertain
         raise PruneError(f"the write could not be confirmed ({type(exc).__name__}: {exc}); "
                          f"{_restore(client, before, backup)}.") from exc
-    have = {_key(t) for t in after}
-    gone = [t for t in kept if _key(t) not in have]
-    stuck = [t for t, _ in plan.removals if _key(t) in have]
-    missing = [t for t in added if _key(t) not in have]
-    if gone or stuck or missing:
+    after_by_key = {_key(e["term"]): e for e in after}
+    gone = [e["term"] for e in kept if _key(e["term"]) not in after_by_key]
+    stuck = [t for t, _ in plan.removals if _key(t) in after_by_key]
+    missing = [e["term"] for e in added if _key(e["term"]) not in after_by_key]
+    changed = [e["term"] for e in kept
+               if _key(e["term"]) in after_by_key and
+               {k: v for k, v in after_by_key[_key(e["term"])].items() if k != "term"} != {k: v for k, v in e.items() if k != "term"}]
+    if gone or stuck or missing or changed:
         raise PruneError(f"verification failed (kept terms missing: {gone[:5]}; removed terms still present: "
-                         f"{stuck[:5]}; additions missing: {missing[:5]}); {_restore(client, before, backup)}.")
+                         f"{stuck[:5]}; additions missing: {missing[:5]}; per-term settings changed: {changed[:5]}); "
+                         f"{_restore(client, before, backup)}.")
     notes = []
-    if set(after) != set(new_list):
+    if {e["term"] for e in after} != {e["term"] for e in new_entries}:
         notes.append("TypeWhisper stored some terms with different capitalization or spacing than were sent.")
-    new_keys = {_key(t) for t in new_list}
-    extra = [t for t in after if _key(t) not in new_keys]
+    new_keys = {_key(e["term"]) for e in new_entries}
+    extra = [e["term"] for e in after if _key(e["term"]) not in new_keys]
     if extra:
         notes.append(f"{len(extra)} term(s) are in the dictionary that this sync did not write "
                      f"(added in the app during the sync?): {extra[:5]}")
     return backup, notes
 
 
-def _write_backup(directory: Path, before: list[str], removed: list[str], added: list[str]) -> Path:
-    """Save the full previous term list. It is the user's personal vocabulary, so the directory is created
-    0700 and the file 0600 (the process umask can only tighten that); O_EXCL means two runs in the same
-    second can never overwrite each other's backup."""
+def _write_backup(directory: Path, entries: list[dict], removed: list[str], added: list[str]) -> Path:
+    """Save the full previous term list with its per-term settings. It is the user's personal
+    vocabulary, so the directory is created 0700 and the file 0600 (the process umask can only
+    tighten that); O_EXCL means two runs in the same second can never overwrite each other's backup."""
     directory.mkdir(mode=0o700, parents=True, exist_ok=True)
     stamp = datetime.now().strftime("%Y%m%dT%H%M%S")
-    payload = json.dumps({"written": stamp, "terms": before, "removed": removed, "added": added},
-                         indent=2, ensure_ascii=False)
+    payload = json.dumps({"written": stamp, "terms": [e["term"] for e in entries], "term_entries": entries,
+                          "removed": removed, "added": added}, indent=2, ensure_ascii=False)
     n = 1
     while True:
         path = directory / (f"terms-before-prune-{stamp}.json" if n == 1 else f"terms-before-prune-{stamp}-{n}.json")
@@ -563,9 +579,9 @@ class TypeWhisperClient:
         except (urllib.error.URLError, ConnectionError, TimeoutError) as exc:
             raise ApiUnavailable(str(exc))
 
-    def terms(self) -> list[str]:
-        """The full term list. A truncated or malformed response is an error: pruning writes back whatever
-        this returns, so a partial list would silently delete the terms it left out."""
+    def _checked(self) -> dict:
+        """GET the term list and refuse an incomplete or malformed response. Pruning writes back whatever
+        it reads, so a partial list would silently delete the terms it left out."""
         data = self._request("GET", "/v1/dictionary/terms")
         terms = data.get("terms")
         if not isinstance(terms, list) or not all(isinstance(t, str) and t.strip() for t in terms):
@@ -577,7 +593,24 @@ class TypeWhisperClient:
         elif data["count"] != len(terms):
             raise RuntimeError(f"GET /v1/dictionary/terms is incomplete: count={data['count']} "
                                f"but {len(terms)} terms were returned")
-        return terms
+        return data
+
+    def terms(self) -> list[str]:
+        return self._checked()["terms"]
+
+    def term_entries(self) -> list[dict]:
+        """The terms WITH their per-term settings (e.g. {"term": "Accessibility", "ctc_min_similarity": 0.8}).
+        Replacing the list with bare strings would reset those settings, so pruning carries these
+        objects through verbatim."""
+        data = self._checked()
+        entries = data.get("term_entries")
+        if entries is None:  # an API version without per-term settings
+            return [{"term": t} for t in data["terms"]]
+        if not isinstance(entries, list) or not all(isinstance(e, dict) and isinstance(e.get("term"), str) for e in entries):
+            raise RuntimeError("GET /v1/dictionary/terms returned malformed term_entries")
+        if [e["term"] for e in entries] != data["terms"]:
+            raise RuntimeError("GET /v1/dictionary/terms: term_entries do not match terms; refusing to prune on it")
+        return entries
 
     def corrections(self) -> dict[str, str]:
         items = self._request("GET", "/v1/dictionary/corrections")["corrections"]
@@ -586,9 +619,12 @@ class TypeWhisperClient:
     def add_terms(self, terms: list[str]) -> None:
         self._request("PUT", "/v1/dictionary/terms", {"terms": terms, "replace": False})
 
-    def replace_terms(self, terms: list[str]) -> None:
-        """Replace the ENTIRE term list (the only removal path the API has). Use apply_prune()."""
-        self._request("PUT", "/v1/dictionary/terms", {"terms": terms, "replace": True})
+    def replace_terms(self, items: list) -> None:
+        """Replace the ENTIRE term list (the only removal path the API has). Use apply_prune().
+        Items that are dicts go in `term_entries` (settings preserved); strings go in `terms`. The API
+        accepts one or the other, never both."""
+        key = "term_entries" if any(isinstance(i, dict) for i in items) else "terms"
+        self._request("PUT", "/v1/dictionary/terms", {key: items, "replace": True})
 
     def put_correction(self, original: str, replacement: str) -> None:
         self._request(
@@ -679,8 +715,12 @@ def main() -> int:
     plan = None
     if args.prune:
         mentions = {t: m for t, (m, _) in usage.items()} if usage else None
-        plan = plan_prune(candidates, existing_terms, args.budget, load_keeplist(args.keep_file), args.max_prune,
-                          mentions)
+        # A term the user tuned (e.g. ctc_min_similarity) is a deliberate choice, like a term they added themselves:
+        # never remove it, whatever its corpus score. (Pruning an untuned term loses nothing the backup can't restore;
+        # pruning a tuned one destroys the tuning.)
+        tuned = {_key(e["term"]) for e in client.term_entries() if set(e) - {"term"}}
+        plan = plan_prune(candidates, existing_terms, args.budget, load_keeplist(args.keep_file) | tuned,
+                          args.max_prune, mentions)
         have_lower = {t.lower() for t in existing_terms}
         terms_to_add = [t for t, _ in plan.additions]
         terms_present = [t for t in candidates if t.lower() in have_lower]
@@ -701,7 +741,7 @@ def main() -> int:
         used = corpus_usage(plan.left_alone, Path(args.corpus)) if plan.left_alone else {}
         _show("Left alone: existing terms with no profile evidence (never removed)",
               [f"{t}  [{used.get(t, (0, 0))[1]} episodes]" for t in plan.left_alone], limit=12)
-        _show("Protected by the keep list", plan.protected)
+        _show("Protected (keep list, or the term has custom per-term settings)", plan.protected)
     _show("Corrections to add", corr_to_add)
     _show("Corrections conflicting with an existing entry (left alone)", corr_conflicts)
     if not args.apply:

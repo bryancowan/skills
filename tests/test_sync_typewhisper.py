@@ -170,6 +170,8 @@ class StubTypeWhisper(BaseHTTPRequestHandler):
     log: list[tuple[str, str]] = []
     drop_on_replace: set[str] = set()  # simulate an app that silently ignores some terms on replace
     omit_count = False  # simulate an API version that does not report a total count
+    meta: dict[str, dict] = {}  # per-term settings, e.g. {"Accessibility": {"ctc_min_similarity": 0.8}}
+    strip_meta_on_replace = False  # simulate an app that drops settings even when sent term_entries
 
     def _send(self, payload):
         body = json.dumps(payload).encode()
@@ -182,7 +184,10 @@ class StubTypeWhisper(BaseHTTPRequestHandler):
     def do_GET(self):
         self.log.append(("GET", self.path))
         if self.path == "/v1/dictionary/terms":
-            self._send({"terms": self.terms} if self.omit_count else {"terms": self.terms, "count": len(self.terms)})
+            payload = {"terms": self.terms, "term_entries": [{"term": t, **self.meta.get(t, {})} for t in self.terms]}
+            if not self.omit_count:
+                payload["count"] = len(self.terms)
+            self._send(payload)
         else:
             items = [{"original": k, "replacement": v, "caseSensitive": False} for k, v in self.corrections.items()]
             self._send({"corrections": items, "count": len(items)})
@@ -191,8 +196,21 @@ class StubTypeWhisper(BaseHTTPRequestHandler):
         payload = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         self.log.append(("PUT", self.path))
         if self.path == "/v1/dictionary/terms":
+            # the real app: "Use either 'terms' or 'term_entries', not both" / "Missing 'terms' or 'term_entries'"
+            if ("terms" in payload) == ("term_entries" in payload):
+                self.send_response(400)
+                self.end_headers()
+                return
             if payload["replace"]:
-                self.terms[:] = [t for t in payload["terms"] if t not in self.drop_on_replace]
+                entries = payload.get("term_entries")
+                names = [e["term"] for e in entries] if entries is not None else payload["terms"]
+                # Pessimistic model: replacing with bare strings RESETS every term's settings; only
+                # term_entries carries them across. Pruning must therefore always send term_entries.
+                kept_meta = {e["term"]: {k: v for k, v in e.items() if k != "term"} for e in (entries or [])}
+                self.terms[:] = [t for t in names if t not in self.drop_on_replace]
+                self.meta.clear()
+                if not self.strip_meta_on_replace:
+                    self.meta.update({k: v for k, v in kept_meta.items() if v and k in self.terms})
             else:
                 have = {t.lower() for t in self.terms}
                 self.terms.extend(t for t in payload["terms"] if t.lower() not in have)
@@ -208,6 +226,7 @@ class StubTypeWhisper(BaseHTTPRequestHandler):
 class ClientTests(unittest.TestCase):
     def setUp(self):
         StubTypeWhisper.terms, StubTypeWhisper.corrections, StubTypeWhisper.log = ["RAG"], {}, []
+        StubTypeWhisper.meta, StubTypeWhisper.strip_meta_on_replace = {}, False
         self.server = HTTPServer(("127.0.0.1", 0), StubTypeWhisper)
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
         self.client = sync.TypeWhisperClient(self.server.server_address[1], "token")
@@ -433,24 +452,31 @@ class PlanPruneTests(unittest.TestCase):
 
 
 class ScriptedClient:
-    """A tiny in-memory TypeWhisper that can misbehave on cue, for apply_prune's failure paths."""
+    """A tiny in-memory TypeWhisper that can misbehave on cue, for apply_prune's failure paths.
+    apply_prune reads term_entries three times (planning snapshot, the final read, the verifying read)."""
 
-    def __init__(self, live, fail_read=None, fail_first_write=False, transform=None):
+    def __init__(self, live, fail_read=None, fail_first_write=False, transform=None, meta=None):
         self.live, self.reads, self.writes = list(live), 0, []
+        self.meta = dict(meta or {})
         self.fail_read, self.fail_first_write, self.transform = fail_read, fail_first_write, transform
 
-    def terms(self):
+    def term_entries(self):
         self.reads += 1
         if self.fail_read and self.fail_read(self):
             raise sync.ApiUnavailable("lost GET")
-        return list(self.live)
+        return [{"term": t, **self.meta.get(t, {})} for t in self.live]
 
-    def replace_terms(self, terms):
-        self.writes.append(list(terms))
+    def terms(self):
+        return [e["term"] for e in self.term_entries()]
+
+    def replace_terms(self, items):
+        self.writes.append(list(items))
         if self.fail_first_write and len(self.writes) == 1:
-            self.live = ["half-applied"]
+            self.live, self.meta = ["half-applied"], {}
             raise RuntimeError("PUT /v1/dictionary/terms failed: HTTP 500")
-        self.live = [self.transform(t) for t in terms] if self.transform else list(terms)
+        names = [i["term"] if isinstance(i, dict) else i for i in items]
+        self.meta = {i["term"]: {k: v for k, v in i.items() if k != "term"} for i in items if isinstance(i, dict) and len(i) > 1}
+        self.live = [self.transform(n) for n in names] if self.transform else names
 
 
 class PruneApplyTests(unittest.TestCase):
@@ -459,6 +485,7 @@ class PruneApplyTests(unittest.TestCase):
     def setUp(self):
         StubTypeWhisper.terms = ["Akin Gump", "Adobe XD", "Keeper"]
         StubTypeWhisper.corrections, StubTypeWhisper.log, StubTypeWhisper.drop_on_replace = {}, [], set()
+        StubTypeWhisper.meta, StubTypeWhisper.strip_meta_on_replace, StubTypeWhisper.omit_count = {}, False, False
         self.server = HTTPServer(("127.0.0.1", 0), StubTypeWhisper)
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
         self.client = sync.TypeWhisperClient(self.server.server_address[1], "token")
@@ -489,10 +516,7 @@ class PruneApplyTests(unittest.TestCase):
             sync.apply_prune(self.client, self.plan, ["Akin Gump", "Adobe XD", "Keeper"], budget=5, backup_dir=self.tmp)
         self.assertIn("changed", str(ctx.exception))
         self.assertEqual(self.puts(), [])  # nothing written to the dictionary
-        # the backup of the planning snapshot is written first, on purpose (it keeps filesystem work out of
-        # the gap between the final read and the write), so one exists and holds the snapshot
-        (backup,) = self.tmp.iterdir()
-        self.assertEqual(json.loads(backup.read_text(encoding="utf-8"))["terms"], ["Akin Gump", "Adobe XD", "Keeper"])
+        self.assertEqual(list(self.tmp.iterdir()), [])  # stale from the start: not even a backup
 
     def test_refuses_to_exceed_the_cap(self):
         with self.assertRaises(sync.PruneError):
@@ -514,7 +538,7 @@ class PruneApplyTests(unittest.TestCase):
 
     def test_a_failed_verifying_read_triggers_a_restore_instead_of_reporting_success(self):
         # reviewer's repro: the write lands, then the verification read fails
-        fake = self.make_fake(["Akin Gump", "Adobe XD", "Keeper"], fail_read=lambda f: f.reads == 2)
+        fake = self.make_fake(["Akin Gump", "Adobe XD", "Keeper"], fail_read=lambda f: f.reads == 3)
         with self.assertRaises(sync.PruneError) as ctx:
             sync.apply_prune(fake, self.plan, ["Akin Gump", "Adobe XD", "Keeper"], budget=5, backup_dir=self.tmp)
         self.assertIn("could not be confirmed", str(ctx.exception))
@@ -554,7 +578,7 @@ class PruneApplyTests(unittest.TestCase):
         class Partial:
             writes = 0
 
-            def terms(inner):
+            def term_entries(inner):
                 raise RuntimeError("GET /v1/dictionary/terms is incomplete: count=2 but 1 terms were returned")
 
             def replace_terms(inner, terms):
@@ -574,9 +598,7 @@ class PruneApplyTests(unittest.TestCase):
         self.assertEqual(self.puts(), [])
 
     def test_a_changed_spelling_is_noted_not_fatal(self):
-        fake = self.make_fake(["Akin Gump", "Orphan"])
-        original = fake.replace_terms
-        fake.replace_terms = lambda terms: original([t.lower() for t in terms])  # an app that lowercases what it stores
+        fake = self.make_fake(["Akin Gump", "Orphan"], transform=str.lower)  # an app that lowercases what it stores
         plan = sync.PrunePlan(removals=[("Akin Gump", 2)], additions=[("Moolenaar", 28)])
         _, notes = sync.apply_prune(fake, plan, ["Akin Gump", "Orphan"], budget=5, backup_dir=self.tmp)
         self.assertEqual(fake.live, ["orphan", "moolenaar"])
@@ -621,11 +643,11 @@ class PruneApplyTests(unittest.TestCase):
 
     def test_a_restore_that_changes_spelling_is_not_reported_as_a_clean_restore(self):
         live = ["Old", "Kept"]
-        fake = self.make_fake(live, fail_read=lambda f: f.reads == 2, transform=str.lower)
+        fake = self.make_fake(live, fail_read=lambda f: f.reads == 3, transform=str.lower)
         plan = sync.PrunePlan(removals=[("Old", 1)], additions=[("New", 9)])
         with self.assertRaises(sync.PruneError) as ctx:
             sync.apply_prune(fake, plan, list(live), budget=5, backup_dir=self.tmp)
-        self.assertIn("different capitalization", str(ctx.exception))
+        self.assertIn("different spelling", str(ctx.exception))
         self.assertIn("exact copy at", str(ctx.exception))
 
     @unittest.skipUnless(os.name == "posix", "POSIX file modes")
@@ -635,12 +657,77 @@ class PruneApplyTests(unittest.TestCase):
         self.assertEqual(backup.stat().st_mode & 0o777, 0o600)
         self.assertEqual(target.stat().st_mode & 0o777, 0o700)
 
+    # ---- per-term settings (found live: 53 of 256 real terms carry ctc_min_similarity) ----
+    TUNED = {"Keeper": {"ctc_min_similarity": 0.8}, "Adobe XD": {"ctc_min_similarity": 0.8}}
+
+    def test_per_term_settings_of_kept_terms_survive_the_write(self):
+        StubTypeWhisper.meta = {k: dict(v) for k, v in self.TUNED.items()}
+        sync.apply_prune(self.client, self.plan, list(StubTypeWhisper.terms), budget=5, backup_dir=self.tmp)
+        self.assertEqual(StubTypeWhisper.terms, ["Adobe XD", "Keeper", "Moolenaar"])
+        self.assertEqual(StubTypeWhisper.meta, self.TUNED)  # still tuned after the whole-list replace
+
+    def test_the_stub_really_resets_settings_on_a_bare_string_replace(self):
+        # documents WHY apply_prune must send term_entries: the pessimistic (and plausible) reading of the API
+        StubTypeWhisper.meta = {k: dict(v) for k, v in self.TUNED.items()}
+        self.client.replace_terms(["Adobe XD", "Keeper"])
+        self.assertEqual(StubTypeWhisper.meta, {})
+
+    def test_a_write_that_loses_settings_is_detected_and_flagged(self):
+        StubTypeWhisper.meta = {k: dict(v) for k, v in self.TUNED.items()}
+        StubTypeWhisper.strip_meta_on_replace = True  # an app that drops settings even when sent term_entries
+        with self.assertRaises(sync.PruneError) as ctx:
+            sync.apply_prune(self.client, self.plan, list(StubTypeWhisper.terms), budget=5, backup_dir=self.tmp)
+        self.assertIn("per-term settings changed", str(ctx.exception))
+        self.assertIn("exact copy at", str(ctx.exception))  # the restore could not bring the settings back: say so
+        (backup,) = self.tmp.iterdir()
+        saved = json.loads(backup.read_text(encoding="utf-8"))
+        self.assertIn({"term": "Keeper", "ctc_min_similarity": 0.8}, saved["term_entries"])  # settings are backed up
+
+    def test_a_setting_edited_in_the_app_just_before_the_write_aborts(self):
+        real = sync._write_backup
+
+        def backup_then_user_retunes(*args, **kwargs):
+            path = real(*args, **kwargs)
+            StubTypeWhisper.meta["Keeper"] = {"ctc_min_similarity": 0.5}  # same terms, one setting changed
+            return path
+
+        StubTypeWhisper.meta = {"Keeper": {"ctc_min_similarity": 0.8}}
+        sync._write_backup = backup_then_user_retunes
+        try:
+            with self.assertRaises(sync.PruneError) as ctx:
+                sync.apply_prune(self.client, self.plan, list(StubTypeWhisper.terms), budget=5, backup_dir=self.tmp)
+        finally:
+            sync._write_backup = real
+        self.assertIn("changed just before the write", str(ctx.exception))
+        self.assertEqual(self.puts(), [])
+
+    def test_term_entries_must_agree_with_terms_and_be_well_formed(self):
+        client = sync.TypeWhisperClient(1, None)
+        for payload in ({"terms": ["a"], "term_entries": [{"term": "b"}]},   # disagree
+                        {"terms": ["a"], "term_entries": ["a"]},             # not objects
+                        {"terms": ["a"], "term_entries": [{"nope": "a"}]}):  # no "term"
+            client._request = lambda method, path, body=None, p=payload: p
+            with self.assertRaises(RuntimeError, msg=str(payload)):
+                client.term_entries()
+        client._request = lambda method, path, body=None: {"terms": ["a", "b"]}  # an API without settings
+        self.assertEqual(client.term_entries(), [{"term": "a"}, {"term": "b"}])
+
+    def test_replace_sends_term_entries_for_objects_and_terms_for_strings_never_both(self):
+        sent = []
+        client = sync.TypeWhisperClient(1, None)
+        client._request = lambda method, path, body=None: sent.append(body)
+        client.replace_terms([{"term": "a", "ctc_min_similarity": 0.8}, {"term": "b"}])
+        client.replace_terms(["a", "b"])
+        self.assertEqual(sent[0], {"term_entries": [{"term": "a", "ctc_min_similarity": 0.8}, {"term": "b"}], "replace": True})
+        self.assertEqual(sent[1], {"terms": ["a", "b"], "replace": True})
+
     def test_a_failed_restore_points_at_the_backup(self):
         class Broken:
             writes = 0
 
-            def terms(self_inner):
-                return ["Akin Gump", "Adobe XD", "Keeper"] if self_inner.writes == 0 else ["Adobe XD"]
+            def term_entries(self_inner):
+                names = ["Akin Gump", "Adobe XD", "Keeper"] if self_inner.writes == 0 else ["Adobe XD"]
+                return [{"term": n} for n in names]
 
             def replace_terms(self_inner, terms):
                 self_inner.writes += 1
@@ -653,10 +740,12 @@ class PruneApplyTests(unittest.TestCase):
         self.assertTrue(any(self.tmp.glob("terms-before-prune-*.json")))
 
     def test_backups_in_the_same_second_do_not_overwrite_each_other(self):
-        a = sync._write_backup(self.tmp, ["x"], [], [])
-        b = sync._write_backup(self.tmp, ["y"], [], [])
+        a = sync._write_backup(self.tmp, [{"term": "x", "ctc_min_similarity": 0.8}], [], [])
+        b = sync._write_backup(self.tmp, [{"term": "y"}], [], [])
         self.assertNotEqual(a, b)
-        self.assertEqual(json.loads(a.read_text())["terms"], ["x"])
+        saved = json.loads(a.read_text())
+        self.assertEqual(saved["terms"], ["x"])
+        self.assertEqual(saved["term_entries"], [{"term": "x", "ctc_min_similarity": 0.8}])  # settings are backed up
 
 
 class PruneCliTests(unittest.TestCase):
@@ -680,6 +769,7 @@ class PruneCliTests(unittest.TestCase):
             said = "Wang Huning spoke." + (" Zhipu is a lab." if i < 3 else "") + (" Tencent too." if i == 0 else "")
             (self.corpus / f"ep{i}.md").write_text(f"intro\n\n## Transcript\n\n{said}\n", encoding="utf-8")
         self.dictionary = ["Gwangju Biennale", "Tencent", "Custom Word"]
+        self.settings = {}  # per-term settings, e.g. {"Tencent": {"ctc_min_similarity": 0.8}}
         self.calls = {"replace": [], "add": [], "put": 0}
         self.stored_corrections = {}
 
@@ -689,12 +779,17 @@ class PruneCliTests(unittest.TestCase):
             def terms(self):
                 return list(outer.dictionary)
 
+            def term_entries(self):
+                return [{"term": t, **outer.settings.get(t, {})} for t in outer.dictionary]
+
             def corrections(self):
                 return dict(outer.stored_corrections)  # main() reads these back to verify its writes
 
-            def replace_terms(self, terms):
-                outer.calls["replace"].append(list(terms))
-                outer.dictionary[:] = terms
+            def replace_terms(self, items):
+                outer.calls["replace"].append(list(items))
+                outer.dictionary[:] = [i["term"] if isinstance(i, dict) else i for i in items]
+                outer.settings = {i["term"]: {k: v for k, v in i.items() if k != "term"}
+                                  for i in items if isinstance(i, dict) and len(i) > 1}
 
             def add_terms(self, terms):
                 outer.calls["add"].append(list(terms))
@@ -779,6 +874,16 @@ class PruneCliTests(unittest.TestCase):
         self.assertEqual(self.calls["add"], [])
         self.assertEqual(sorted(self.dictionary), ["Custom Word", "Wang Huning", "Zhipu"])
         self.assertTrue(any((self.tmp / "backups").glob("terms-before-prune-*.json")))
+
+    def test_a_term_with_custom_settings_is_never_pruned_and_keeps_them(self):
+        self.settings = {"Gwangju Biennale": {"ctc_min_similarity": 0.8}}  # the WEAKEST removable term, but tuned
+        code, out, err = self.run_main("--prune", "--apply")
+        self.assertEqual(code, 0, err)
+        self.assertIn("Gwangju Biennale", self.dictionary)
+        self.assertEqual(self.settings, {"Gwangju Biennale": {"ctc_min_similarity": 0.8}})
+        self.assertNotIn("Tencent", self.dictionary)   # the next-weakest, untuned term gave up its slot instead
+        self.assertIn("Wang Huning", self.dictionary)
+        self.assertIn("Custom Word", self.dictionary)
 
     def test_keep_file_stops_a_term_being_removed(self):
         (self.tmp / "keep.txt").write_text("# keep\nTencent\n", encoding="utf-8")

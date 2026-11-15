@@ -23,9 +23,17 @@ python scripts/sync_typewhisper.py --corpus ~/vault --prune --apply   # swap the
   replaces and beat it by 2, at most 25 terms go per run (`--max-prune`), and ties
   go to whichever term is said less often in the corpus. **Never removed:** terms with
   no profile evidence (the user's own words and other dictation: they show up under
-  "Left alone") and anything in `references/typewhisper-keep.txt`; add a term there if
-  it matters more than its transcript counts suggest. Matching ignores case, Unicode
-  composition and extra spaces. Without `--apply` it is a read-only report.
+  "Left alone"), any term with custom per-term settings (see below), and anything in
+  `references/typewhisper-keep.txt`; add a term there if it matters more than its
+  transcript counts suggest. Matching ignores case, Unicode composition and extra
+  spaces. Without `--apply` it is a read-only report.
+- **Per-term settings.** The API returns each term as an object (`term_entries`), and some
+  carry settings: on the author's dictionary 53 of 256 terms have
+  `ctc_min_similarity: 0.8`. A whole-list replace with bare strings would reset all of
+  them, so `--prune` always sends the entry objects, verbatim, for every term that stays
+  (the endpoint accepts `terms` *or* `term_entries`, never both). Verification compares
+  the settings, not just the names, and the backup stores the full entries. A term the
+  user tuned is a deliberate choice, so it is **never pruned** (like their own words).
 - **Pruning safety rails.** TypeWhisper's API has no delete, only "replace the whole
   list", so a write is only as safe as the list it is built from:
   - The term list must be provably complete: when pruning, the API's `count` is
