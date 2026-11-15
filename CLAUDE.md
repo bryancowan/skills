@@ -39,7 +39,7 @@ my-skill/
   - `good-documentation/` — writing and reviewing documentation
   - `obsidian-jd-organizer/` — maintains Johnny Decimal vault structure; audits, files notes, updates indexes, expands categories
   - `obsidian-wiki-compiler/` — compiles raw sources into interconnected Obsidian wikis with diagrams and visualizations
-  - `podcast-transcript/` — converts a podcast SRT into speaker-labeled markdown (append to a note or standalone file); profile-driven speakers + STT-artifact correction
+  - `podcast-transcript/` — converts a podcast SRT (plain or already diarized) into speaker-labeled markdown (append to a note or standalone file); profile-driven speakers + STT-artifact correction; `scripts/parse_srt.py --diarized` maps chunk-local speaker labels and regroups interleaved fragments, `scripts/verify_transcript.py` checks the result; regression tests in `tests/test_parse_srt.py` and `tests/test_verify_transcript.py`
   - `prompt-creation/` — creating and refining prompts for LLMs and AI agents
   - `ship-and-watch/` — commits, pushes, opens a PR, then polls CI every 5 minutes, auto-fixing failures until green
   - `ship-and-watch-tick/` — one iteration of the ship-and-watch polling loop; invoked automatically by `ship-and-watch`, not called directly
