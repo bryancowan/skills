@@ -266,9 +266,20 @@ Cue = namedtuple("Cue", "idx start end label text raw", defaults=(None,))
 Frag = namedtuple("Frag", "idx speaker text")
 
 # "Speaker 3:", ">> JOHN SMITH:", "HOST:" at the very start of a cue.
-_LABEL_RE = re.compile(
-    r"^(?:>>\s*)?(Speaker\s*\d+|[A-Z][A-Z0-9 .'\-]{0,24}?)\s*:\s*(.*)$", re.DOTALL
-)
+# "Speaker 3:", ">> JOHN SMITH:", "ÉLODIE:" at the very start of a cue. The candidate is
+# validated in _label_candidate (Python's re has no \p{Lu}, so "all caps" is checked there).
+_LABEL_RE = re.compile(r"^(?:>>\s*)?([^\s:][^:\n]{0,24}?)\s*:\s*(.*)$", re.DOTALL)
+_MAX_NAME_LABELS = 12      # name-style labels (JOHN:, NOTE:); "Speaker N" labels are not capped
+
+
+def _label_candidate(cand: str) -> bool:
+    """'Speaker 3' or an ALL-CAPS name label (accents allowed): ÉLODIE, DR. SMITH, A."""
+    if re.fullmatch(r"(?i)speaker\s*\d+", cand):
+        return True
+    return cand == cand.upper() and any(ch.isalpha() for ch in cand) \
+        and re.fullmatch(r"[\w .'\-]+", cand) is not None
+
+
 # Reactions that must never be read as the continuation of someone's sentence.
 _BACKCHANNELS = {"yeah", "yes", "yep", "right", "sure", "okay", "ok", "mm", "mhm", "mm-hmm", "uh-huh",
                  "no", "indeed", "wow", "oh", "ah", "exactly", "interesting", "absolutely", "true",
@@ -311,6 +322,8 @@ def parse_labeled_cues(entries: list[tuple[int, int, int, str]], not_labels=()) 
     cues = []
     for idx, start, end, text in entries:
         m = _LABEL_RE.match(text)
+        if m and not _label_candidate(m.group(1).strip()):
+            m = None
         label = _norm_label(m.group(1)) if m else ""
         if m and label not in skip:
             cues.append(Cue(idx, start, end, label, m.group(2).strip(), text))
@@ -333,20 +346,21 @@ def qualifying_labels(cues: list[Cue]) -> set[str]:
 def is_diarized(cues: list[Cue], threshold: float = 0.7, max_labels: int = 12) -> bool:
     """
     True when cues carry a small set of speaker labels. Either most cues are labeled,
-    or — for diarizers that label only the first cue of each turn — the first cue is
-    labeled, at least two distinct speakers appear and a fifth of the cues are labeled.
+    or — for diarizers that label only the first cue of each turn — at least two distinct
+    speakers appear and a fifth of the cues are labeled. (A multi-chunk episode can have
+    many "Speaker N" labels, so those are not capped.)
     A name-style label alone ("NOTE:" on every cue) isn't enough: it needs two of them.
     """
     if not cues:
         return False
     q = qualifying_labels(cues)
-    if not q or len(q) > max_labels:
-        return False
+    if not q or len([lab for lab in q if not lab.isdigit()]) > max_labels:
+        return False          # many name-style labels = not speakers; "Speaker N" labels are uncapped
     if len(q) < 2 and not any(lab.isdigit() for lab in q):
         return False
     labeled = [c for c in cues if c.label in q]
     frac = len(labeled) / len(cues)
-    return frac >= threshold or (cues[0].label in q and len(q) >= 2 and frac >= 0.2)
+    return frac >= threshold or (len(q) >= 2 and frac >= 0.2)
 
 
 def strip_speaker_labels(cues: list[Cue]) -> list[Cue]:
@@ -471,17 +485,20 @@ def parse_map_specs(specs: list[str]) -> list[tuple[str, str, int, int]]:
 
 
 def apply_map(cues: list[Cue], maps: list[tuple[str, str, int, int]],
-              inherit_unlabeled: bool = True) -> list[Frag]:
+              inherit_unlabeled: bool = True, first_speaker: str | None = None) -> list[Frag]:
     """
     Name every cue's speaker. Unmapped labels are an error — never guessed.
     When --map entries overlap, the LAST one wins, so a broad default can be followed
     by a narrower override. Some diarizers label only the first cue of each turn; with
     inherit_unlabeled an unlabeled cue takes the previous cue's speaker (the first cue
-    must be labeled). Use frag_notes(frags) afterwards to report how many were inherited.
+    must be labeled, or `first_speaker` names whoever speaks before the first label).
     """
     frags, missing = [], {}
     prev_label = ""
     for c in cues:
+        if not c.label and not prev_label and first_speaker:
+            frags.append(Frag(c.idx, first_speaker, c.text))
+            continue
         label = c.label or (prev_label if inherit_unlabeled else "")
         name = next((n for (l, n, lo, hi) in reversed(maps) if l == label and lo <= c.idx <= hi), None)
         if name is None:
@@ -728,14 +745,19 @@ def _run_diarized(args) -> int:
             with open(args.fixes_file, encoding="utf-8") as f:
                 fixes += parse_fix_specs([ln for ln in f.read().splitlines()
                                           if ln.strip() and not ln.lstrip().startswith("#")])
-        frags = apply_map(cues, parse_map_specs(args.map))
+        frags = apply_map(cues, parse_map_specs(args.map), first_speaker=args.first_speaker)
         inherited = sum(1 for c in cues if not c.label)
         if inherited:
             print(f"NOTE: {inherited} cue(s) had no speaker label and inherited the previous "
                   "cue's speaker (this SRT labels only some cues).", file=sys.stderr)
     except ValueError as e:
-        hint = ("\n  Real speaker → add --map LABEL=NAME. Stray text that merely looks like a label "
-                "(e.g. a cue starting 'NOTE:') → add --not-label LABEL.") if "unmapped" in str(e) else ""
+        hint = ""
+        if "(no label)" in str(e):
+            hint = ("\n  The first cue(s) have no label, so there is nothing before them to inherit from. "
+                    "Name whoever speaks first with --first-speaker NAME.")
+        elif "unmapped" in str(e):
+            hint = ("\n  Real speaker → add --map LABEL=NAME. Stray text that merely looks like a label "
+                    "(e.g. a cue starting 'NOTE:') → add --not-label LABEL.")
         print(f"error: {e}{hint}", file=sys.stderr)
         return 2
 
@@ -826,6 +848,11 @@ def main():
         metavar="LABEL",
         help="Treat cues starting 'LABEL:' as plain text, not a speaker (repeatable), "
              "e.g. --not-label note for a stray 'NOTE: …' cue",
+    )
+    parser.add_argument(
+        "--first-speaker",
+        metavar="NAME",
+        help="For SRTs that label only some cues: the speaker of any cues BEFORE the first label",
     )
     parser.add_argument(
         "--fix",

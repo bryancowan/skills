@@ -130,6 +130,11 @@ class Verify(unittest.TestCase):
         r = self.run_verify(FRONT + "## Transcript\n\n**Andrew:** Hello world everyone today.\n", srt=srt)
         self.assertEqual(self.msgs(r, "FAIL"), [])
 
+    def test_empty_speaker_turn_fails(self):
+        note = FRONT + "## Transcript\n\n**Andrew:** Hello world yes indeed.\n\n**Bill:**\n\n**Andrew:** Thanks for coming.\n"
+        r = self.run_verify(note, srt=self.srt_of("Hello world yes indeed. Thanks for coming."))
+        self.assertTrue(any("not '**Name:** text'" in m for m in self.msgs(r, "FAIL")))
+
     def test_adjacent_same_speaker_warns(self):
         body = GOOD_BODY.replace("**Bill:** Thanks", "**Andrew:** Thanks")
         r = self.run_verify(FRONT + "## Transcript\n\n" + body)

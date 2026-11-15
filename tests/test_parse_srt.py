@@ -121,6 +121,62 @@ class LabelRobustness(unittest.TestCase):
         self.assertFalse(P.is_diarized(self.parse(["Speaker 1: Hi.", "more.", "more.", "more.", "more."])))
 
 
+class PrReviewRegressions(unittest.TestCase):
+    """Findings from the review of the PR itself."""
+    def parse(self, texts):
+        return P.parse_labeled_cues([(i, 0, 0, t) for i, t in enumerate(texts, 1)])
+
+    def test_many_speaker_labels_are_not_capped(self):
+        # a multi-chunk episode can legitimately have 13+ "Speaker N" labels (2 fresh ones per chunk)
+        texts = [f"Speaker {n}: Line {n} a." for n in range(1, 14)] + [f"Speaker {n}: Line {n} b." for n in range(1, 14)]
+        self.assertTrue(P.is_diarized(self.parse(texts)))
+
+    def test_many_name_style_labels_are_still_not_diarized(self):
+        names = [chr(65 + i) * 3 for i in range(13)]            # AAA, BBB, ... 13 distinct name labels
+        texts = [f"{n}: line {i}." for _ in range(3) for i, n in enumerate(names)]
+        self.assertFalse(P.is_diarized(self.parse(texts)))
+
+    def test_accented_all_caps_name_labels_are_recognized(self):
+        texts = ["ÉLODIE: Bonjour.", "JOSÉ: Hola.", "ÉLODIE: Encore.", "JOSÉ: Adiós."]
+        cues = self.parse(texts)
+        self.assertEqual([c.label for c in cues], ["élodie", "josé", "élodie", "josé"])
+        self.assertTrue(P.is_diarized(cues))
+
+    def test_ordinary_sentences_with_a_colon_are_not_labels(self):
+        for text in ("Politico writes: unlike many peers, Nvidia lacks it.", "Here is the thing: it works.",
+                     "Note: this is mixed case.", "Q&A: how it went."):
+            self.assertEqual(self.parse([text])[0].label, "", text)
+
+    def test_unlabeled_opening_cue_is_still_detected_and_needs_first_speaker(self):
+        texts = ["intro words before any label", "Speaker 1: Hello.", "continues.", "Speaker 2: Hi.", "more.",
+                 "Speaker 1: Sure."]
+        cues = self.parse(texts)
+        self.assertTrue(P.is_diarized(cues))
+        maps = P.parse_map_specs(["1=Andrew", "2=Bill"])
+        with self.assertRaises(ValueError) as cm:
+            P.apply_map(cues, maps)
+        self.assertIn("(no label)", str(cm.exception))
+        frags = P.apply_map(cues, maps, first_speaker="Bill")
+        self.assertEqual([f.speaker for f in frags], ["Bill", "Andrew", "Andrew", "Bill", "Bill", "Andrew"])
+
+    def test_cli_first_speaker_flag_and_its_hint(self):
+        rows = [("Speaker 1", "Hello."), ("Speaker 2", "Hi."), ("Speaker 1", "Sure."), ("Speaker 2", "Ok.")]
+        srt = "\n".join(f"{i}\n00:00:{i*2:02d},000 --> 00:00:{i*2+1:02d},000\n{lab}: {txt}\n"
+                        for i, (lab, txt) in enumerate(rows, 1))
+        srt = "0\n00:00:00,000 --> 00:00:01,000\nWelcome everyone.\n\n" + srt
+        with tempfile.NamedTemporaryFile("w", suffix=".srt", delete=False, encoding="utf-8") as f:
+            f.write(srt)
+        self.addCleanup(os.unlink, f.name)
+        base = [sys.executable, "-I", os.path.join(HERE, "parse_srt.py"), f.name, "--diarized",
+                "--map", "1=Andrew", "--map", "2=Bill"]
+        bad = subprocess.run(base, capture_output=True, text=True)
+        self.assertEqual(bad.returncode, 2, bad.stdout)
+        self.assertIn("--first-speaker", bad.stderr)
+        good = subprocess.run(base + ["--first-speaker", "Bill"], capture_output=True, text=True)
+        self.assertEqual(good.returncode, 0, good.stderr)
+        self.assertIn("Welcome everyone.", good.stdout)
+
+
 class Mapping(unittest.TestCase):
     def test_map_specs_with_ranges(self):
         self.assertEqual(P.parse_map_specs(["1=Andrew", "2=Bill@1-342", "3=Bill@343-"]),

@@ -139,13 +139,20 @@ many did.
 
 **3. Build.** Put the Step 2 artifact fixes in a `--fixes-file` (`old => new`, one per
 line; applied to the raw text *before* cleanup so they can match across cue
-boundaries). On a first pass you can omit it and read the draft to find artifacts.
+boundaries). On a first pass start with an empty file (`touch fixes.txt`), read the
+draft to find artifacts, then fill it in and re-run. The command is copy-pasteable as
+written:
 
 ```bash
+touch fixes.txt      # first pass: empty; add "old => new" lines after Step 2
 python3 -I scripts/parse_srt.py "$SRT_FILE" --diarized \
   --map 1=Andrew --map 2=Bill --map 3=Bill --map 4=Andrew \
-  [--fixes-file fixes.txt] --review > /tmp/transcript_body.md
+  --fixes-file fixes.txt --review > /tmp/transcript_body.md 2> /tmp/transcript_review.txt
 ```
+
+Optional flags: `--not-label LABEL` (stray `NOTE:`-style text), `--first-speaker NAME`
+(cues before the first label, for SRTs that label only some cues). Exit codes: `0` ok,
+`2` bad input / unmapped label / not diarized, `3` coverage check failed.
 
 stdout is the finished `**Name:** text` body (one turn per paragraph); stderr has the
 coverage line, per-speaker turn counts, `REVIEW` flags and (with `--review`) every
@@ -283,13 +290,28 @@ honest markers. Don't silently delete them.
 
 Build the labeled paragraphs as `(speaker, text)` pairs, then write per mode.
 
+**Diarized SRTs:** the body from Step 1D (`/tmp/transcript_body.md`) is already the
+finished markdown — pass it straight to the append command below. The Python snippets
+(fallback append, new-file) need `labeled_paragraphs`; build it from that file:
+
+```python
+import re
+with open("/tmp/transcript_body.md", encoding="utf-8") as f:
+    labeled_paragraphs = re.findall(r"^\*\*(.+?):\*\* (.*)$", f.read(), re.M)
+```
+
 **append mode** — guard against duplicates, then append. In an Obsidian vault, prefer
 the `obsidian` CLI (the vault's `CLAUDE.md` asks for it; needs Obsidian open):
 
 ```bash
 NOTEP="Reading List/My Note.md"          # path from the vault root
-rg -c "^## Transcript" "/abs/vault/$NOTEP" && echo "ABORT: already has a transcript"
-obsidian append path="$NOTEP" content="$(printf '## Transcript\n\n'; cat /tmp/transcript_body.md)" silent
+NOTE_ABS="/abs/vault/$NOTEP"
+cp "$NOTE_ABS" /tmp/note_before_transcript.md        # for the byte-identical-prefix check below
+if rg -q "^## Transcript" "$NOTE_ABS"; then
+  echo "ABORT: note already has a ## Transcript — not appending"
+else
+  obsidian append path="$NOTEP" content="$(printf '## Transcript\n\n'; cat /tmp/transcript_body.md)" silent
+fi
 ```
 
 - **Start the content at `## Transcript`, with no leading newline.** The CLI inserts
@@ -297,8 +319,8 @@ obsidian append path="$NOTEP" content="$(printf '## Transcript\n\n'; cat /tmp/tr
   heading (fixed by hand last time; `verify_transcript.py` now warns about it).
 - ~80 KB passed fine through `content="$(cat …)"`. If the shell rejects the argument
   size, use the Python fallback below.
-- Keep a copy of the note first (`cp`) and confirm afterwards that the original text is
-  a byte-identical prefix of the new file (`head -c <old size> new | cmp - old`).
+- Afterwards confirm the original text is a byte-identical prefix of the new file:
+  `head -c "$(wc -c < /tmp/note_before_transcript.md)" "$NOTE_ABS" | cmp - /tmp/note_before_transcript.md`.
 
 **append mode, fallback** (no Obsidian / CLI failed):
 
@@ -359,10 +381,11 @@ any frontmatter field you can't determine — don't invent values.**
 
 ### Step 6 — Verify
 
-**Run the automated checks first** (append: pass the note; new-file: the output file):
+**Run the automated checks first** on the file you wrote to:
 
 ```bash
-python3 -I scripts/verify_transcript.py "$NOTE_FILE" --srt "$SRT_FILE" \
+TARGET_MD="$NOTE_FILE"     # append mode; for new-file mode use TARGET_MD="$OUTPUT_FILE"
+python3 -I scripts/verify_transcript.py "$TARGET_MD" --srt "$SRT_FILE" \
   --speakers Andrew Bill --forbid "Namibia" "Alice Wang"   # heard-as forms you fixed
 ```
 

@@ -26,7 +26,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import parse_srt as P  # noqa: E402
 
-TURN_RE = re.compile(r"^\*\*([^*]+?):\*\* ?(.*)$")
+TURN_RE = re.compile(r"^\*\*([^*]+?):\*\* +(\S.*)$")   # an empty "**Bill:**" is NOT a turn
 
 
 def _norm_words(text: str) -> list[str]:
