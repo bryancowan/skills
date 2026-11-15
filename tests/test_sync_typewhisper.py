@@ -6,6 +6,7 @@ Run from the repo root:  python3 -m unittest tests/test_sync_typewhisper.py
 import contextlib
 import io
 import json
+import os
 import shutil
 import sys
 import tempfile
@@ -168,6 +169,7 @@ class StubTypeWhisper(BaseHTTPRequestHandler):
     corrections: dict[str, str] = {}
     log: list[tuple[str, str]] = []
     drop_on_replace: set[str] = set()  # simulate an app that silently ignores some terms on replace
+    omit_count = False  # simulate an API version that does not report a total count
 
     def _send(self, payload):
         body = json.dumps(payload).encode()
@@ -180,7 +182,7 @@ class StubTypeWhisper(BaseHTTPRequestHandler):
     def do_GET(self):
         self.log.append(("GET", self.path))
         if self.path == "/v1/dictionary/terms":
-            self._send({"terms": self.terms, "count": len(self.terms)})
+            self._send({"terms": self.terms} if self.omit_count else {"terms": self.terms, "count": len(self.terms)})
         else:
             items = [{"original": k, "replacement": v, "caseSensitive": False} for k, v in self.corrections.items()]
             self._send({"corrections": items, "count": len(items)})
@@ -297,6 +299,22 @@ class CorpusTests(unittest.TestCase):
         self.assertEqual(usage["Xinhua"], (1, 1))
         self.assertEqual(usage["Xi"], (1, 1))  # "Xi Jinping" counts; "Xinhua" does not
 
+    @unittest.skipUnless(hasattr(os, "symlink"), "needs symlinks")
+    def test_symlinks_cannot_fake_extra_episodes_or_read_outside_the_corpus(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp, "vault")
+            root.mkdir()
+            outside = Path(tmp, "outside.md")
+            outside.write_text("x\n## Transcript\n\nFlern Flern\n", encoding="utf-8")
+            (root / "real.md").write_text("x\n## Transcript\n\nSomething else\n", encoding="utf-8")
+            try:
+                for i in range(10):
+                    (root / f"link{i}.md").symlink_to(outside)
+            except OSError:
+                self.skipTest("cannot create symlinks here")
+            self.assertEqual(len(sync.corpus_bodies(root)), 1)  # only the real file
+            self.assertEqual(sync.corpus_usage(["Flern"], root)["Flern"], (0, 0))
+
     def test_cli_rejects_a_corpus_that_is_not_a_folder(self):
         argv, sys.argv = sys.argv, ["sync_typewhisper.py", "--corpus", "/definitely/not/a/folder"]
         try:
@@ -394,6 +412,14 @@ class PlanPruneTests(unittest.TestCase):
         plan = sync.plan_prune({"Café": 1}, ["Cafe\u0301"], budget=1)
         self.assertEqual(plan.left_alone, [])
 
+    def test_compatibility_look_alikes_are_distinct_terms(self):
+        # reviewer's repro: NFKC made "Ⅳ" (roman numeral) equal "IV", so removing one dropped both
+        self.assertNotEqual(sync._key("Ⅳ"), sync._key("IV"))
+        self.assertNotEqual(sync._key("Straße"), sync._key("Strasse"))
+        plan = sync.plan_prune({"IV": 1, "New": 10}, ["Ⅳ", "IV"], budget=2)
+        self.assertEqual([t for t, _ in plan.removals], ["IV"])
+        self.assertEqual(plan.left_alone, ["Ⅳ"])  # no profile evidence for the look-alike: never removed
+
     def test_load_keeplist_normalizes(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp, "keep.txt")
@@ -409,9 +435,9 @@ class PlanPruneTests(unittest.TestCase):
 class ScriptedClient:
     """A tiny in-memory TypeWhisper that can misbehave on cue, for apply_prune's failure paths."""
 
-    def __init__(self, live, fail_read=None, fail_first_write=False):
+    def __init__(self, live, fail_read=None, fail_first_write=False, transform=None):
         self.live, self.reads, self.writes = list(live), 0, []
-        self.fail_read, self.fail_first_write = fail_read, fail_first_write
+        self.fail_read, self.fail_first_write, self.transform = fail_read, fail_first_write, transform
 
     def terms(self):
         self.reads += 1
@@ -424,7 +450,7 @@ class ScriptedClient:
         if self.fail_first_write and len(self.writes) == 1:
             self.live = ["half-applied"]
             raise RuntimeError("PUT /v1/dictionary/terms failed: HTTP 500")
-        self.live = list(terms)
+        self.live = [self.transform(t) for t in terms] if self.transform else list(terms)
 
 
 class PruneApplyTests(unittest.TestCase):
@@ -462,8 +488,11 @@ class PruneApplyTests(unittest.TestCase):
         with self.assertRaises(sync.PruneError) as ctx:
             sync.apply_prune(self.client, self.plan, ["Akin Gump", "Adobe XD", "Keeper"], budget=5, backup_dir=self.tmp)
         self.assertIn("changed", str(ctx.exception))
-        self.assertEqual(self.puts(), [])  # nothing written
-        self.assertEqual(list(self.tmp.iterdir()), [])  # not even a backup
+        self.assertEqual(self.puts(), [])  # nothing written to the dictionary
+        # the backup of the planning snapshot is written first, on purpose (it keeps filesystem work out of
+        # the gap between the final read and the write), so one exists and holds the snapshot
+        (backup,) = self.tmp.iterdir()
+        self.assertEqual(json.loads(backup.read_text(encoding="utf-8"))["terms"], ["Akin Gump", "Adobe XD", "Keeper"])
 
     def test_refuses_to_exceed_the_cap(self):
         with self.assertRaises(sync.PruneError):
@@ -510,6 +539,17 @@ class PruneApplyTests(unittest.TestCase):
         client._request = lambda method, path, body=None: {"count": 2, "terms": ["a", "b"]}
         self.assertEqual(client.terms(), ["a", "b"])
 
+    def test_a_response_without_a_count_is_refused_when_pruning(self):
+        # reviewer's repro: with no count a partial list is indistinguishable from a complete one
+        client = sync.TypeWhisperClient(1, None, require_count=True)
+        client._request = lambda method, path, body=None: {"terms": ["Old", "Private"]}  # "Unseen" missing
+        with self.assertRaises(RuntimeError) as ctx:
+            client.terms()
+        self.assertIn("count", str(ctx.exception))
+        lenient = sync.TypeWhisperClient(1, None)  # the add-only path keeps working without a count
+        lenient._request = client._request
+        self.assertEqual(lenient.terms(), ["Old", "Private"])
+
     def test_a_partial_terms_read_aborts_before_any_write(self):
         class Partial:
             writes = 0
@@ -549,6 +589,51 @@ class PruneApplyTests(unittest.TestCase):
         plan = sync.PrunePlan(removals=[("Akin Gump", 2)], additions=[("Moolenaar", 28)])
         _, notes = sync.apply_prune(fake, plan, ["Akin Gump", "Keeper"], budget=5, backup_dir=self.tmp)
         self.assertTrue(any("Added In The App" in n for n in notes))
+
+    def test_a_plan_that_would_remove_more_than_it_names_is_refused(self):
+        # two entries collapse to the key of the one removal (duplicate-by-case): removing "Old" would drop both
+        fake = self.make_fake(["Old", "old", "Keeper"])
+        plan = sync.PrunePlan(removals=[("Old", 1)], additions=[("New", 9)])
+        with self.assertRaises(sync.PruneError) as ctx:
+            sync.apply_prune(fake, plan, ["Old", "old", "Keeper"], budget=5, backup_dir=self.tmp)
+        self.assertIn("duplicates or look-alike", str(ctx.exception))
+        self.assertEqual(fake.writes, [])
+
+    def test_the_backup_is_written_before_the_final_read_so_a_slow_backup_cannot_widen_the_race(self):
+        fake = self.make_fake(["Akin Gump", "Keeper"])
+        real = sync._write_backup
+
+        def backup_then_user_adds_a_term(*args, **kwargs):
+            path = real(*args, **kwargs)
+            fake.live.append("Added While Backup Was Written")  # the user edits the dictionary mid-backup
+            return path
+
+        sync._write_backup = backup_then_user_adds_a_term
+        try:
+            plan = sync.PrunePlan(removals=[("Akin Gump", 2)], additions=[("Moolenaar", 28)])
+            with self.assertRaises(sync.PruneError) as ctx:
+                sync.apply_prune(fake, plan, ["Akin Gump", "Keeper"], budget=5, backup_dir=self.tmp)
+        finally:
+            sync._write_backup = real
+        self.assertIn("changed", str(ctx.exception))
+        self.assertEqual(fake.writes, [])  # caught by the final read, not silently overwritten
+        self.assertIn("Added While Backup Was Written", fake.live)
+
+    def test_a_restore_that_changes_spelling_is_not_reported_as_a_clean_restore(self):
+        live = ["Old", "Kept"]
+        fake = self.make_fake(live, fail_read=lambda f: f.reads == 2, transform=str.lower)
+        plan = sync.PrunePlan(removals=[("Old", 1)], additions=[("New", 9)])
+        with self.assertRaises(sync.PruneError) as ctx:
+            sync.apply_prune(fake, plan, list(live), budget=5, backup_dir=self.tmp)
+        self.assertIn("different capitalization", str(ctx.exception))
+        self.assertIn("exact copy at", str(ctx.exception))
+
+    @unittest.skipUnless(os.name == "posix", "POSIX file modes")
+    def test_backups_are_private(self):
+        target = self.tmp / "fresh" / "backups"
+        backup, _ = sync.apply_prune(self.client, self.plan, list(StubTypeWhisper.terms), budget=5, backup_dir=target)
+        self.assertEqual(backup.stat().st_mode & 0o777, 0o600)
+        self.assertEqual(target.stat().st_mode & 0o777, 0o700)
 
     def test_a_failed_restore_points_at_the_backup(self):
         class Broken:
@@ -645,6 +730,25 @@ class PruneCliTests(unittest.TestCase):
         code, _, err = self.run_main("--prune", corpus=False)
         self.assertEqual(code, 2)
         self.assertIn("--corpus", err)
+
+    def test_a_real_client_is_made_strict_for_prune_but_not_for_a_plain_sync(self):
+        StubTypeWhisper.terms, StubTypeWhisper.corrections, StubTypeWhisper.log = list(self.dictionary), {}, []
+        StubTypeWhisper.drop_on_replace, StubTypeWhisper.omit_count = set(), True
+        server = HTTPServer(("127.0.0.1", 0), StubTypeWhisper)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        sync.TypeWhisperClient.discover = classmethod(
+            lambda cls: sync.TypeWhisperClient(server.server_address[1], "token"))
+        try:
+            code, _, err = self.run_main("--prune", "--apply")
+            self.assertEqual(code, 1)
+            self.assertIn("total count", err)
+            self.assertEqual([e for e in StubTypeWhisper.log if e[0] == "PUT"], [])  # nothing written
+            code, _, _ = self.run_main()  # a plain (add-only) dry run still works without a count
+            self.assertEqual(code, 0)
+        finally:
+            StubTypeWhisper.omit_count = False
+            server.shutdown()
+            server.server_close()
 
     def test_nonsense_limits_are_refused(self):
         for extra in (("--max-prune", "-1"), ("--budget", "0")):

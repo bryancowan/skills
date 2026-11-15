@@ -28,20 +28,28 @@ python scripts/sync_typewhisper.py --corpus ~/vault --prune --apply   # swap the
   composition and extra spaces. Without `--apply` it is a read-only report.
 - **Pruning safety rails.** TypeWhisper's API has no delete, only "replace the whole
   list", so a write is only as safe as the list it is built from:
-  - A truncated or malformed term list is an error (the API reports a `count`; a
-    mismatch aborts), because writing back a partial list would silently delete the
-    terms it left out.
-  - Before writing, the dictionary is re-read and the run aborts if it no longer matches
-    the plan; the full previous list is saved to `~/.podcast-transcript/backups/` (an
-    unwritable backup aborts before anything is written); a list over the cap or with
+  - The term list must be provably complete: when pruning, the API's `count` is
+    required and must match the list (a truncated list would otherwise be written back
+    and silently delete whatever it left out). A malformed list is an error too.
+  - Terms match on case, Unicode composition and extra spaces, never on compatibility
+    folding: `Ⅳ` and `IV`, `ß` and `ss` are different terms. The plan must remove
+    exactly the terms it names; if duplicate or look-alike entries would make it remove
+    more, it aborts.
+  - The full previous list is saved first, to `~/.podcast-transcript/backups/` (private:
+    directory 0700, file 0600, never overwritten; an unwritable backup aborts before
+    anything is written). Then the dictionary is re-read immediately before the write and
+    the run aborts if it no longer matches the plan; a list over the cap or with
     duplicates is refused.
   - After the write the result is verified. If the write, the verifying read or the
     verification itself fails, the previous list is restored; if the restore cannot be
-    confirmed the error says the state is unknown and names the backup file.
+    confirmed (or the app stored different capitalization) the message says so and names
+    the backup file.
   - Notes are printed when the app stored terms with different capitalization, or when
     terms appear that the sync did not write.
+  - The corpus never follows symlinks (they could fake extra episodes or read outside the
+    folder).
   - **Residual risk:** the API has no conditional write, so a term added in the
-    TypeWhisper app in the milliseconds between the final read and the write would be
+    TypeWhisper app in the instant between the final read and the write would be
     overwritten, undetectably. Ask the user not to edit the dictionary while a sync runs.
   - **The first `--prune --apply` on a machine:** show the user the dry-run plan and get
     a go-ahead (it is the first write through the replace-the-whole-list path); after

@@ -270,8 +270,13 @@ def profile_prose(directory: Path) -> str:
 def corpus_bodies(corpus: Path) -> list[str]:
     """The text after "## Transcript" of every finished transcript under `corpus`."""
     bodies: list[str] = []
+    root = Path(corpus).resolve()
     for path in Path(corpus).rglob("*.md"):
         if _NON_CORPUS_DIRS & set(path.parts):
+            continue
+        # A symlink could point outside the folder, or ten links at one file would fake ten episodes
+        # and slip past the --prune corpus-size guard.
+        if path.is_symlink() or not path.resolve().is_relative_to(root):
             continue
         try:
             text = path.read_text(encoding="utf-8")
@@ -326,8 +331,10 @@ def plan_terms(
 
 def _key(term: str) -> str:
     """Canonical form for matching terms: case, Unicode composition ("é" vs "e" + accent) and runs of
-    whitespace must not let a term slip past the keep list or be mistaken for a different term."""
-    return " ".join(unicodedata.normalize("NFKC", term).split()).casefold()
+    whitespace must not let a term slip past the keep list. Deliberately NOT compatibility folding
+    (NFKC) or casefold: "Ⅳ" and "IV", or "ß" and "ss", are different terms and must never be conflated,
+    because a conflated match would remove more than the plan names."""
+    return " ".join(unicodedata.normalize("NFC", term).split()).lower()
 
 
 def load_keeplist(path: Path = KEEP_FILE) -> set[str]:
@@ -405,11 +412,14 @@ def _restore(client, before: list[str], backup: Path) -> str:
     """Put the previous list back and confirm it. Any failure leaves the state unknown, so say so."""
     try:
         client.replace_terms(before)
-        ok = {_key(t) for t in client.terms()} == {_key(t) for t in before}
+        now = client.terms()
     except Exception:  # noqa: BLE001 - mid-recovery, ANY failure means we cannot vouch for the state
-        ok = False
-    if ok:
+        now = None
+    if now is not None and set(now) == set(before):
         return "the previous dictionary was restored"
+    if now is not None and {_key(t) for t in now} == {_key(t) for t in before}:
+        return (f"the previous dictionary was restored, but TypeWhisper stored some terms with different "
+                f"capitalization or spacing than the originals (exact copy at {backup})")
     return f"RESTORE FAILED OR COULD NOT BE CONFIRMED: the dictionary state is unknown; full backup at {backup}"
 
 
@@ -417,19 +427,32 @@ def apply_prune(
     client, plan: PrunePlan, expected: list[str], budget: int = PARAKEET_TERM_CAP, backup_dir: Path | None = None
 ) -> tuple[Path, list[str]]:
     """Write a prune plan. The API's only removal path is replacing the whole term list, so every
-    step is defensive: re-read and refuse if the dictionary is no longer what the plan was made
-    from, back up the complete previous list, refuse to exceed the cap, write once, verify, and
-    restore the previous list if anything is off, including when the write or the verifying read
-    itself fails (the write may or may not have landed). Returns (backup path, notes).
+    step is defensive. The backup of the planning snapshot is written FIRST so that no filesystem work
+    sits between the final read and the write; that read must still match the plan, the plan must
+    remove exactly the terms it names (look-alike or duplicate entries abort it), the cap is enforced,
+    and after the single write the result is verified. If the write, the verifying read or the
+    verification itself fails, the previous list is restored (the write may or may not have landed).
+    Returns (backup path, notes).
 
-    Residual risk, because the API has no conditional write: a term added in the TypeWhisper app
-    in the milliseconds between the final read and the write is overwritten and cannot be detected.
-    Don't edit the dictionary while a sync runs."""
-    before = client.terms()
+    Residual risk, because the API has no conditional write: a term added in the TypeWhisper app in the
+    instant between the final read and the write is overwritten and cannot be detected. Don't edit the
+    dictionary while a sync runs."""
+    try:
+        backup = _write_backup(backup_dir or BACKUP_DIR, list(expected), [t for t, _ in plan.removals],
+                               [t for t, _ in plan.additions])
+    except OSError as exc:
+        raise PruneError(f"could not write the backup ({exc}); nothing was written.") from exc
+
+    before = client.terms()  # the final read: nothing slow happens between here and the write
     if {_key(t) for t in before} != {_key(t) for t in expected}:
         raise PruneError("the TypeWhisper dictionary changed while this plan was being made; nothing was "
                          "written. Re-run to plan against the current dictionary.")
     removed = {_key(t) for t, _ in plan.removals}
+    dropped = [t for t in before if _key(t) in removed]
+    if len(dropped) != len(plan.removals):
+        raise PruneError(f"the plan names {len(plan.removals)} terms to remove but {len(dropped)} dictionary "
+                         f"entries match them ({dropped[:5]}): duplicates or look-alike spellings. "
+                         "Nothing was written.")
     kept = [t for t in before if _key(t) not in removed]
     kept_keys = {_key(t) for t in kept}
     added = [t for t, _ in plan.additions if _key(t) not in kept_keys]
@@ -438,10 +461,6 @@ def apply_prune(
         raise PruneError(f"refusing to write {len(new_list)} terms (cap {budget}); nothing was written.")
     if len({_key(t) for t in new_list}) != len(new_list):
         raise PruneError("the new term list has duplicates; nothing was written.")
-    try:
-        backup = _write_backup(backup_dir or BACKUP_DIR, before, [t for t, _ in plan.removals], added)
-    except OSError as exc:
-        raise PruneError(f"could not write the backup ({exc}); nothing was written.") from exc
 
     try:
         client.replace_terms(new_list)
@@ -468,18 +487,24 @@ def apply_prune(
 
 
 def _write_backup(directory: Path, before: list[str], removed: list[str], added: list[str]) -> Path:
-    directory.mkdir(parents=True, exist_ok=True)
+    """Save the full previous term list. It is the user's personal vocabulary, so the directory is created
+    0700 and the file 0600 (the process umask can only tighten that); O_EXCL means two runs in the same
+    second can never overwrite each other's backup."""
+    directory.mkdir(mode=0o700, parents=True, exist_ok=True)
     stamp = datetime.now().strftime("%Y%m%dT%H%M%S")
-    path = directory / f"terms-before-prune-{stamp}.json"
+    payload = json.dumps({"written": stamp, "terms": before, "removed": removed, "added": added},
+                         indent=2, ensure_ascii=False)
     n = 1
-    while path.exists():  # two runs in the same second must not overwrite each other's backup
-        n += 1
-        path = directory / f"terms-before-prune-{stamp}-{n}.json"
-    path.write_text(
-        json.dumps({"written": stamp, "terms": before, "removed": removed, "added": added}, indent=2, ensure_ascii=False),
-        encoding="utf-8",
-    )
-    return path
+    while True:
+        path = directory / (f"terms-before-prune-{stamp}.json" if n == 1 else f"terms-before-prune-{stamp}-{n}.json")
+        try:
+            fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        except FileExistsError:
+            n += 1
+            continue
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(payload)
+        return path
 
 
 def plan_corrections(
@@ -505,9 +530,10 @@ class ApiUnavailable(Exception):
 
 
 class TypeWhisperClient:
-    def __init__(self, port: int, token: str | None):
+    def __init__(self, port: int, token: str | None, require_count: bool = False):
         self.base = f"http://127.0.0.1:{port}"
         self.token = token
+        self.require_count = require_count  # pruning needs the API's total count to prove a list is complete
 
     @classmethod
     def discover(cls, discovery_file: Path = DISCOVERY_FILE) -> "TypeWhisperClient":
@@ -544,7 +570,11 @@ class TypeWhisperClient:
         terms = data.get("terms")
         if not isinstance(terms, list) or not all(isinstance(t, str) and t.strip() for t in terms):
             raise RuntimeError("GET /v1/dictionary/terms returned a malformed term list")
-        if "count" in data and data["count"] != len(terms):
+        if "count" not in data:
+            if self.require_count:
+                raise RuntimeError("GET /v1/dictionary/terms did not report a total count, so a truncated list "
+                                   "cannot be told from a complete one; refusing to prune on it")
+        elif data["count"] != len(terms):
             raise RuntimeError(f"GET /v1/dictionary/terms is incomplete: count={data['count']} "
                                f"but {len(terms)} terms were returned")
         return terms
@@ -631,6 +661,8 @@ def main() -> int:
               "Install a word list (e.g. `apt install wamerican`) to enable corrections.", file=sys.stderr)
 
     client = TypeWhisperClient.discover()
+    if args.prune and hasattr(client, "require_count"):
+        client.require_count = True
     try:
         existing_terms = client.terms()
         existing_corrections = client.corrections()
