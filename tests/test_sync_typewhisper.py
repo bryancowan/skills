@@ -383,10 +383,48 @@ class PlanPruneTests(unittest.TestCase):
         plan = sync.plan_prune(cands, ["Aardvark", "Zebra"], budget=2, mentions={"Aardvark": 9, "Zebra": 1})
         self.assertEqual([t for t, _ in plan.removals], ["Zebra"])
 
+    def test_keep_list_and_matching_ignore_unicode_composition_and_extra_spaces(self):
+        # "Café" with a combining accent, and "Old  Name" with two spaces, must still be protected
+        plan = sync.plan_prune({"Café": 1, "New": 10}, ["Café"], budget=1, keep={"cafe\u0301"})
+        self.assertEqual((plan.removals, plan.protected), ([], ["Café"]))
+        plan = sync.plan_prune({"Old Name": 1, "New": 10}, ["Old Name"], budget=1, keep={"old  name"})
+        self.assertEqual(plan.removals, [])
+        # an existing term spelled with a combining accent is the SAME term as the profile's precomposed one,
+        # so it has evidence (a score) and is not mistaken for an orphan
+        plan = sync.plan_prune({"Café": 1}, ["Cafe\u0301"], budget=1)
+        self.assertEqual(plan.left_alone, [])
+
+    def test_load_keeplist_normalizes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp, "keep.txt")
+            path.write_text("# c\nCafe\u0301   Society\n", encoding="utf-8")
+            self.assertEqual(sync.load_keeplist(path), {"café society"})
+
     def test_inputs_are_not_mutated(self):
         existing, cands = ["Old"], {"New": 50, "Old": 1}
         sync.plan_prune(cands, existing, budget=1)
         self.assertEqual((existing, cands), (["Old"], {"New": 50, "Old": 1}))
+
+
+class ScriptedClient:
+    """A tiny in-memory TypeWhisper that can misbehave on cue, for apply_prune's failure paths."""
+
+    def __init__(self, live, fail_read=None, fail_first_write=False):
+        self.live, self.reads, self.writes = list(live), 0, []
+        self.fail_read, self.fail_first_write = fail_read, fail_first_write
+
+    def terms(self):
+        self.reads += 1
+        if self.fail_read and self.fail_read(self):
+            raise sync.ApiUnavailable("lost GET")
+        return list(self.live)
+
+    def replace_terms(self, terms):
+        self.writes.append(list(terms))
+        if self.fail_first_write and len(self.writes) == 1:
+            self.live = ["half-applied"]
+            raise RuntimeError("PUT /v1/dictionary/terms failed: HTTP 500")
+        self.live = list(terms)
 
 
 class PruneApplyTests(unittest.TestCase):
@@ -411,7 +449,8 @@ class PruneApplyTests(unittest.TestCase):
 
     def test_happy_path_replaces_once_keeps_everything_else_and_saves_a_backup(self):
         original = list(StubTypeWhisper.terms)
-        backup = sync.apply_prune(self.client, self.plan, original, budget=5, backup_dir=self.tmp)
+        backup, notes = sync.apply_prune(self.client, self.plan, original, budget=5, backup_dir=self.tmp)
+        self.assertEqual(notes, [])
         self.assertEqual(StubTypeWhisper.terms, ["Adobe XD", "Keeper", "Moolenaar"])
         self.assertEqual(len(self.puts()), 1)
         saved = json.loads(backup.read_text(encoding="utf-8"))
@@ -439,6 +478,77 @@ class PruneApplyTests(unittest.TestCase):
         self.assertIn("restored", str(ctx.exception))
         self.assertEqual(StubTypeWhisper.terms, original)
         self.assertEqual(len(self.puts()), 2)  # the write, then the restore
+
+    @staticmethod
+    def make_fake(live, **kwargs):
+        return ScriptedClient(live, **kwargs)
+
+    def test_a_failed_verifying_read_triggers_a_restore_instead_of_reporting_success(self):
+        # reviewer's repro: the write lands, then the verification read fails
+        fake = self.make_fake(["Akin Gump", "Adobe XD", "Keeper"], fail_read=lambda f: f.reads == 2)
+        with self.assertRaises(sync.PruneError) as ctx:
+            sync.apply_prune(fake, self.plan, ["Akin Gump", "Adobe XD", "Keeper"], budget=5, backup_dir=self.tmp)
+        self.assertIn("could not be confirmed", str(ctx.exception))
+        self.assertIn("restored", str(ctx.exception))
+        self.assertEqual(fake.live, ["Akin Gump", "Adobe XD", "Keeper"])
+        self.assertEqual(len(fake.writes), 2)  # the write, then the restore
+
+    def test_a_failing_write_is_restored_too(self):
+        live = ["Akin Gump", "Adobe XD", "Keeper"]
+        fake = self.make_fake(live, fail_first_write=True)  # half-applies the write, then HTTP 500
+        with self.assertRaises(sync.PruneError) as ctx:
+            sync.apply_prune(fake, self.plan, list(live), budget=5, backup_dir=self.tmp)
+        self.assertIn("restored", str(ctx.exception))
+        self.assertEqual(fake.live, live)
+
+    def test_an_incomplete_or_malformed_terms_response_is_refused(self):
+        client = sync.TypeWhisperClient(1, None)
+        for payload in ({"count": 3, "terms": ["only one"]}, {"terms": "nope"}, {"terms": ["ok", " "]}, {"count": 0}):
+            client._request = lambda method, path, body=None, p=payload: p
+            with self.assertRaises(RuntimeError, msg=str(payload)):
+                client.terms()
+        client._request = lambda method, path, body=None: {"count": 2, "terms": ["a", "b"]}
+        self.assertEqual(client.terms(), ["a", "b"])
+
+    def test_a_partial_terms_read_aborts_before_any_write(self):
+        class Partial:
+            writes = 0
+
+            def terms(inner):
+                raise RuntimeError("GET /v1/dictionary/terms is incomplete: count=2 but 1 terms were returned")
+
+            def replace_terms(inner, terms):
+                inner.writes += 1
+
+        client = Partial()
+        with self.assertRaises(RuntimeError):
+            sync.apply_prune(client, self.plan, ["Akin Gump"], budget=5, backup_dir=self.tmp)
+        self.assertEqual(client.writes, 0)
+
+    def test_an_unwritable_backup_is_a_clean_error_and_nothing_is_written(self):
+        occupied = self.tmp / "not-a-dir"
+        occupied.write_text("in the way", encoding="utf-8")
+        with self.assertRaises(sync.PruneError) as ctx:
+            sync.apply_prune(self.client, self.plan, list(StubTypeWhisper.terms), budget=5, backup_dir=occupied)
+        self.assertIn("backup", str(ctx.exception))
+        self.assertEqual(self.puts(), [])
+
+    def test_a_changed_spelling_is_noted_not_fatal(self):
+        fake = self.make_fake(["Akin Gump", "Orphan"])
+        original = fake.replace_terms
+        fake.replace_terms = lambda terms: original([t.lower() for t in terms])  # an app that lowercases what it stores
+        plan = sync.PrunePlan(removals=[("Akin Gump", 2)], additions=[("Moolenaar", 28)])
+        _, notes = sync.apply_prune(fake, plan, ["Akin Gump", "Orphan"], budget=5, backup_dir=self.tmp)
+        self.assertEqual(fake.live, ["orphan", "moolenaar"])
+        self.assertTrue(any("capitalization" in n for n in notes))
+
+    def test_terms_that_appear_during_the_sync_are_reported(self):
+        fake = self.make_fake(["Akin Gump", "Keeper"])
+        original = fake.replace_terms
+        fake.replace_terms = lambda terms: original(list(terms) + ["Added In The App"])
+        plan = sync.PrunePlan(removals=[("Akin Gump", 2)], additions=[("Moolenaar", 28)])
+        _, notes = sync.apply_prune(fake, plan, ["Akin Gump", "Keeper"], budget=5, backup_dir=self.tmp)
+        self.assertTrue(any("Added In The App" in n for n in notes))
 
     def test_a_failed_restore_points_at_the_backup(self):
         class Broken:
@@ -535,6 +645,12 @@ class PruneCliTests(unittest.TestCase):
         code, _, err = self.run_main("--prune", corpus=False)
         self.assertEqual(code, 2)
         self.assertIn("--corpus", err)
+
+    def test_nonsense_limits_are_refused(self):
+        for extra in (("--max-prune", "-1"), ("--budget", "0")):
+            code, _, err = self.run_main("--prune", *extra)
+            self.assertEqual(code, 2, extra)
+            self.assertIn("--max-prune", err)
 
     def test_prune_needs_enough_transcripts(self):
         for path in list(self.corpus.glob("ep*.md"))[:5]:

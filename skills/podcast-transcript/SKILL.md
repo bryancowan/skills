@@ -436,7 +436,9 @@ If the dry-run lists **deferred terms** (all 256 Parakeet slots are used) and a 
 is available (`--corpus <folder of finished transcripts>` or
 `$PODCAST_TRANSCRIPT_CORPUS`), follow it with `--prune`: it swaps the weakest
 *profile-derived* terms for stronger deferred ones, never touches the user's own words,
-and backs up and verifies every write. The user has approved automating this. **The
+and backs up, verifies and (on any doubt) restores every write; it can't make the
+write atomic, so don't edit the TypeWhisper dictionary while it runs. The user has
+approved automating this. **The
 first `--prune --apply` on a machine needs their go-ahead after you show the dry-run
 plan** (it is the first write through the replace-the-whole-list path); after that run
 it automatically. Never push past the cap to "make room" any other way.

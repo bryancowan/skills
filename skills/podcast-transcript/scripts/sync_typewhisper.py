@@ -59,6 +59,7 @@ import json
 import os
 import re
 import sys
+import unicodedata
 import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
@@ -323,12 +324,18 @@ def plan_terms(
     return fresh[:free], present, fresh[free:]
 
 
+def _key(term: str) -> str:
+    """Canonical form for matching terms: case, Unicode composition ("é" vs "e" + accent) and runs of
+    whitespace must not let a term slip past the keep list or be mistaken for a different term."""
+    return " ".join(unicodedata.normalize("NFKC", term).split()).casefold()
+
+
 def load_keeplist(path: Path = KEEP_FILE) -> set[str]:
-    """Terms --prune must never remove, one per line (# comments allowed)."""
+    """Terms --prune must never remove, one per line (# comments allowed), as canonical keys."""
     if not path.exists():
         return set()
     lines = (line.split("#", 1)[0].strip() for line in path.read_text(encoding="utf-8").splitlines())
-    return {line.lower() for line in lines if line}
+    return {_key(line) for line in lines if line}
 
 
 @dataclass
@@ -356,24 +363,24 @@ def plan_prune(
     one-variant term scores 2); `mentions` (raw corpus mention counts) then decides: the term said
     least often goes first, and the one said most often is added first, so ties are not settled by
     the alphabet."""
-    keep = {k.lower() for k in (keep or set())}
-    said = {t.lower(): n for t, n in (mentions or {}).items()}
-    score_of = {t.lower(): s for t, s in candidates.items()}
-    have = {t.lower() for t in existing}
+    keep = {_key(k) for k in (keep or set())}
+    said = {_key(t): n for t, n in (mentions or {}).items()}
+    score_of = {_key(t): s for t, s in candidates.items()}
+    have = {_key(t) for t in existing}
     removable: list[tuple[str, int]] = []
     plan = PrunePlan()
     for term in existing:
-        score = score_of.get(term.lower())
+        score = score_of.get(_key(term))
         if score is None:
             plan.left_alone.append(term)
-        elif term.lower() in keep:
+        elif _key(term) in keep:
             plan.protected.append(term)
         else:
             removable.append((term, score))
-    removable.sort(key=lambda ts: (ts[1], said.get(ts[0].lower(), 0), ts[0].lower()))
+    removable.sort(key=lambda ts: (ts[1], said.get(_key(ts[0]), 0), _key(ts[0])))
     fresh = sorted(
-        ((t, s) for t, s in candidates.items() if t.lower() not in have),
-        key=lambda ts: (-ts[1], -said.get(ts[0].lower(), 0), -len(ts[0]), ts[0]),
+        ((t, s) for t, s in candidates.items() if _key(t) not in have),
+        key=lambda ts: (-ts[1], -said.get(_key(ts[0]), 0), -len(ts[0]), ts[0]),
     )
     free = max(0, budget - len(existing))
     plan.additions, queue = fresh[:free], fresh[free:]
@@ -394,43 +401,70 @@ class PruneError(Exception):
     """A prune could not be written safely; the message says what state the dictionary is in."""
 
 
+def _restore(client, before: list[str], backup: Path) -> str:
+    """Put the previous list back and confirm it. Any failure leaves the state unknown, so say so."""
+    try:
+        client.replace_terms(before)
+        ok = {_key(t) for t in client.terms()} == {_key(t) for t in before}
+    except Exception:  # noqa: BLE001 - mid-recovery, ANY failure means we cannot vouch for the state
+        ok = False
+    if ok:
+        return "the previous dictionary was restored"
+    return f"RESTORE FAILED OR COULD NOT BE CONFIRMED: the dictionary state is unknown; full backup at {backup}"
+
+
 def apply_prune(
     client, plan: PrunePlan, expected: list[str], budget: int = PARAKEET_TERM_CAP, backup_dir: Path | None = None
-) -> Path:
+) -> tuple[Path, list[str]]:
     """Write a prune plan. The API's only removal path is replacing the whole term list, so every
     step is defensive: re-read and refuse if the dictionary is no longer what the plan was made
     from, back up the complete previous list, refuse to exceed the cap, write once, verify, and
-    restore the previous list if anything is off. Returns the backup path."""
+    restore the previous list if anything is off, including when the write or the verifying read
+    itself fails (the write may or may not have landed). Returns (backup path, notes).
+
+    Residual risk, because the API has no conditional write: a term added in the TypeWhisper app
+    in the milliseconds between the final read and the write is overwritten and cannot be detected.
+    Don't edit the dictionary while a sync runs."""
     before = client.terms()
-    if {t.lower() for t in before} != {t.lower() for t in expected}:
+    if {_key(t) for t in before} != {_key(t) for t in expected}:
         raise PruneError("the TypeWhisper dictionary changed while this plan was being made; nothing was "
                          "written. Re-run to plan against the current dictionary.")
-    removed = {t.lower() for t, _ in plan.removals}
-    kept = [t for t in before if t.lower() not in removed]
-    kept_lower = {t.lower() for t in kept}
-    added = [t for t, _ in plan.additions if t.lower() not in kept_lower]
+    removed = {_key(t) for t, _ in plan.removals}
+    kept = [t for t in before if _key(t) not in removed]
+    kept_keys = {_key(t) for t in kept}
+    added = [t for t, _ in plan.additions if _key(t) not in kept_keys]
     new_list = kept + added
     if len(new_list) > budget:
         raise PruneError(f"refusing to write {len(new_list)} terms (cap {budget}); nothing was written.")
-    if len({t.lower() for t in new_list}) != len(new_list):
+    if len({_key(t) for t in new_list}) != len(new_list):
         raise PruneError("the new term list has duplicates; nothing was written.")
+    try:
+        backup = _write_backup(backup_dir or BACKUP_DIR, before, [t for t, _ in plan.removals], added)
+    except OSError as exc:
+        raise PruneError(f"could not write the backup ({exc}); nothing was written.") from exc
 
-    backup = _write_backup(backup_dir or BACKUP_DIR, before, [t for t, _ in plan.removals], added)
-    client.replace_terms(new_list)
-    have = {t.lower() for t in client.terms()}
-    gone = [t for t in kept if t.lower() not in have]
-    stuck = [t for t, _ in plan.removals if t.lower() in have]
-    missing = [t for t in added if t.lower() not in have]
+    try:
+        client.replace_terms(new_list)
+        after = client.terms()
+    except Exception as exc:  # noqa: BLE001 - once the write has started, any failure leaves the state uncertain
+        raise PruneError(f"the write could not be confirmed ({type(exc).__name__}: {exc}); "
+                         f"{_restore(client, before, backup)}.") from exc
+    have = {_key(t) for t in after}
+    gone = [t for t in kept if _key(t) not in have]
+    stuck = [t for t, _ in plan.removals if _key(t) in have]
+    missing = [t for t in added if _key(t) not in have]
     if gone or stuck or missing:
-        try:
-            client.replace_terms(before)
-            restored = {t.lower() for t in client.terms()} == {t.lower() for t in before}
-        except (ApiUnavailable, RuntimeError):
-            restored = False
-        state = "the previous dictionary was restored" if restored else f"RESTORE FAILED; full backup at {backup}"
         raise PruneError(f"verification failed (kept terms missing: {gone[:5]}; removed terms still present: "
-                         f"{stuck[:5]}; additions missing: {missing[:5]}); {state}.")
-    return backup
+                         f"{stuck[:5]}; additions missing: {missing[:5]}); {_restore(client, before, backup)}.")
+    notes = []
+    if set(after) != set(new_list):
+        notes.append("TypeWhisper stored some terms with different capitalization or spacing than were sent.")
+    new_keys = {_key(t) for t in new_list}
+    extra = [t for t in after if _key(t) not in new_keys]
+    if extra:
+        notes.append(f"{len(extra)} term(s) are in the dictionary that this sync did not write "
+                     f"(added in the app during the sync?): {extra[:5]}")
+    return backup, notes
 
 
 def _write_backup(directory: Path, before: list[str], removed: list[str], added: list[str]) -> Path:
@@ -504,7 +538,16 @@ class TypeWhisperClient:
             raise ApiUnavailable(str(exc))
 
     def terms(self) -> list[str]:
-        return self._request("GET", "/v1/dictionary/terms")["terms"]
+        """The full term list. A truncated or malformed response is an error: pruning writes back whatever
+        this returns, so a partial list would silently delete the terms it left out."""
+        data = self._request("GET", "/v1/dictionary/terms")
+        terms = data.get("terms")
+        if not isinstance(terms, list) or not all(isinstance(t, str) and t.strip() for t in terms):
+            raise RuntimeError("GET /v1/dictionary/terms returned a malformed term list")
+        if "count" in data and data["count"] != len(terms):
+            raise RuntimeError(f"GET /v1/dictionary/terms is incomplete: count={data['count']} "
+                               f"but {len(terms)} terms were returned")
+        return terms
 
     def corrections(self) -> dict[str, str]:
         items = self._request("GET", "/v1/dictionary/corrections")["corrections"]
@@ -556,6 +599,9 @@ def main() -> int:
     args = parser.parse_args()
     if args.corpus and not Path(args.corpus).is_dir():
         print(f"--corpus is not a folder: {args.corpus}", file=sys.stderr)
+        return 2
+    if args.max_prune < 0 or args.budget < 1:
+        print("--max-prune must be >= 0 and --budget >= 1", file=sys.stderr)
         return 2
     if args.prune:
         if not args.corpus:
@@ -635,9 +681,11 @@ def main() -> int:
     if args.apply:
         try:
             if plan is not None and plan.removals:
-                backup = apply_prune(client, plan, existing_terms, args.budget)
+                backup, notes = apply_prune(client, plan, existing_terms, args.budget)
                 print(f"\nPruned {len(plan.removals)} terms and added {len(terms_to_add)}; the previous dictionary "
                       f"is saved at {backup}")
+                for note in notes:
+                    print(f"NOTE: {note}")
             elif terms_to_add:
                 client.add_terms(terms_to_add)
             for original, replacement in corr_to_add:

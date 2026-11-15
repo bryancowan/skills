@@ -24,13 +24,28 @@ python scripts/sync_typewhisper.py --corpus ~/vault --prune --apply   # swap the
   go to whichever term is said less often in the corpus. **Never removed:** terms with
   no profile evidence (the user's own words and other dictation: they show up under
   "Left alone") and anything in `references/typewhisper-keep.txt`; add a term there if
-  it matters more than its transcript counts suggest. TypeWhisper's API has no
-  delete, only "replace the whole list", so the script re-reads the dictionary right
-  before writing and refuses if it changed, saves the full previous list to
-  `~/.podcast-transcript/backups/`, verifies the result and restores it on any
-  mismatch. **The first `--prune --apply` on a machine:** show the user the dry-run
-  plan and get a go-ahead (it is the first write through that path); after that, run it
-  automatically after the normal sync. Without `--apply` it is a read-only report.
+  it matters more than its transcript counts suggest. Matching ignores case, Unicode
+  composition and extra spaces. Without `--apply` it is a read-only report.
+- **Pruning safety rails.** TypeWhisper's API has no delete, only "replace the whole
+  list", so a write is only as safe as the list it is built from:
+  - A truncated or malformed term list is an error (the API reports a `count`; a
+    mismatch aborts), because writing back a partial list would silently delete the
+    terms it left out.
+  - Before writing, the dictionary is re-read and the run aborts if it no longer matches
+    the plan; the full previous list is saved to `~/.podcast-transcript/backups/` (an
+    unwritable backup aborts before anything is written); a list over the cap or with
+    duplicates is refused.
+  - After the write the result is verified. If the write, the verifying read or the
+    verification itself fails, the previous list is restored; if the restore cannot be
+    confirmed the error says the state is unknown and names the backup file.
+  - Notes are printed when the app stored terms with different capitalization, or when
+    terms appear that the sync did not write.
+  - **Residual risk:** the API has no conditional write, so a term added in the
+    TypeWhisper app in the milliseconds between the final read and the write would be
+    overwritten, undetectably. Ask the user not to edit the dictionary while a sync runs.
+  - **The first `--prune --apply` on a machine:** show the user the dry-run plan and get
+    a go-ahead (it is the first write through the replace-the-whole-list path); after
+    that, run it automatically after the normal sync.
 - **Ranking:** score = (logged mis-hearings + a small bonus if the profile's title
   or Speakers section names the term) × (1 + number of finished episodes that use
   it). The episode factor needs `--corpus <folder>`: a folder of finished
