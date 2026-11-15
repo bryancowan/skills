@@ -432,29 +432,22 @@ python scripts/sync_typewhisper.py --apply   # write it
 Run the dry-run first the first time and show the user the output. After that,
 run `--apply` once at the end of any run that added rows to a profile.
 
-- **Terms** (correct spellings) are what actually improve the Parakeet pass:
-  vocabulary boosting uses them during transcription. Parakeet boosts at most
-  256 terms and silently drops the rest, so the script fills only the free slots,
-  best-ranked first, and lists what it deferred with each term's score. Never
-  push past the cap to "make room"; pruning old terms is the user's call.
-- **Ranking:** score = (logged mis-hearings + a small bonus if the profile's title
-  or Speakers section names the term) × (1 + number of finished episodes that use
-  it). The episode factor needs `--corpus <folder>`: a folder of finished
-  transcripts (markdown files with a `## Transcript` section, such as the Obsidian
-  vault this skill writes into). Pass it when the user keeps one; set
-  `PODCAST_TRANSCRIPT_CORPUS` to make it the default. Without it, ranking falls
-  back to mis-hearings plus the profile bonus.
-- **Corrections** (heard-as → correct) are a filtered bonus. They are global to
-  all dictation and the watch folder never applies them, so only distinctive
-  garbles are sent: no context-dependent rows ("she" → "Xi"), no ordinary English
-  words, no long one-off phrases, and nothing in
-  `references/typewhisper-denylist.txt`. Add to that file any heard-as form that
-  turns out to be a real name or word.
-- It only adds: it never deletes, replaces the dictionary, or overwrites a
-  correction the user already has.
-- It needs TypeWhisper's API server (Settings > Advanced > API Server). If the
-  server is off the script says so and exits 0; skip the step and mention it in
-  one line. The next run catches up, because the profiles are the source of truth.
+If the dry-run lists **deferred terms** (all 256 Parakeet slots are used) and a corpus
+is available (`--corpus <folder of finished transcripts>` or
+`$PODCAST_TRANSCRIPT_CORPUS`), follow it with `--prune`: it swaps the weakest
+*profile-derived* terms for stronger deferred ones, never touches the user's own words
+or terms they gave custom per-term settings, and backs up, verifies and (on any doubt)
+restores every write; it can't make the
+write atomic, so don't edit the TypeWhisper dictionary while it runs. The user has
+approved automating this. **The first `--prune --apply` on a machine needs their
+go-ahead after you show the dry-run plan, and should be a one-term canary
+(`--max-prune 1`)** that they check in TypeWhisper: it is the first write through the
+replace-the-whole-list path on that machine (it passed once on the author's: every
+kept term's per-term settings survived). After that run it automatically. Never push past the cap to "make room" any other way.
+
+Read `references/typewhisper-sync.md` before running `--prune` or explaining a score:
+it covers the ranking formula, exactly what pruning removes and never removes, the safety
+rails, how corrections are filtered, and the keep list (`references/typewhisper-keep.txt`).
 
 ---
 

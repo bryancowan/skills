@@ -84,6 +84,32 @@ class SkillDocCommands(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
 
 
+class TypeWhisperSyncReference(unittest.TestCase):
+    """references/typewhisper-sync.md states the prune thresholds; they must match the script."""
+
+    def test_documented_prune_numbers_match_the_script_constants(self):
+        sys.path.insert(0, str(SCRIPTS))
+        import sync_typewhisper as sync
+
+        ref = (SKILL / "references" / "typewhisper-sync.md").read_text(encoding="utf-8")
+        self.assertIn(f"{sync.SWAP_RATIO}×", ref)
+        self.assertIn(f"beat it by {sync.SWAP_MIN_GAIN}", ref)
+        self.assertIn(f"{sync.DEFAULT_MAX_PRUNE} terms", ref)
+        self.assertIn(f"at least {sync.MIN_CORPUS_EPISODES}", ref)
+        self.assertTrue(str(sync.BACKUP_DIR).endswith(".podcast-transcript/backups"))
+        self.assertIn("term_entries", ref)
+        self.assertIn("never pruned", ref)
+        self.assertIn("--max-prune 1", ref)       # the first-run canary
+        self.assertIn("Unverified against the live app", ref)
+        self.assertIn("Verified on a live app", ref)
+        self.assertIn(".podcast-transcript/backups", ref)
+
+    def test_skill_md_points_at_the_reference_and_it_exists(self):
+        self.assertIn("references/typewhisper-sync.md", DOC)
+        self.assertTrue((SKILL / "references" / "typewhisper-sync.md").is_file())
+        self.assertTrue((SKILL / "references" / "typewhisper-keep.txt").is_file())
+
+
 @unittest.skipUnless(shutil.which("rg"), "ripgrep (rg) is what SKILL.md uses for the guard")
 class AppendGuard(unittest.TestCase):
     """The duplicate-transcript guard must actually stop the append, not just print ABORT."""
