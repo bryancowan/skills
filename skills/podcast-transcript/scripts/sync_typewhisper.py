@@ -7,6 +7,8 @@ Usage:
     python sync_typewhisper.py --apply      # write to TypeWhisper
     python sync_typewhisper.py --budget 200 # override the 256-term Parakeet cap
     python sync_typewhisper.py --corpus ~/vault  # rank by use in finished transcripts
+    python sync_typewhisper.py --corpus ~/vault --prune          # dry-run: which weak terms to swap out
+    python sync_typewhisper.py --corpus ~/vault --prune --apply  # swap them (with a full backup)
 
 Reads the "Known STT artifacts" tables in references/podcasts/*.md and syncs them
 through TypeWhisper's local HTTP API (Settings > Advanced > API Server):
@@ -20,9 +22,23 @@ through TypeWhisper's local HTTP API (Settings > Advanced > API Server):
   ambiguous ones ("she" -> "Xi") are filtered out. Watch-folder SRTs do not get
   corrections; they help dictation and file transcription.
 
-The script only adds. It never deletes, never replaces the dictionary, and never
-overwrites an existing correction that has a different replacement. It is
+By default the script only adds: it never deletes, never replaces the dictionary, and
+never overwrites an existing correction that has a different replacement. It is
 idempotent, and exits 0 when the API server is off so it cannot fail a run.
+
+--prune opts in to swapping, because the 256-term cap fills up and a new, valuable term
+(e.g. a name in this week's news) otherwise waits forever. When there is no free slot it
+removes the weakest *profile-derived* terms and adds stronger deferred ones. Removal has
+guard rails, because the API's only write path is "replace the whole list":
+  - needs --corpus with at least MIN_CORPUS_EPISODES finished transcripts: episode counts
+    are what justify removing a term, so it never prunes on mis-hearing counts alone;
+  - a deferred term must score at least SWAP_RATIO x the term it replaces and beat it by
+    SWAP_MIN_GAIN (no churn over 3 vs 2), and at most --max-prune terms go per run;
+  - terms with no profile evidence (your own words, other dictation) are NEVER removed,
+    and neither is anything in references/typewhisper-keep.txt;
+  - it re-reads the dictionary right before writing and refuses if it changed, saves the
+    full previous list to a backup file, verifies the result, and rolls back on mismatch.
+Without --apply the --prune run is a read-only report.
 
 Importable functions:
     parse_profiles(directory)          → list of ProfileRow
@@ -32,6 +48,7 @@ Importable functions:
     corpus_usage(terms, corpus_dir)    → dict of term → (mentions, episodes)
     rank_scores(cands, prose, usage)   → dict of term → ranking score
     plan_terms(cands, existing, budget)→ (to_add, present, overflow)
+    plan_prune(cands, existing, ...)   → PrunePlan (removals, additions, left_alone, ...)
     plan_corrections(accepted, existing) → (to_add, present, conflicts)
 """
 
@@ -44,7 +61,8 @@ import re
 import sys
 import urllib.error
 import urllib.request
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 
 PARAKEET_TERM_CAP = 256
@@ -55,6 +73,12 @@ DENYLIST_FILE = Path(__file__).resolve().parent.parent / "references" / "typewhi
 SYSTEM_WORDS = Path("/usr/share/dict/words")
 PROSE_BONUS = 2  # a term named in a profile's title or Speakers section counts as this many extra mis-hearings
 _NON_CORPUS_DIRS = {".git", ".obsidian", ".trash"}
+MIN_CORPUS_EPISODES = 10  # pruning is justified by episode counts, so require a real corpus
+SWAP_RATIO = 2  # a deferred term must score at least this many times the term it replaces...
+SWAP_MIN_GAIN = 2  # ...and beat it by at least this many points (no churn over 3 vs 2)
+DEFAULT_MAX_PRUNE = 25  # terms removed per run: limits the blast radius of a bad corpus
+KEEP_FILE = Path(__file__).resolve().parent.parent / "references" / "typewhisper-keep.txt"
+BACKUP_DIR = Path(os.environ.get("PODCAST_TRANSCRIPT_BACKUP_DIR") or Path.home() / ".podcast-transcript" / "backups")
 WEAK_EVIDENCE_MAX = 2  # generic single words need more than this many logged mis-hearings
 MAX_CORRECTION_TOKENS = 3  # longer garbles are one-off sentence fragments, not reusable fixes
 _LOWERCASE_CONNECTORS = {"of", "the", "and", "von", "van", "der", "de", "la", "el", "al", "bin"}
@@ -242,10 +266,8 @@ def profile_prose(directory: Path) -> str:
     return "\n".join(chunks)
 
 
-def corpus_usage(terms: list[str], corpus: Path) -> dict[str, tuple[int, int]]:
-    """Count each term across finished transcripts: markdown files under `corpus`
-    that contain a "## Transcript" section (what this skill writes). Only the text
-    after that heading counts. Returns {term: (mentions, episodes_containing_it)}."""
+def corpus_bodies(corpus: Path) -> list[str]:
+    """The text after "## Transcript" of every finished transcript under `corpus`."""
     bodies: list[str] = []
     for path in Path(corpus).rglob("*.md"):
         if _NON_CORPUS_DIRS & set(path.parts):
@@ -256,6 +278,14 @@ def corpus_usage(terms: list[str], corpus: Path) -> dict[str, tuple[int, int]]:
             continue
         if "\n## Transcript" in text:
             bodies.append(text.split("\n## Transcript", 1)[1])
+    return bodies
+
+
+def corpus_usage(terms: list[str], corpus: Path) -> dict[str, tuple[int, int]]:
+    """Count each term across finished transcripts: markdown files under `corpus`
+    that contain a "## Transcript" section (what this skill writes). Only the text
+    after that heading counts. Returns {term: (mentions, episodes_containing_it)}."""
+    bodies = corpus_bodies(corpus)
     usage: dict[str, tuple[int, int]] = {}
     for term in terms:
         counts = [_count_mentions(term, body) for body in bodies]
@@ -291,6 +321,131 @@ def plan_terms(
     fresh = sorted((t for t in candidates if t.lower() not in have), key=lambda t: (-candidates[t], -len(t), t))
     free = max(0, budget - len(existing))
     return fresh[:free], present, fresh[free:]
+
+
+def load_keeplist(path: Path = KEEP_FILE) -> set[str]:
+    """Terms --prune must never remove, one per line (# comments allowed)."""
+    if not path.exists():
+        return set()
+    lines = (line.split("#", 1)[0].strip() for line in path.read_text(encoding="utf-8").splitlines())
+    return {line.lower() for line in lines if line}
+
+
+@dataclass
+class PrunePlan:
+    removals: list[tuple[str, int]] = field(default_factory=list)  # existing profile terms to drop (weakest first)
+    additions: list[tuple[str, int]] = field(default_factory=list)  # new terms: free slots first, then swap-ins
+    left_alone: list[str] = field(default_factory=list)  # existing terms with no profile evidence: never removed
+    protected: list[str] = field(default_factory=list)  # existing profile terms on the keep list
+    deferred: list[tuple[str, int]] = field(default_factory=list)  # still waiting after the plan
+
+
+def plan_prune(
+    candidates: dict[str, int],
+    existing: list[str],
+    budget: int = PARAKEET_TERM_CAP,
+    keep: set[str] | None = None,
+    max_removals: int = DEFAULT_MAX_PRUNE,
+    mentions: dict[str, int] | None = None,
+) -> PrunePlan:
+    """Fill free slots first, then swap the weakest removable existing terms for the strongest
+    deferred ones. Only terms the profiles know about (a score in `candidates`) can be removed:
+    a term with no profile evidence is somebody's own word and is left alone. A swap needs the new
+    term to score >= SWAP_RATIO x the old one and beat it by >= SWAP_MIN_GAIN; because both lists
+    are sorted, the first pair that fails ends the search. Scores tie a lot (every one-episode,
+    one-variant term scores 2); `mentions` (raw corpus mention counts) then decides: the term said
+    least often goes first, and the one said most often is added first, so ties are not settled by
+    the alphabet."""
+    keep = {k.lower() for k in (keep or set())}
+    said = {t.lower(): n for t, n in (mentions or {}).items()}
+    score_of = {t.lower(): s for t, s in candidates.items()}
+    have = {t.lower() for t in existing}
+    removable: list[tuple[str, int]] = []
+    plan = PrunePlan()
+    for term in existing:
+        score = score_of.get(term.lower())
+        if score is None:
+            plan.left_alone.append(term)
+        elif term.lower() in keep:
+            plan.protected.append(term)
+        else:
+            removable.append((term, score))
+    removable.sort(key=lambda ts: (ts[1], said.get(ts[0].lower(), 0), ts[0].lower()))
+    fresh = sorted(
+        ((t, s) for t, s in candidates.items() if t.lower() not in have),
+        key=lambda ts: (-ts[1], -said.get(ts[0].lower(), 0), -len(ts[0]), ts[0]),
+    )
+    free = max(0, budget - len(existing))
+    plan.additions, queue = fresh[:free], fresh[free:]
+    while queue and removable and len(plan.removals) < max_removals:
+        (new_term, new_score), (old_term, old_score) = queue[0], removable[0]
+        if new_score >= SWAP_RATIO * old_score and new_score - old_score >= SWAP_MIN_GAIN:
+            plan.removals.append(removable.pop(0))
+            plan.additions.append(queue.pop(0))
+        else:
+            break
+    plan.left_alone.sort(key=str.lower)
+    plan.protected.sort(key=str.lower)
+    plan.deferred = queue
+    return plan
+
+
+class PruneError(Exception):
+    """A prune could not be written safely; the message says what state the dictionary is in."""
+
+
+def apply_prune(
+    client, plan: PrunePlan, expected: list[str], budget: int = PARAKEET_TERM_CAP, backup_dir: Path | None = None
+) -> Path:
+    """Write a prune plan. The API's only removal path is replacing the whole term list, so every
+    step is defensive: re-read and refuse if the dictionary is no longer what the plan was made
+    from, back up the complete previous list, refuse to exceed the cap, write once, verify, and
+    restore the previous list if anything is off. Returns the backup path."""
+    before = client.terms()
+    if {t.lower() for t in before} != {t.lower() for t in expected}:
+        raise PruneError("the TypeWhisper dictionary changed while this plan was being made; nothing was "
+                         "written. Re-run to plan against the current dictionary.")
+    removed = {t.lower() for t, _ in plan.removals}
+    kept = [t for t in before if t.lower() not in removed]
+    kept_lower = {t.lower() for t in kept}
+    added = [t for t, _ in plan.additions if t.lower() not in kept_lower]
+    new_list = kept + added
+    if len(new_list) > budget:
+        raise PruneError(f"refusing to write {len(new_list)} terms (cap {budget}); nothing was written.")
+    if len({t.lower() for t in new_list}) != len(new_list):
+        raise PruneError("the new term list has duplicates; nothing was written.")
+
+    backup = _write_backup(backup_dir or BACKUP_DIR, before, [t for t, _ in plan.removals], added)
+    client.replace_terms(new_list)
+    have = {t.lower() for t in client.terms()}
+    gone = [t for t in kept if t.lower() not in have]
+    stuck = [t for t, _ in plan.removals if t.lower() in have]
+    missing = [t for t in added if t.lower() not in have]
+    if gone or stuck or missing:
+        try:
+            client.replace_terms(before)
+            restored = {t.lower() for t in client.terms()} == {t.lower() for t in before}
+        except (ApiUnavailable, RuntimeError):
+            restored = False
+        state = "the previous dictionary was restored" if restored else f"RESTORE FAILED; full backup at {backup}"
+        raise PruneError(f"verification failed (kept terms missing: {gone[:5]}; removed terms still present: "
+                         f"{stuck[:5]}; additions missing: {missing[:5]}); {state}.")
+    return backup
+
+
+def _write_backup(directory: Path, before: list[str], removed: list[str], added: list[str]) -> Path:
+    directory.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().strftime("%Y%m%dT%H%M%S")
+    path = directory / f"terms-before-prune-{stamp}.json"
+    n = 1
+    while path.exists():  # two runs in the same second must not overwrite each other's backup
+        n += 1
+        path = directory / f"terms-before-prune-{stamp}-{n}.json"
+    path.write_text(
+        json.dumps({"written": stamp, "terms": before, "removed": removed, "added": added}, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    return path
 
 
 def plan_corrections(
@@ -358,6 +513,10 @@ class TypeWhisperClient:
     def add_terms(self, terms: list[str]) -> None:
         self._request("PUT", "/v1/dictionary/terms", {"terms": terms, "replace": False})
 
+    def replace_terms(self, terms: list[str]) -> None:
+        """Replace the ENTIRE term list (the only removal path the API has). Use apply_prune()."""
+        self._request("PUT", "/v1/dictionary/terms", {"terms": terms, "replace": True})
+
     def put_correction(self, original: str, replacement: str) -> None:
         self._request(
             "PUT",
@@ -386,10 +545,29 @@ def main() -> int:
         help="Folder of finished transcripts (e.g. an Obsidian vault); ranks terms by how many "
         "episodes use them. Also read from $PODCAST_TRANSCRIPT_CORPUS",
     )
+    parser.add_argument(
+        "--prune",
+        action="store_true",
+        help="When no slot is free, swap the weakest profile-derived terms for stronger deferred ones. "
+        "Needs --corpus. Read-only unless combined with --apply",
+    )
+    parser.add_argument("--max-prune", type=int, default=DEFAULT_MAX_PRUNE, help="Most terms --prune removes per run")
+    parser.add_argument("--keep-file", type=Path, default=KEEP_FILE, help="Terms --prune must never remove")
     args = parser.parse_args()
     if args.corpus and not Path(args.corpus).is_dir():
         print(f"--corpus is not a folder: {args.corpus}", file=sys.stderr)
         return 2
+    if args.prune:
+        if not args.corpus:
+            print("--prune needs --corpus (or $PODCAST_TRANSCRIPT_CORPUS): episode counts are what justify "
+                  "removing a term, and without them the scores cannot tell a recurring name from a one-off.",
+                  file=sys.stderr)
+            return 2
+        episodes = len(corpus_bodies(Path(args.corpus)))
+        if episodes < MIN_CORPUS_EPISODES:
+            print(f"--prune needs at least {MIN_CORPUS_EPISODES} finished transcripts in the corpus; "
+                  f"found {episodes} under {args.corpus}.", file=sys.stderr)
+            return 2
 
     rows = parse_profiles(args.profiles)
     words = load_system_words()
@@ -420,22 +598,47 @@ def main() -> int:
         print(f"TypeWhisper API error: {exc}", file=sys.stderr)
         return 1
 
-    terms_to_add, terms_present, terms_overflow = plan_terms(candidates, existing_terms, args.budget)
+    plan = None
+    if args.prune:
+        mentions = {t: m for t, (m, _) in usage.items()} if usage else None
+        plan = plan_prune(candidates, existing_terms, args.budget, load_keeplist(args.keep_file), args.max_prune,
+                          mentions)
+        have_lower = {t.lower() for t in existing_terms}
+        terms_to_add = [t for t, _ in plan.additions]
+        terms_present = [t for t in candidates if t.lower() in have_lower]
+        terms_overflow = [t for t, _ in plan.deferred]
+    else:
+        terms_to_add, terms_present, terms_overflow = plan_terms(candidates, existing_terms, args.budget)
     corr_to_add, corr_present, corr_conflicts = plan_corrections(accepted, existing_corrections)
 
     mode = "APPLY" if args.apply else "DRY-RUN"
     print(f"[{mode}] {len(rows)} profile rows, {len(existing_terms)}/{args.budget} term slots used")
     ranked = lambda terms: [f"{t}  [score {candidates[t]}]" for t in terms]  # noqa: E731
+    if plan is not None:
+        _show("Terms to REMOVE (weakest first; each is replaced by a stronger deferred term)",
+              [f"{t}  [score {sc}]" for t, sc in plan.removals], limit=len(plan.removals))
     _show("Terms to add", ranked(terms_to_add), limit=len(terms_to_add))
     _show("Terms deferred (no free Parakeet slot)", ranked(terms_overflow))
+    if plan is not None:
+        used = corpus_usage(plan.left_alone, Path(args.corpus)) if plan.left_alone else {}
+        _show("Left alone: existing terms with no profile evidence (never removed)",
+              [f"{t}  [{used.get(t, (0, 0))[1]} episodes]" for t in plan.left_alone], limit=12)
+        _show("Protected by the keep list", plan.protected)
     _show("Corrections to add", corr_to_add)
     _show("Corrections conflicting with an existing entry (left alone)", corr_conflicts)
     if not args.apply:
         _show("Corrections skipped as unsafe", skipped, limit=15)
+        if not args.prune and terms_overflow:
+            print(f"\n{len(terms_overflow)} terms are deferred. Add --prune (with --corpus) to see which "
+                  "weak terms could be swapped out for them.")
 
     if args.apply:
         try:
-            if terms_to_add:
+            if plan is not None and plan.removals:
+                backup = apply_prune(client, plan, existing_terms, args.budget)
+                print(f"\nPruned {len(plan.removals)} terms and added {len(terms_to_add)}; the previous dictionary "
+                      f"is saved at {backup}")
+            elif terms_to_add:
                 client.add_terms(terms_to_add)
             for original, replacement in corr_to_add:
                 client.put_correction(original, replacement)
@@ -445,6 +648,9 @@ def main() -> int:
             # Writes are add-only and idempotent, so the next run fills any gap.
             print("TypeWhisper API server went away mid-sync; the next run will catch up.")
             return 0
+        except PruneError as exc:
+            print(f"PRUNE FAILED: {exc}", file=sys.stderr)
+            return 1
         except RuntimeError as exc:
             print(f"TypeWhisper API error: {exc}", file=sys.stderr)
             return 1

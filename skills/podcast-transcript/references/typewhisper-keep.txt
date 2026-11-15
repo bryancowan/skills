@@ -1,0 +1,4 @@
+# Terms `sync_typewhisper.py --prune` must never remove from the TypeWhisper dictionary,
+# one per line (# comments allowed). Add a term here when it matters more than its
+# transcript counts suggest: a name you dictate often outside podcasts, or one you
+# expect to come back. Terms with no profile evidence are never pruned anyway.

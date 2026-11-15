@@ -6,6 +6,7 @@ Run from the repo root:  python3 -m unittest tests/test_sync_typewhisper.py
 import contextlib
 import io
 import json
+import shutil
 import sys
 import tempfile
 import threading
@@ -166,6 +167,7 @@ class StubTypeWhisper(BaseHTTPRequestHandler):
     terms: list[str] = []
     corrections: dict[str, str] = {}
     log: list[tuple[str, str]] = []
+    drop_on_replace: set[str] = set()  # simulate an app that silently ignores some terms on replace
 
     def _send(self, payload):
         body = json.dumps(payload).encode()
@@ -187,9 +189,11 @@ class StubTypeWhisper(BaseHTTPRequestHandler):
         payload = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         self.log.append(("PUT", self.path))
         if self.path == "/v1/dictionary/terms":
-            assert payload["replace"] is False
-            have = {t.lower() for t in self.terms}
-            self.terms.extend(t for t in payload["terms"] if t.lower() not in have)
+            if payload["replace"]:
+                self.terms[:] = [t for t in payload["terms"] if t not in self.drop_on_replace]
+            else:
+                have = {t.lower() for t in self.terms}
+                self.terms.extend(t for t in payload["terms"] if t.lower() not in have)
             self._send({"terms": self.terms, "count": len(self.terms)})
         else:
             self.corrections[payload["original"]] = payload["replacement"]
@@ -331,6 +335,248 @@ class ApplyFailureTests(unittest.TestCase):
 
     def test_http_error_mid_apply_exits_nonzero(self):
         self.assertEqual(self.run_main(RuntimeError("PUT /v1/dictionary/terms failed: HTTP 500")), 1)
+
+
+class PlanPruneTests(unittest.TestCase):
+    """plan_prune: which weak terms give up their slot to which stronger deferred ones."""
+
+    CANDS = {"Moolenaar": 28, "Zhipu": 10, "Opus 5": 6, "Marginal": 3, "Akin Gump": 2, "Allen Iverson": 2, "Keeper": 1}
+
+    def test_swaps_the_weakest_existing_for_the_strongest_deferred(self):
+        plan = sync.plan_prune(self.CANDS, ["Akin Gump", "Allen Iverson", "Keeper", "Adobe XD"], budget=4)
+        self.assertEqual([t for t, _ in plan.removals], ["Keeper", "Akin Gump", "Allen Iverson"])
+        self.assertEqual([t for t, _ in plan.additions], ["Moolenaar", "Zhipu", "Opus 5"])
+        self.assertEqual([t for t, _ in plan.deferred], ["Marginal"])
+
+    def test_free_slots_are_filled_before_anything_is_removed(self):
+        plan = sync.plan_prune(self.CANDS, ["Akin Gump", "Keeper"], budget=3)  # one free slot
+        self.assertEqual([t for t, _ in plan.additions][0], "Moolenaar")
+        self.assertEqual(len(plan.additions), len(plan.removals) + 1)
+
+    def test_no_churn_for_a_marginal_gain(self):
+        for new, old in ((3, 2), (2, 1)):  # ratio ok but gain too small / gain ok but ratio too small
+            plan = sync.plan_prune({"New": new, "Old": old}, ["Old"], budget=1)
+            self.assertEqual(plan.removals, [], f"{new} vs {old}")
+        plan = sync.plan_prune({"New": 4, "Old": 2}, ["Old"], budget=1)  # exactly 2x and +2: the minimum swap
+        self.assertEqual([t for t, _ in plan.removals], ["Old"])
+
+    def test_terms_without_profile_evidence_are_never_removed(self):
+        plan = sync.plan_prune({"New": 99}, ["Adobe XD", "Keras"], budget=2)
+        self.assertEqual(plan.removals, [])
+        self.assertEqual(plan.left_alone, ["Adobe XD", "Keras"])
+        self.assertEqual([t for t, _ in plan.deferred], ["New"])
+
+    def test_keep_list_protects_a_term_case_insensitively(self):
+        plan = sync.plan_prune({"New": 99, "Old": 1}, ["Old"], budget=1, keep={"old"})
+        self.assertEqual(plan.removals, [])
+        self.assertEqual(plan.protected, ["Old"])
+
+    def test_max_removals_caps_a_run(self):
+        cands = {f"New{i}": 50 for i in range(5)} | {f"Old{i}": 1 for i in range(5)}
+        plan = sync.plan_prune(cands, [f"Old{i}" for i in range(5)], budget=5, max_removals=2)
+        self.assertEqual(len(plan.removals), 2)
+        self.assertEqual(len(plan.additions), 2)
+
+    def test_score_ties_are_settled_by_mentions_not_the_alphabet(self):
+        cands = {"New": 50, "Aardvark": 2, "Zebra": 2}
+        # Aardvark sorts first alphabetically but is said far more often, so Zebra goes
+        plan = sync.plan_prune(cands, ["Aardvark", "Zebra"], budget=2, mentions={"Aardvark": 9, "Zebra": 1})
+        self.assertEqual([t for t, _ in plan.removals], ["Zebra"])
+
+    def test_inputs_are_not_mutated(self):
+        existing, cands = ["Old"], {"New": 50, "Old": 1}
+        sync.plan_prune(cands, existing, budget=1)
+        self.assertEqual((existing, cands), (["Old"], {"New": 50, "Old": 1}))
+
+
+class PruneApplyTests(unittest.TestCase):
+    """apply_prune writes through the API's only removal path (replace the whole list) defensively."""
+
+    def setUp(self):
+        StubTypeWhisper.terms = ["Akin Gump", "Adobe XD", "Keeper"]
+        StubTypeWhisper.corrections, StubTypeWhisper.log, StubTypeWhisper.drop_on_replace = {}, [], set()
+        self.server = HTTPServer(("127.0.0.1", 0), StubTypeWhisper)
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        self.client = sync.TypeWhisperClient(self.server.server_address[1], "token")
+        self.tmp = Path(tempfile.mkdtemp(prefix="prune-"))
+        self.plan = sync.PrunePlan(removals=[("Akin Gump", 2)], additions=[("Moolenaar", 28)])
+
+    def tearDown(self):
+        self.server.shutdown()
+        self.server.server_close()
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def puts(self):
+        return [entry for entry in StubTypeWhisper.log if entry[0] == "PUT"]
+
+    def test_happy_path_replaces_once_keeps_everything_else_and_saves_a_backup(self):
+        original = list(StubTypeWhisper.terms)
+        backup = sync.apply_prune(self.client, self.plan, original, budget=5, backup_dir=self.tmp)
+        self.assertEqual(StubTypeWhisper.terms, ["Adobe XD", "Keeper", "Moolenaar"])
+        self.assertEqual(len(self.puts()), 1)
+        saved = json.loads(backup.read_text(encoding="utf-8"))
+        self.assertEqual(saved["terms"], original)  # the COMPLETE previous list
+        self.assertEqual((saved["removed"], saved["added"]), (["Akin Gump"], ["Moolenaar"]))
+
+    def test_refuses_when_the_dictionary_changed_since_planning(self):
+        StubTypeWhisper.terms.append("Added In The App Meanwhile")
+        with self.assertRaises(sync.PruneError) as ctx:
+            sync.apply_prune(self.client, self.plan, ["Akin Gump", "Adobe XD", "Keeper"], budget=5, backup_dir=self.tmp)
+        self.assertIn("changed", str(ctx.exception))
+        self.assertEqual(self.puts(), [])  # nothing written
+        self.assertEqual(list(self.tmp.iterdir()), [])  # not even a backup
+
+    def test_refuses_to_exceed_the_cap(self):
+        with self.assertRaises(sync.PruneError):
+            sync.apply_prune(self.client, self.plan, list(StubTypeWhisper.terms), budget=2, backup_dir=self.tmp)
+        self.assertEqual(self.puts(), [])
+
+    def test_a_failed_verification_rolls_back(self):
+        StubTypeWhisper.drop_on_replace = {"Moolenaar"}  # the app silently ignores the new term
+        original = list(StubTypeWhisper.terms)
+        with self.assertRaises(sync.PruneError) as ctx:
+            sync.apply_prune(self.client, self.plan, original, budget=5, backup_dir=self.tmp)
+        self.assertIn("restored", str(ctx.exception))
+        self.assertEqual(StubTypeWhisper.terms, original)
+        self.assertEqual(len(self.puts()), 2)  # the write, then the restore
+
+    def test_a_failed_restore_points_at_the_backup(self):
+        class Broken:
+            writes = 0
+
+            def terms(self_inner):
+                return ["Akin Gump", "Adobe XD", "Keeper"] if self_inner.writes == 0 else ["Adobe XD"]
+
+            def replace_terms(self_inner, terms):
+                self_inner.writes += 1
+                if self_inner.writes > 1:
+                    raise sync.ApiUnavailable("gone")
+
+        with self.assertRaises(sync.PruneError) as ctx:
+            sync.apply_prune(Broken(), self.plan, ["Akin Gump", "Adobe XD", "Keeper"], budget=5, backup_dir=self.tmp)
+        self.assertIn("RESTORE FAILED", str(ctx.exception))
+        self.assertTrue(any(self.tmp.glob("terms-before-prune-*.json")))
+
+    def test_backups_in_the_same_second_do_not_overwrite_each_other(self):
+        a = sync._write_backup(self.tmp, ["x"], [], [])
+        b = sync._write_backup(self.tmp, ["y"], [], [])
+        self.assertNotEqual(a, b)
+        self.assertEqual(json.loads(a.read_text())["terms"], ["x"])
+
+
+class PruneCliTests(unittest.TestCase):
+    """main() --prune: guards, dry-run really is read-only, --apply swaps through apply_prune."""
+
+    PROFILE = (
+        "# Podcast Profile: Prune Fixture\n\n| Heard as | Correct |\n|---|---|\n"
+        '| "Wahooning" / "Wong Ning" / "Wahoo Ning" | "Wang Huning" |\n'
+        '| "Ten Cent" | "Tencent" |\n'
+        '| "Gwangju Biennial" | "Gwangju Biennale" |\n'
+        '| "Zhipu Zee" | "Zhipu" |\n'
+    )
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp(prefix="prune-cli-"))
+        (self.tmp / "profiles").mkdir()
+        (self.tmp / "profiles" / "p.md").write_text(self.PROFILE, encoding="utf-8")
+        self.corpus = self.tmp / "vault"
+        self.corpus.mkdir()
+        for i in range(10):  # 10 finished transcripts: Wang Huning in all, Zhipu in 3, Tencent in 1
+            said = "Wang Huning spoke." + (" Zhipu is a lab." if i < 3 else "") + (" Tencent too." if i == 0 else "")
+            (self.corpus / f"ep{i}.md").write_text(f"intro\n\n## Transcript\n\n{said}\n", encoding="utf-8")
+        self.dictionary = ["Gwangju Biennale", "Tencent", "Custom Word"]
+        self.calls = {"replace": [], "add": [], "put": 0}
+        self.stored_corrections = {}
+
+        outer = self
+
+        class Fake:
+            def terms(self):
+                return list(outer.dictionary)
+
+            def corrections(self):
+                return dict(outer.stored_corrections)  # main() reads these back to verify its writes
+
+            def replace_terms(self, terms):
+                outer.calls["replace"].append(list(terms))
+                outer.dictionary[:] = terms
+
+            def add_terms(self, terms):
+                outer.calls["add"].append(list(terms))
+                outer.dictionary.extend(terms)
+
+            def put_correction(self, original, replacement):
+                outer.calls["put"] += 1
+                outer.stored_corrections[original] = replacement
+
+        self._orig = (sync.TypeWhisperClient.discover, sync.BACKUP_DIR)
+        sync.TypeWhisperClient.discover = classmethod(lambda cls: Fake())
+        sync.BACKUP_DIR = self.tmp / "backups"
+
+    def tearDown(self):
+        sync.TypeWhisperClient.discover, sync.BACKUP_DIR = self._orig
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def run_main(self, *extra, corpus=True):
+        argv = ["sync_typewhisper.py", "--profiles", str(self.tmp / "profiles"), "--budget", "3",
+                "--keep-file", str(self.tmp / "no-keep.txt"), *extra]
+        if corpus:
+            argv += ["--corpus", str(self.corpus)]
+        old, sys.argv = sys.argv, argv
+        out, err = io.StringIO(), io.StringIO()
+        try:
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                code = sync.main()
+        finally:
+            sys.argv = old
+        return code, out.getvalue(), err.getvalue()
+
+    def test_prune_without_a_corpus_is_refused(self):
+        code, _, err = self.run_main("--prune", corpus=False)
+        self.assertEqual(code, 2)
+        self.assertIn("--corpus", err)
+
+    def test_prune_needs_enough_transcripts(self):
+        for path in list(self.corpus.glob("ep*.md"))[:5]:
+            path.unlink()
+        code, _, err = self.run_main("--prune")
+        self.assertEqual(code, 2)
+        self.assertIn("at least 10", err)
+
+    def test_dry_run_reports_the_swap_and_writes_nothing(self):
+        code, out, _ = self.run_main("--prune")
+        self.assertEqual(code, 0)
+        self.assertIn("Terms to REMOVE", out)
+        self.assertIn("Gwangju Biennale", out)
+        self.assertIn("Custom Word", out.split("Left alone")[1])  # orphans are listed as left alone
+        self.assertEqual((self.calls["replace"], self.calls["add"]), ([], []))
+        self.assertEqual(self.dictionary, ["Gwangju Biennale", "Tencent", "Custom Word"])
+
+    def test_apply_swaps_weak_terms_for_strong_and_never_touches_orphans(self):
+        code, out, err = self.run_main("--prune", "--apply")
+        self.assertEqual(code, 0, err)
+        self.assertEqual(len(self.calls["replace"]), 1)
+        self.assertEqual(self.calls["add"], [])
+        self.assertEqual(sorted(self.dictionary), ["Custom Word", "Wang Huning", "Zhipu"])
+        self.assertTrue(any((self.tmp / "backups").glob("terms-before-prune-*.json")))
+
+    def test_keep_file_stops_a_term_being_removed(self):
+        (self.tmp / "keep.txt").write_text("# keep\nTencent\n", encoding="utf-8")
+        code, _, err = self.run_main("--prune", "--apply", "--keep-file", str(self.tmp / "keep.txt"))
+        self.assertEqual(code, 0, err)
+        self.assertIn("Tencent", self.dictionary)
+        self.assertIn("Custom Word", self.dictionary)
+
+    def test_without_prune_nothing_is_ever_removed(self):
+        code, _, _ = self.run_main("--apply")
+        self.assertEqual(code, 0)
+        self.assertEqual(self.calls["replace"], [])
+        self.assertEqual(self.dictionary, ["Gwangju Biennale", "Tencent", "Custom Word"])
+
+    def test_dry_run_without_prune_hints_that_swapping_is_available(self):
+        code, out, _ = self.run_main()
+        self.assertEqual(code, 0)
+        self.assertIn("--prune", out)
 
 
 class NoWordListTests(unittest.TestCase):
