@@ -229,7 +229,7 @@ improves over time.
 | "dumbman" | "Daman" (additional variant beyond "Dummin"/"dumb and") |
 | "scribe only mailbag" | "subscriber-only mailbag" |
 | "K-pop Demon Hunters" / "K-Pop Demon Hunters" | "KPop Demon Hunters" (official stylization; standardize within an episode) |
-| "Alice Wong" / "Alice Wang" | "Alice Huang" (Megaspeed exec at the center of the Nov 2026 Jensen Huang scandal; confirmed by NYT coverage). Ben's on-air slip "Alicia" is real and Andrew corrects it — keep "Alicia Huang" in Ben's lines |
+| "Alice Wong" / "Alice Wang" | "Alice Huang" (Megaspeed exec at the center of the Nov 2026 Jensen Huang scandal; confirmed by NYT coverage; "Alice" is the correct name. Ben's on-air slip "Alicia" is real and Andrew corrects it, so keep "Alicia Huang" in Ben's lines in the transcript but never boost it as a term) |
 | "Harlotnik's family" | "Lutnick's family" (Commerce Secretary Howard Lutnick; Malaysia data-center ties) |
 | "Bamboo Labs" | "Bambu Lab" (3D printer maker; H2C model, confirmed) |
 | "Kuda" | "CUDA" (Nvidia's programming platform) |
