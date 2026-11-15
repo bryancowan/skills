@@ -209,6 +209,50 @@ improves over time.
 | "pregnant faucets" | "pregnant pauses" |
 | "Dara Amade" / "Daryl Amadai" / "Amadees" | "Dario Amodei" / "the Amodeis" |
 | "Stratekry" / "Strateceri" / "Striche" / "Striker" | "Stratechery" (additional variants) |
+| "Craig Moffin" | "Craig Moffett" (additional variant beyond existing row) |
+| "Eric Suford" | "Eric Seufert" (mobile ad analyst) |
+| "Thomas Kirion" | "Thomas Kurian" (additional variant) |
+| "Strategery itself" (Stripe ad read) / "Shekri" / "Stratekeri" | "Stratechery" (additional variants; "Strategery" is only Andrew's joke when clearly a joke) |
+| "hyperscales" | "hyperscalers" |
+| "fast is dead" (re: software) | "SaaS is dead" |
+| "Superbase" | "Supabase" |
+| "Starlights" | "Starlink" (additional variant beyond "Starling") |
+| "wrecks" (re: NVL72 / server racks) | "racks" |
+| "big tech shell" | "big tech shill" |
+| "AMoed" / "AI moded" | "AI-moded" / "AI Mode" (Google) |
+| "I ran lobbed" | "Iran lobbed" |
+| "Shay Gilgis Alexander" | "Shai Gilgeous-Alexander" (OKC Thunder guard) |
+| "word cells" | "wordcels" |
+| "Patrick Colson" (Stripe ad-adjacent tweet about democracy) | "Patrick Collison" (Stripe co-founder) |
+| "Trajectory" (Ben: "I don't put any AI stuff in ___") | "Stratechery" (additional variant) — low confidence |
+| "Seaford" (re: *You Can See Everything*) | "Seyfried" (Amanda Seyfried, appears in the film; confirmed by web search). Also confirmed: "Evans" = Billy Evans, Holmes's partner |
+| "dumbman" | "Daman" (additional variant beyond "Dummin"/"dumb and") |
+| "scribe only mailbag" | "subscriber-only mailbag" |
+| "K-pop Demon Hunters" / "K-Pop Demon Hunters" | "KPop Demon Hunters" (official stylization; standardize within an episode) |
+| "Alice Wong" / "Alice Wang" | "Alice Huang" (Megaspeed exec at the center of the Nov 2026 Jensen Huang scandal; confirmed by NYT coverage). Ben's on-air slip "Alicia" is real and Andrew corrects it — keep "Alicia Huang" in Ben's lines |
+| "Harlotnik's family" | "Lutnick's family" (Commerce Secretary Howard Lutnick; Malaysia data-center ties) |
+| "Bamboo Labs" | "Bambu Lab" (3D printer maker; H2C model, confirmed) |
+| "Kuda" | "CUDA" (Nvidia's programming platform) |
+| "AlcNet" | "AlexNet" |
+| "MegaSpeed" | "Megaspeed" (Nvidia-linked cloud/hardware company) |
+| "Jenson" | "Jensen" |
+| "Duman" | "Daman" (additional variant beyond "Dumman"/"Dummin") |
+| "an MMS, an MSS specialty" | "an MSS specialty" (China's Ministry of State Security) |
+| "top town diktat" | "top-down diktat" |
+| "Xinjiang in the north" (re: Taiwan fabs / TSMC) | "Hsinchu in the north" |
+| "software size problems/hole" | "software-sized problems/hole" |
+| "articles on Trajectory" (re: Ben's early Microsoft-reorg article) | "articles on Stratechery" — medium confidence |
+| "ad recognition" (re: labeling inventory) | "AI recognition" — low confidence |
+| "NVIDIA" (all caps, inconsistent with "Nvidia" in same transcript) | "Nvidia" (normalize to the Stratechery house style) |
+
+> Diarized SRTs: newer pre-diarized SRTs (cues prefixed `Speaker N:`) can use
+> more labels than people — in ep. 300 the diarizer re-numbered partway through
+> (Speakers 1/2 for the first ~55 min, then 3/4), so four tags mapped to two hosts
+> (1,4 = Andrew; 2,3 = Ben). `parse_srt.py --diarized` reports this seam
+> automatically (disjoint label groups); still verify each group's mapping against
+> direct address ("Ben, how you doing?") and the sign-off (SKILL.md Step 1D).
+> (Earlier runs also hit the parser eating the "Uh" in "Uh-huh" and blanking lone
+> "Uh." turns; the diarized build no longer does.)
 
 > Role note: hosting can flip. In the "Doom Debates Go Mainstream" episode, Ben
 > jokingly takes the host chair and interviews Andrew about his Sharp Text

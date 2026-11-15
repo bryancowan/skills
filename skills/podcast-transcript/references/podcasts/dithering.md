@@ -27,3 +27,6 @@ in person, Daring Fireball readership).
 | "Bryce Terang" | "Brice Turang" (Milwaukee Brewers second baseman) |
 | "Sheshekari" | "Stratechery" |
 | "Joe Pachar Passarchic" | "Joe Pisarcik" (1978 Eagles–Giants fumble) |
+| "Jensen Wong" | "Jensen Huang" |
+| "Alice Wong" | "Alice Huang" (former Megaspeed executive; per Nov 2026 reporting) |
+| "Tay Kim" | "Tae Kim" |
