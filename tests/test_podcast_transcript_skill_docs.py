@@ -99,6 +99,8 @@ class TypeWhisperSyncReference(unittest.TestCase):
         self.assertTrue(str(sync.BACKUP_DIR).endswith(".podcast-transcript/backups"))
         self.assertIn("term_entries", ref)
         self.assertIn("never pruned", ref)
+        self.assertIn("--max-prune 1", ref)       # the first-run canary
+        self.assertIn("Unverified against the live app", ref)
         self.assertIn(".podcast-transcript/backups", ref)
 
     def test_skill_md_points_at_the_reference_and_it_exists(self):

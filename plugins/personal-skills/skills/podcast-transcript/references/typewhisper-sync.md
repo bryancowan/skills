@@ -31,9 +31,15 @@ python scripts/sync_typewhisper.py --corpus ~/vault --prune --apply   # swap the
   carry settings: on the author's dictionary 53 of 256 terms have
   `ctc_min_similarity: 0.8`. A whole-list replace with bare strings would reset all of
   them, so `--prune` always sends the entry objects, verbatim, for every term that stays
-  (the endpoint accepts `terms` *or* `term_entries`, never both). Verification compares
-  the settings, not just the names, and the backup stores the full entries. A term the
-  user tuned is a deliberate choice, so it is **never pruned** (like their own words).
+  (the endpoint accepts `terms` *or* `term_entries`, never both). A response without
+  usable `term_entries` is an error: entries are never invented from bare names.
+  Verification compares the settings, not just the names (JSON `1` and `true` differ,
+  `1` and `1.0` don't, null counts as absent, and fields the server adds itself are
+  ignored), and the backup stores the full entries. If the restore brings the names back
+  without the settings, it tries once to re-apply them with a non-replace upsert. A term
+  the user tuned is a deliberate choice, so it is **never pruned** (like their own
+  words), and that is re-checked against the final read at write time, so a term tuned
+  mid-run is not removed.
 - **Pruning safety rails.** TypeWhisper's API has no delete, only "replace the whole
   list", so a write is only as safe as the list it is built from:
   - The term list must be provably complete: when pruning, the API's `count` is
@@ -56,12 +62,23 @@ python scripts/sync_typewhisper.py --corpus ~/vault --prune --apply   # swap the
     terms appear that the sync did not write.
   - The corpus never follows symlinks (they could fake extra episodes or read outside the
     folder).
+  - A dictionary with duplicate terms (same term, different case or spacing) is
+    refused, as is a plan that would remove more entries than it names.
+  - **Unverified against the live app** (the rails above detect and undo these, but only a
+    real write shows which way each one goes): whether a replace with `term_entries`
+    preserves every setting; whether the app accepts or normalizes extra fields; whether
+    list order affects boosting priority (kept terms keep their order and additions go
+    on the end); and whether the add-only path leaves existing terms' settings alone.
   - **Residual risk:** the API has no conditional write, so a term added in the
     TypeWhisper app in the instant between the final read and the write would be
     overwritten, undetectably. Ask the user not to edit the dictionary while a sync runs.
   - **The first `--prune --apply` on a machine:** show the user the dry-run plan and get
-    a go-ahead (it is the first write through the replace-the-whole-list path); after
-    that, run it automatically after the normal sync.
+    a go-ahead (it is the first write through the replace-the-whole-list path), then run
+    it as a one-term canary, `--prune --apply --max-prune 1`, and have the user glance at
+    the dictionary in TypeWhisper (the tuned terms still tuned?). The write rewrites the
+    whole list either way, but a one-term change is easy to inspect and the verification
+    and rollback have run for real. Only then run the full prune; after that, run it
+    automatically after the normal sync.
 - **Ranking:** score = (logged mis-hearings + a small bonus if the profile's title
   or Speakers section names the term) × (1 + number of finished episodes that use
   it). The episode factor needs `--corpus <folder>`: a folder of finished

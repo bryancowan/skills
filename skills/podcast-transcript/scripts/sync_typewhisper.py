@@ -413,19 +413,67 @@ def _sig(entry: dict) -> str:
     return json.dumps(entry, sort_keys=True, ensure_ascii=False)
 
 
+def _has_settings(entry: dict) -> bool:
+    """True when the user gave the term any per-term setting (a null is the same as none)."""
+    return any(k != "term" and v is not None for k, v in entry.items())
+
+
+def _norm_setting(value):
+    """bool is not a number here (JSON 1 and true must never compare equal), and 1 equals 1.0."""
+    if isinstance(value, bool):
+        return ("bool", value)
+    if isinstance(value, (int, float)):
+        return ("num", float(value))
+    return ("json", json.dumps(value, sort_keys=True, ensure_ascii=False))
+
+
+def _settings_preserved(sent: dict, after: dict) -> bool:
+    """Every non-null setting we sent must come back equal. Fields the server adds on its own (an
+    updated_at, say) are ignored, and null counts the same as absent, so a legitimate prune is not
+    rolled back over server bookkeeping; a dropped or altered setting still is."""
+    for key, value in sent.items():
+        if key == "term" or value is None:
+            continue
+        if after.get(key) is None or _norm_setting(after[key]) != _norm_setting(value):
+            return False
+    return True
+
+
+def _entries_match(expected: list[dict], actual: list[dict]) -> bool:
+    """Same terms (no duplicates) and every expected setting preserved."""
+    keys = [_key(e["term"]) for e in actual]
+    if len(keys) != len(set(keys)) or set(keys) != {_key(e["term"]) for e in expected}:
+        return False
+    by_key = {_key(e["term"]): e for e in actual}
+    return all(_settings_preserved(e, by_key[_key(e["term"])]) for e in expected)
+
+
 def _restore(client, before: list[dict], backup: Path) -> str:
-    """Put the previous entries (settings included) back and confirm it. Any failure leaves the state
-    unknown, so say so."""
+    """Put the previous entries (settings included) back and confirm it. If the names are back but the
+    per-term settings are not, try once to re-apply just those entries with a non-replace upsert. Any
+    failure leaves the state unknown, so say so."""
+    repaired = False
     try:
         client.replace_terms(before)
         now = client.term_entries()
+        if not _entries_match(before, now) and {_key(e["term"]) for e in now} == {_key(e["term"]) for e in before}:
+            by_key = {_key(e["term"]): e for e in now}
+            lost = [e for e in before if _has_settings(e) and not _settings_preserved(e, by_key[_key(e["term"])])]
+            if lost:
+                client.upsert_terms(lost)
+                repaired = True
+                now = client.term_entries()
     except Exception:  # noqa: BLE001 - mid-recovery, ANY failure means we cannot vouch for the state
         now = None
-    if now is not None and {_sig(e) for e in now} == {_sig(e) for e in before}:
-        return "the previous dictionary was restored"
+    if now is not None and _entries_match(before, now):
+        base = ("the previous dictionary was restored (per-term settings re-applied with an upsert)" if repaired
+                else "the previous dictionary was restored")
+        if {e["term"] for e in now} != {e["term"] for e in before}:  # same terms, different capitalization/spacing
+            base += f", but TypeWhisper stored some terms with different spelling than the originals (exact copy at {backup})"
+        return base
     if now is not None and {_key(e["term"]) for e in now} == {_key(e["term"]) for e in before}:
-        return (f"the previous terms were restored, but TypeWhisper stored some with different spelling or "
-                f"per-term settings than the originals (exact copy at {backup})")
+        return (f"the previous terms were restored, but their per-term settings could not be: re-create them from "
+                f"the exact copy at {backup}")
     return f"RESTORE FAILED OR COULD NOT BE CONFIRMED: the dictionary state is unknown; full backup at {backup}"
 
 
@@ -465,6 +513,10 @@ def apply_prune(
         raise PruneError(f"the plan names {len(plan.removals)} terms to remove but {len(dropped)} dictionary "
                          f"entries match them ({dropped[:5]}): duplicates or look-alike spellings. "
                          "Nothing was written.")
+    tuned_now = [e["term"] for e in before if _key(e["term"]) in removed and _has_settings(e)]
+    if tuned_now:
+        raise PruneError(f"{len(tuned_now)} planned removal(s) now have custom per-term settings ({tuned_now[:5]}): "
+                         "tuned terms are never pruned. Nothing was written; re-run to plan again.")
     kept = [e for e in before if _key(e["term"]) not in removed]
     kept_keys = {_key(e["term"]) for e in kept}
     added = [{"term": t} for t, _ in plan.additions if _key(t) not in kept_keys]
@@ -480,16 +532,18 @@ def apply_prune(
     except Exception as exc:  # noqa: BLE001 - once the write has started, any failure leaves the state uncertain
         raise PruneError(f"the write could not be confirmed ({type(exc).__name__}: {exc}); "
                          f"{_restore(client, before, backup)}.") from exc
+    after_keys = [_key(e["term"]) for e in after]
     after_by_key = {_key(e["term"]): e for e in after}
     gone = [e["term"] for e in kept if _key(e["term"]) not in after_by_key]
     stuck = [t for t, _ in plan.removals if _key(t) in after_by_key]
     missing = [e["term"] for e in added if _key(e["term"]) not in after_by_key]
     changed = [e["term"] for e in kept
-               if _key(e["term"]) in after_by_key and
-               {k: v for k, v in after_by_key[_key(e["term"])].items() if k != "term"} != {k: v for k, v in e.items() if k != "term"}]
-    if gone or stuck or missing or changed:
+               if _key(e["term"]) in after_by_key and not _settings_preserved(e, after_by_key[_key(e["term"])])]
+    duplicated = len(after_keys) != len(set(after_keys))
+    if gone or stuck or missing or changed or duplicated:
         raise PruneError(f"verification failed (kept terms missing: {gone[:5]}; removed terms still present: "
-                         f"{stuck[:5]}; additions missing: {missing[:5]}; per-term settings changed: {changed[:5]}); "
+                         f"{stuck[:5]}; additions missing: {missing[:5]}; per-term settings changed: {changed[:5]}"
+                         f"{'; duplicate terms in the result' if duplicated else ''}); "
                          f"{_restore(client, before, backup)}.")
     notes = []
     if {e["term"] for e in after} != {e["term"] for e in new_entries}:
@@ -604,12 +658,16 @@ class TypeWhisperClient:
         objects through verbatim."""
         data = self._checked()
         entries = data.get("term_entries")
-        if entries is None:  # an API version without per-term settings
-            return [{"term": t} for t in data["terms"]]
         if not isinstance(entries, list) or not all(isinstance(e, dict) and isinstance(e.get("term"), str) for e in entries):
-            raise RuntimeError("GET /v1/dictionary/terms returned malformed term_entries")
+            # Never invent bare entries from `terms`: any per-term settings would be silently lost on write.
+            raise RuntimeError("GET /v1/dictionary/terms did not return usable term_entries, so per-term settings "
+                               "cannot be preserved; refusing to prune on it")
         if [e["term"] for e in entries] != data["terms"]:
             raise RuntimeError("GET /v1/dictionary/terms: term_entries do not match terms; refusing to prune on it")
+        keys = [_key(e["term"]) for e in entries]
+        if len(keys) != len(set(keys)):
+            raise RuntimeError("the TypeWhisper dictionary contains duplicate terms (same term, different case or "
+                               "spacing); refusing to prune, since a removal could hit the wrong one")
         return entries
 
     def corrections(self) -> dict[str, str]:
@@ -625,6 +683,10 @@ class TypeWhisperClient:
         accepts one or the other, never both."""
         key = "term_entries" if any(isinstance(i, dict) for i in items) else "terms"
         self._request("PUT", "/v1/dictionary/terms", {key: items, "replace": True})
+
+    def upsert_terms(self, entries: list[dict]) -> None:
+        """Add or update entries WITHOUT replacing the list (used only to re-apply settings after a restore)."""
+        self._request("PUT", "/v1/dictionary/terms", {"term_entries": entries, "replace": False})
 
     def put_correction(self, original: str, replacement: str) -> None:
         self._request(
@@ -718,7 +780,7 @@ def main() -> int:
         # A term the user tuned (e.g. ctc_min_similarity) is a deliberate choice, like a term they added themselves:
         # never remove it, whatever its corpus score. (Pruning an untuned term loses nothing the backup can't restore;
         # pruning a tuned one destroys the tuning.)
-        tuned = {_key(e["term"]) for e in client.term_entries() if set(e) - {"term"}}
+        tuned = {_key(e["term"]) for e in client.term_entries() if _has_settings(e)}
         plan = plan_prune(candidates, existing_terms, args.budget, load_keeplist(args.keep_file) | tuned,
                           args.max_prune, mentions)
         have_lower = {t.lower() for t in existing_terms}

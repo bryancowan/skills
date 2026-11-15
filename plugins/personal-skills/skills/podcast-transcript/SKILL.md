@@ -439,10 +439,11 @@ is available (`--corpus <folder of finished transcripts>` or
 or terms they gave custom per-term settings, and backs up, verifies and (on any doubt)
 restores every write; it can't make the
 write atomic, so don't edit the TypeWhisper dictionary while it runs. The user has
-approved automating this. **The
-first `--prune --apply` on a machine needs their go-ahead after you show the dry-run
-plan** (it is the first write through the replace-the-whole-list path); after that run
-it automatically. Never push past the cap to "make room" any other way.
+approved automating this. **The first `--prune --apply` on a machine needs their
+go-ahead after you show the dry-run plan, and should be a one-term canary
+(`--max-prune 1`)** that they check in TypeWhisper: it is the first write through the
+replace-the-whole-list path and its effect on per-term settings has not been seen on a
+live app. After that run it automatically. Never push past the cap to "make room" any other way.
 
 Read `references/typewhisper-sync.md` before running `--prune` or explaining a score:
 it covers the ranking formula, exactly what pruning removes and never removes, the safety
