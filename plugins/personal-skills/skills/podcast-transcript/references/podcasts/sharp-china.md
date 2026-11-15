@@ -15,6 +15,23 @@ infers everything from the transcript.
   Sinocism newsletter, shares specific facts and events, opens sentences with
   "I mean," / "I think," / "You know,".
 
+## Diarized SRTs (speaker-labeled by the transcription model)
+
+First seen 2026-11-14 (Nov 11 emergency-plus-regular double episode). Don't assume a
+label order — it is **not stable**:
+
+- The diarizer ran in chunks and re-labeled the hosts per chunk: `Speaker 1`=Andrew /
+  `Speaker 2`=Bill for cues 1–342, then `Speaker 3`=Bill / `Speaker 4`=Andrew from cue
+  343. Always map per label group from anchors (Andrew's intro "I'm Andrew Sharp…",
+  the sign-off "Bill, it's great to see you" → "Thanks, Andrew").
+- This episode stacked two recordings in one file (seen once) (a short breaking-news intro
+  recorded later, then the main episode with a second "Hello and welcome back"
+  intro). Both are the same two hosts; keep one continuous transcript.
+- This model's own artifact profile is mostly **proper nouns and entity names**
+  (Alice Wang/Wong, "Namibia's", Satekri, USCR, Besson/Bessener); sentence structure
+  and punctuation were good. Expect ~90 interleaved-fragment spots per 70 minutes,
+  of which only a handful are truly mislabeled.
+
 ## Known STT artifacts
 
 Recurring mis-transcriptions for this podcast. Apply these as part of the Step 2
@@ -234,6 +251,39 @@ fix list. Append new ones here as you find them so the profile improves over tim
 | "XGP's / CG&P's perspective" | "CCP's perspective" |
 | "Daryl/Darryl Murray, Maury" | "Daryl Morey, Morey" |
 | "Bapi / Kylian ababe / Mumbape" | "Mbappé" |
+| "Jensen Wong" / "Jensen Wang" / "Alice Wong" (Megaspeed context) | "Jensen Huang" / "Alice Huang" (Huang Le, Megaspeed executive in the NYT spy-plot story) |
+| "Mega Speed" | "Megaspeed" (Singapore-based Nvidia customer) |
+| "Fu Chonghua" | "Fu Chengyu" (ex-Sinopec/CNOOC chairman, placed under CCDI investigation Oct 31, 2026) |
+| "Zunjing Hong" | "Zeng Qinghong" (moderate confidence; Jiang Zemin–era oil clique) |
+| "Tia Mazewang" | "Tiemaozi Wang" ("iron hat princes"; low confidence) |
+| "Maiton" | "Meituan" |
+| "white clubs" | "white gloves" (cutouts used for corruption) |
+| "Mullinar" / "Mulinar" / "Mul Mulinar" | "Moolenaar" (variant of "John Mulinar" above) |
+| "Raja Krishnamorthy" | "Raja Krishnamoorthi" |
+| "Hassan Piker" | "Hasan Piker" |
+| "Hagstaff" | "Hegseth" |
+| "Edgar Snowden" | "Edward Snowden" |
+| "Jill Ty" | "Joe Tsai" (variant of "Joe Zai" above) |
+| "AIPEC" | "APEC" |
+| "RTX Pro, 5,500 ships" | "RTX Pro 5500 chips" |
+| "fall grasp" / "frog gras" | "foie gras" |
+| "Namibia's interests" (Lutnick/chip context) | "Nvidia's interests" |
+| "Alice Wang" (Megaspeed context) | "Alice Huang" (variant of the "Alice Wong" artifact above) |
+| "Bessener" | "Bessent" (variant of "Bassin"/"Besson") |
+| "He Lifang" / "Hu Li Feng" | "He Lifeng" (variants of "Holi Fong") |
+| "Satekri" | "Stratechery" (variant of "techary"; here Ben Thompson's newsletter) |
+| "USCR head" | "USTR head" |
+| "Dmitry Sevastopoulos" / "Dmitri" (FT context) | "Demetri Sevastopulo" (Financial Times; variant of "Dmitry Sevastopolo") |
+| "Access report" (Axios context) | "Axios report" |
+| "Moulinar" | "Moolenaar" (variant of "Mulinar") |
+| "Taixin" | "Caixin" (variant of "Tai Chin"/"Tyshine") |
+| "The Match Act" / "Chips Security Act" | "the MATCH Act" / "the Chip Security Act" (with the "AI OVERWATCH Act", the three chip bills in the NDAA) |
+| "Speed Matrix" | "Speedmatrix" (Megaspeed's Malaysian affiliate) |
+| "TerraFab" | "Terafab" (Musk's Tesla/SpaceX chip fab) |
+| "Vera Rubens" | "Vera Rubins" (Nvidia Vera Rubin chips) |
+| "Prudy Senior" / "this menu" / "co-op them" | "pretty senior" / "this memo" / "co-opt them" |
+| "strategery side" | "Stratechery side" |
+| "overhang on the video" | "overhang on Nvidia" |
 
 > The "she" → "Xi" fix needs judgment — only correct it where the context is
 > clearly about the Chinese leader, not an actual female referent. Leave the

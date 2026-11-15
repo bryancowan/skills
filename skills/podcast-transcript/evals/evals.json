@@ -30,6 +30,12 @@
       "prompt": "I just added a few new artifacts to the Sharp China profile. Push the podcast profile fixes into my TypeWhisper dictionary so Parakeet picks them up.",
       "expected_output": "Runs scripts/sync_typewhisper.py as a dry-run first and shows the summary (terms to add, terms deferred past the 256-term Parakeet cap, corrections to add, corrections skipped as unsafe), then runs it with --apply only after the user is happy. Explains that Terms are what affect the watch-folder Parakeet pass while Corrections are global and not applied to watch-folder SRTs. Never deletes entries, never replaces the dictionary, never sends context-dependent rows such as 'she' -> 'Xi', and does not try to write dictionary.store directly. If TypeWhisper's API server is off, reports that in one line and tells the user to enable Settings > Advanced > API Server instead of failing.",
       "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Use the podcast-transcript skill on ~/transcripts/<episode>.srt — it was already diarized by a new model, so it shouldn't need much — and add the transcript to my Obsidian note ~/vault/Reading List/<episode>.md",
+      "expected_output": "Detects the SRT is diarized (parse_srt.py --diarized) instead of using plain paragraph mode. Notices the labels are chunk-local (disjoint label groups, e.g. Speaker 1/2 then Speaker 3/4) and maps EACH group to Andrew Sharp / Bill Bishop using anchors (intro, sign-off, direct address) rather than assuming 1=host, 2=guest. Builds with --map (and a --fixes-file of STT artifact fixes such as Alice Wang→Alice Huang, Besson→Bessent), reads the REVIEW flags and --review clusters, and repairs any genuinely mislabeled fragment. Confirms the coverage line (every cue used once). Appends '## Transcript' via the obsidian CLI with content starting at the heading (no double blank line), keeping the original note a byte-identical prefix. Runs verify_transcript.py (--srt, --speakers, --forbid) and spot-checks the label-group boundary. Skips the TypeWhisper sync because the SRT did not come from it.",
+      "files": []
     }
   ]
 }

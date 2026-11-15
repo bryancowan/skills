@@ -396,7 +396,15 @@ def main() -> int:
     base_scores = term_candidates(rows, words)
     usage = corpus_usage(list(base_scores), Path(args.corpus)) if args.corpus else None
     candidates = rank_scores(base_scores, profile_prose(args.profiles), usage)
-    accepted, skipped = safe_corrections(rows, words, load_denylist())
+    if words:
+        accepted, skipped = safe_corrections(rows, words, load_denylist())
+    else:
+        # Without a word list the "no ordinary English words" filter silently does nothing and
+        # ~100 ordinary phrases ("dumb and", "easy pass") would become GLOBAL dictation fixes.
+        accepted, skipped = {}, []
+        print(f"WARNING: no system word list at {SYSTEM_WORDS}, so the ordinary-English-word filter "
+              "cannot run; skipping ALL corrections (they apply to all dictation). Terms still sync. "
+              "Install a word list (e.g. `apt install wamerican`) to enable corrections.", file=sys.stderr)
 
     client = TypeWhisperClient.discover()
     try:

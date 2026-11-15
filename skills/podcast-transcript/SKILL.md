@@ -1,6 +1,6 @@
 ---
 name: podcast-transcript
-description: Convert a podcast SRT transcript into clean, speaker-labeled markdown — either appended to an existing note or written as a standalone file with metadata. Use when given a .srt file path, or when asked to "add transcript", "process the SRT", or "convert podcast transcript".
+description: Convert a podcast SRT transcript (plain or already speaker-diarized) into clean, speaker-labeled markdown — either appended to an existing note or written as a standalone file with metadata. Use when given a .srt file path, or when asked to "add transcript", "process the SRT", or "convert podcast transcript".
 ---
 
 # Podcast Transcript → Markdown
@@ -17,6 +17,10 @@ Convert a speech-to-text SRT transcript into a clean, speaker-labeled
 - **SRT input only.** `.vtt` / WebVTT is out of scope.
 - Speaker attribution on **unlabeled** audio is inference, not ground truth —
   best-effort, verify the result (Step 6).
+- **Diarized** SRTs (cues already prefixed `Speaker 1:` / `NAME:`) are far better
+  starting points but are **not ground truth either**: labels can be chunk-local
+  (the same person is `Speaker 1` in the first half, `Speaker 4` in the second) and
+  overlapped speech is chopped into alternating fragments. Step 1D handles both.
 - Rolling / overlapping captions (e.g. YouTube auto-captions) can repeat whole
   phrases; the light cleanup dedupes consecutive *words*, not repeated phrases.
 
@@ -31,7 +35,8 @@ Collect these before starting.
 | `NOTE_FILE` | append mode: absolute path to the target `.md` note |
 | `OUTPUT_FILE` | new-file mode: absolute path to write the new `.md` |
 | `PROFILE` | Optional podcast profile slug (see Podcast profiles) |
-| `GAP_MS` | Silence gap threshold for paragraph breaks (default: **1500ms**) |
+| `GAP_MS` | Silence gap threshold for paragraph breaks (default: **1500ms**; plain SRTs only) |
+| `SPEAKER_MAP` | Diarized SRTs only: label → name, e.g. `1=Andrew 2=Bill 3=Bill 4=Andrew` (derived in Step 1D, not asked for) |
 
 **Resolving `OUTPUT_MODE`:** if the user gave an existing note to add to → `append`.
 If they gave only an SRT (no target note) → `new-file`. If ambiguous, ask.
@@ -58,6 +63,20 @@ worked example.
 
 ### Step 1 — Parse the SRT
 
+**First, find out whether the SRT is already diarized** (cues start with
+`Speaker 1:`, `>> NAME:`, etc.):
+
+```bash
+python3 -I scripts/parse_srt.py "$SRT_FILE" --diarized
+```
+
+- It prints a speaker table, or says *"does not look diarized"* (exit 2).
+- **Diarized → follow Step 1D** (then continue at Step 2). Do **not** use the plain
+  paragraph mode below: it runs the labels together.
+- **Not diarized → follow Step 1P** (the original flow), then Steps 2–4.
+
+#### Step 1P — Plain (unlabeled) SRT
+
 Run `parse_srt.py` from this skill's directory to produce numbered, cleaned
 paragraphs:
 
@@ -80,6 +99,98 @@ If the script is unavailable, the logic is ~40 lines: parse each SRT block into
 `(index, start_ms, end_ms, text)`, start a new paragraph whenever the gap to the
 next entry exceeds `GAP_MS`, then apply light cleanup. Reimplement rather than
 maintaining a second copy here.
+
+#### Step 1D — Diarized SRT
+
+Learned the hard way on a real two-host episode: the new diarizers get the *speaker
+turns* mostly right, but the labels and the cue order need repair before you can
+trust them.
+
+**1. Inspect.** `--diarized` with no `--map` prints, per label, its cue count and
+first/last cue, then **anchor cues** (intros, sign-offs, direct address).
+
+```bash
+python3 -I scripts/parse_srt.py "$SRT_FILE" --diarized
+```
+
+**2. Map every label to a name — per label group.** If the report says
+`WARNING: N disjoint label groups — labels are CHUNK-LOCAL`, the diarizer ran in
+chunks and *re-labeled the people in each one* (e.g. `1`=Andrew/`2`=Bill for cues
+1–342 but `3`=Bill/`4`=Andrew from cue 343). A naive "1→host, 2→guest" mapping
+silently swaps the speakers for the second half. For **each** group, find an anchor
+that pins both names:
+
+- an intro ("I'm Andrew Sharp… on the other line, Bill Bishop"),
+- a sign-off exchange ("…great to see you, Bill" → reply "Thanks, Andrew"),
+- direct address ("Bill, what do you think?" → the *other* label is speaking),
+- the profile's role signals (host asks / introduces, analyst gives long answers).
+
+Every label-looking prefix is kept as a label — a rare one is **never** silently
+merged into the previous speaker. The inspect report lists rare labels separately
+("RARE LABELS"), and an unmapped one is a hard error with the fix in the message:
+a real speaker who just talks little (`--map bob=Bob`), or stray text that merely
+looks like a label, e.g. a cue starting `NOTE:` (`--not-label note`). If one label is
+reused for different people inside a single group, limit it with a
+cue range: `--map 1=Andrew@1-300 --map 1=Bill@301-`. If entries overlap, the **last**
+one wins (a broad default followed by a narrower override). Unmapped labels are a hard
+error, never a guess. Some diarizers label only the first cue of each turn: unlabeled
+cues then inherit the previous cue's speaker, and the run prints a `NOTE:` saying how
+many did.
+
+**3. Build.** Put the Step 2 artifact fixes in a `--fixes-file` (`old => new`, one per
+line; applied to the raw text *before* cleanup so they can match across cue
+boundaries). On a first pass start with an empty file (`touch fixes.txt`), read the
+draft to find artifacts, then fill it in and re-run. The command is copy-pasteable as
+written:
+
+```bash
+touch fixes.txt      # first pass: empty; add "old => new" lines after Step 2
+python3 -I scripts/parse_srt.py "$SRT_FILE" --diarized \
+  --map 1=Andrew --map 2=Bill --map 3=Bill --map 4=Andrew \
+  --fixes-file fixes.txt --review > /tmp/transcript_body.md 2> /tmp/transcript_review.txt
+```
+
+Optional flags: `--not-label LABEL` (stray `NOTE:`-style text), `--first-speaker NAME`
+(cues before the first label, for SRTs that label only some cues). Exit codes: `0` ok,
+`2` bad input / unmapped label / not diarized, `3` coverage check failed.
+
+stdout is the finished `**Name:** text` body (one turn per paragraph); stderr has the
+coverage line, per-speaker turn counts, `REVIEW` flags and (with `--review`) every
+regrouped cluster. Redirect stderr to a file for long episodes and read it. A
+`REVIEW` flag means a turn *began mid-sentence* in the SRT — a continuation the
+regrouping missed (on the reference episode: 1 flag in 676 cues, and it was real).
+
+What the script does for you:
+
+- **Regroups interleaved fragments.** Overlapped speech arrives as alternating cues
+  mid-sentence (`"…and now"` / `"And that"` / `"here we are."`). It detects a
+  *resumption* (a speaker's unfinished cue continued by a lowercase or one/two-word
+  cue after a short interruption), regroups each speaker's fragments into whole
+  sentences and orders them by where they finish. It never reorders one speaker's own
+  words — only the interleaving between speakers changes (property-tested). Short reactions ("Yeah.") go after
+  the sentence they interrupted. A cue that merely lacks final punctuation is **not**
+  treated as interleaving.
+- **Drops only hesitation cues** (`Um.`, `Uh,`) and never strips `ah`/`hmm` in the
+  diarized build — those are reactions. `Uh-huh`, `uh-oh` and URL paths are left alone.
+- **Cleans disfluencies**: `um/uh`, hyphen cut-offs (`it- it is` → `it is`,
+  `show- shown` → `shown`), function-word repeats (`and and`), em-dash normalization.
+- **Proves coverage after cleanup**: every cue ends up in exactly one final turn, the
+  filler-only list, or the "emptied by cleanup" list (reported on stderr) — otherwise
+  the run exits 3 instead of printing a transcript that silently lost text.
+
+**4. Review — the part only you can do.** Fix every `REVIEW` flag, then skim the
+`--review` clusters (BEFORE/AFTER) to confirm each regrouping reads right. The labels on interleaved fragments are almost always *correct* (in a
+90-spot episode only 2 cues were truly mislabeled), but a genuinely mislabeled
+fragment can't be detected mechanically — typically a one-person sentence split
+across both labels, e.g. Bill quoting Lutnick: `Lutnick said, well, [A: I'll come back
+to you] [B: I need] [A: with some options]`. Fix those by editing the body, using the
+Step 3 signals. Read the first and last cue after each label-group boundary: that is
+where a wrong map shows up.
+
+Then continue at **Step 2** (artifact scan; `--proper-nouns` works on diarized files
+and ignores the labels) and re-run the build with the finished `--fixes-file`.
+Step 3 is already done; Step 4 reduces to resolving review flags and any
+context-dependent fixes the literal list can't express (`she`→`Xi`).
 
 ---
 
@@ -116,9 +227,11 @@ industry-specific or foreign terms.
 SRT from STT usually has **no** speaker labels, so attribution is inference. Work
 top-to-bottom; most turns flow naturally once the first few are anchored.
 
-**First, check for existing labels.** Some diarized SRTs already contain inline
-speaker tags (`Speaker 1:`, `>> NAME:`, `JOHN:`). If present, use them as ground
-truth — map each tag to a real name and skip inference.
+**First, check for existing labels.** Some SRTs already contain inline speaker tags
+(`Speaker 1:`, `>> NAME:`, `JOHN:`). If present, **use Step 1D** — treat the labels as
+a strong prior, not ground truth: map each tag to a real name per label group using
+anchors, watch for chunk-local label shifts, and review interleaved fragments. Fall
+back to the inference signals below only where the labels are missing or look wrong.
 
 **Two-person podcasts** (the common case) alternate. Attribution signals, priority
 order:
@@ -145,6 +258,10 @@ pass.
 ---
 
 ### Step 4 — Write the labeled transcript
+
+*(Diarized SRTs: Step 1D already produced the body. Here you only resolve the
+`REVIEW` flags, repair genuinely mislabeled fragments, and apply fixes the literal
+`--fixes-file` can't express. The rest of this step is for plain SRTs.)*
 
 For each paragraph:
 
@@ -173,7 +290,42 @@ honest markers. Don't silently delete them.
 
 Build the labeled paragraphs as `(speaker, text)` pairs, then write per mode.
 
-**append mode** — guard against duplicates, then append:
+**Diarized SRTs:** the body from Step 1D (`/tmp/transcript_body.md`) is already the
+finished markdown — pass it straight to the append command below. The Python snippets
+(fallback append, new-file) need `labeled_paragraphs`; build it from that file:
+
+```python
+import re
+with open("/tmp/transcript_body.md", encoding="utf-8") as f:
+    labeled_paragraphs = re.findall(r"^\*\*(.+?):\*\* (.*)$", f.read(), re.M)
+```
+
+**append mode** — guard against duplicates, then append. In an Obsidian vault, prefer
+the `obsidian` CLI (the vault's `CLAUDE.md` asks for it; needs Obsidian open):
+
+```bash
+NOTEP="Reading List/My Note.md"          # path from the vault root
+NOTE_ABS="/abs/vault/$NOTEP"
+cp "$NOTE_ABS" /tmp/note_before_transcript.md        # for the byte-identical-prefix check below
+rg -q "^## Transcript" "$NOTE_ABS"; check=$?     # 0 = found, 1 = not found, 2 = error (missing/unreadable)
+if [ "$check" -eq 0 ]; then
+  echo "ABORT: note already has a ## Transcript — not appending"
+elif [ "$check" -eq 1 ]; then
+  obsidian append path="$NOTEP" content="$(printf '## Transcript\n\n'; cat /tmp/transcript_body.md)" silent
+else
+  echo "ABORT: could not read $NOTE_ABS (rg exit $check) — not appending"
+fi
+```
+
+- **Start the content at `## Transcript`, with no leading newline.** The CLI inserts
+  its own newline when appending; a leading `\n` produced two blank lines before the
+  heading (fixed by hand last time; `verify_transcript.py` now warns about it).
+- ~80 KB passed fine through `content="$(cat …)"`. If the shell rejects the argument
+  size, use the Python fallback below.
+- Afterwards confirm the original text is a byte-identical prefix of the new file:
+  `head -c "$(wc -c < /tmp/note_before_transcript.md)" "$NOTE_ABS" | cmp - /tmp/note_before_transcript.md`.
+
+**append mode, fallback** (no Obsidian / CLI failed):
 
 ```python
 NOTE_FILE = "/path/to/note.md"
@@ -232,10 +384,33 @@ any frontmatter field you can't determine — don't invent values.**
 
 ### Step 6 — Verify
 
+**Run the automated checks first** on the file you wrote to:
+
+```bash
+if [ "$OUTPUT_MODE" = "new-file" ]; then TARGET_MD="$OUTPUT_FILE"; else TARGET_MD="$NOTE_FILE"; fi
+python3 -I scripts/verify_transcript.py "$TARGET_MD" --srt "$SRT_FILE" \
+  --speakers Andrew Bill --forbid "Namibia" "Alice Wang"   # heard-as forms you fixed
+```
+
+It FAILs on a missing/duplicate `## Transcript`, raw `Speaker N` labels, unexpected
+speaker names, forbidden artifact strings, a transcript that doesn't end where the SRT
+ends (truncation — anchored: the transcript's *own* last words must match the SRT's,
+a nearby echo only warns), a line inside the transcript that isn't `**Name:** text`,
+frontmatter that doesn't close *before* the transcript, forbidden terms (matched
+case-insensitively), and when well under ~60% of evenly spaced
+5-word samples from the SRT appear in the transcript (a deleted passage in the
+middle); it WARNs on 60–85% sample coverage, adjacent same-speaker turns, lopsided
+speakers, an implausible word count vs the SRT, and a double blank line before the
+heading. (It ignores `um`/`uh` and hesitation-only cues on the SRT side, since the
+transcript has them removed.) Fix every FAIL; look at every WARN. Then the manual
+checks:
+
 1. Read the **tail of the output** (append: end of `NOTE_FILE`; new-file:
    `OUTPUT_FILE`) and confirm `## Transcript` appears cleanly after the existing
    content / frontmatter.
 2. Spot-check 2–3 speaker labels from the middle against the raw Step 1 paragraphs.
+   For diarized SRTs, spot-check **at each label-group boundary** (the cues either side
+   of the shift) against the SRT — a wrong map shows up there first.
 3. Confirm the transcript ends with the last speaker's sign-off (not truncated).
 4. new-file mode: confirm the YAML frontmatter parses (no stray colons/brackets)
    and only contains fields you could actually determine.
@@ -244,8 +419,10 @@ any frontmatter field you can't determine — don't invent values.**
 
 ### Step 7 — Sync fixes to TypeWhisper (optional)
 
-If the SRT came from TypeWhisper's watch folder with Parakeet, push the profile
-fixes back into its dictionary so the next episode starts cleaner:
+**Only if the SRT came from TypeWhisper's watch folder with Parakeet** — a diarized
+SRT from another model/tool doesn't benefit; skip this step (still update the profile
+in Step 2, which is the source of truth) — push the profile fixes back into its
+dictionary so the next episode starts cleaner:
 
 ```bash
 python scripts/sync_typewhisper.py           # dry-run: shows what would change
@@ -289,3 +466,8 @@ run `--apply` once at the end of any run that added rows to a profile.
   or `--gap 800` (more breaks).
 - **Crosstalk:** when people talk over each other the STT output is a garbled mix.
   Apply a light cleanup rather than reconstructing what was said.
+- **Genuinely ambiguous overlap:** when two people talk over each other the true word
+  order is unknowable; the regrouping picks a defensible reading, it can't prove one.
+  Don't spend time perfecting those few spots.
+- **Tests** (in the skills repo, stdlib only): `python3 -m unittest tests/test_parse_srt.py
+  tests/test_verify_transcript.py`. Run them after touching the scripts.
