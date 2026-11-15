@@ -21,3 +21,11 @@ jobs:
         run: bash tests/test-personal-skills-plugin-version-policy.sh
       - name: Check generated bundle drift
         run: bash scripts/sync-personal-skills-plugin.sh --check
+      # ripgrep: tests/test_podcast_transcript_skill_docs.py runs the append-guard command from
+      # SKILL.md, which uses rg; without it those tests would silently skip.
+      - name: Install ripgrep
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ripgrep
+      - name: Run Python tests
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"  # keep __pycache__ out of the bundled skill dirs
+        run: python3 -m unittest discover -s tests -p 'test_*.py'
