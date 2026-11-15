@@ -1050,6 +1050,14 @@ class RealProfileTests(unittest.TestCase):
             self.assertNotIn(unsafe.lower(), accepted)
         self.assertIn("Sinocism", sync.term_candidates(rows))
 
+    def test_on_air_slips_noted_in_a_profile_are_not_boosted_as_terms(self):
+        # "Alice Huang" is correct; the profile mentions Ben's slip "Alicia Huang" only to keep it in
+        # the transcript. A quoted name in a row's note must never be scored as a correct spelling.
+        terms = sync.term_candidates(sync.parse_profiles(sync.PROFILES_DIR))
+        self.assertIn("Alice Huang", terms)
+        self.assertNotIn("Alicia Huang", terms)
+        self.assertNotIn("Alicia", terms)
+
 
 if __name__ == "__main__":
     unittest.main()
