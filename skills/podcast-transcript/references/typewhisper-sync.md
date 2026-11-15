@@ -64,21 +64,26 @@ python scripts/sync_typewhisper.py --corpus ~/vault --prune --apply   # swap the
     folder).
   - A dictionary with duplicate terms (same term, different case or spacing) is
     refused, as is a plan that would remove more entries than it names.
-  - **Unverified against the live app** (the rails above detect and undo these, but only a
-    real write shows which way each one goes): whether a replace with `term_entries`
-    preserves every setting; whether the app accepts or normalizes extra fields; whether
-    list order affects boosting priority (kept terms keep their order and additions go
-    on the end); and whether the add-only path leaves existing terms' settings alone.
+  - **Verified on a live app (2026-11-15, one-term canary on a 256-term dictionary in which
+    53 terms carry `ctc_min_similarity`):** a replace with `term_entries` preserved every
+    kept term's entry field for field; the app accepts the entry objects and added no
+    fields of its own; and it keeps the list alphabetically sorted itself, so list order
+    is not ours to manage (an addition landed mid-list, not at the end).
+  - **Unverified against the live app** (the rails above detect and undo these, but only
+    a failing write would show how they behave): the rollback and the settings-repair
+    upsert paths against the real app, and whether the add-only path leaves existing
+    terms' settings alone (it only ever sends new, bare names).
   - **Residual risk:** the API has no conditional write, so a term added in the
     TypeWhisper app in the instant between the final read and the write would be
     overwritten, undetectably. Ask the user not to edit the dictionary while a sync runs.
   - **The first `--prune --apply` on a machine:** show the user the dry-run plan and get
-    a go-ahead (it is the first write through the replace-the-whole-list path), then run
-    it as a one-term canary, `--prune --apply --max-prune 1`, and have the user glance at
-    the dictionary in TypeWhisper (the tuned terms still tuned?). The write rewrites the
-    whole list either way, but a one-term change is easy to inspect and the verification
-    and rollback have run for real. Only then run the full prune; after that, run it
-    automatically after the normal sync.
+    a go-ahead (it is the first write through the replace-the-whole-list path on that
+    machine), then run it as a one-term canary, `--prune --apply --max-prune 1`, and
+    diff the live dictionary against a snapshot taken just before (only the swapped terms
+    should differ; every tuned term unchanged). The write rewrites the whole list either
+    way, but a one-term change is easy to inspect. This has passed once on the author's
+    machine (see above). Only then run the full prune; after that, run it automatically
+    after the normal sync.
 - **Ranking:** score = (logged mis-hearings + a small bonus if the profile's title
   or Speakers section names the term) × (1 + number of finished episodes that use
   it). The episode factor needs `--corpus <folder>`: a folder of finished
