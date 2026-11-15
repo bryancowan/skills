@@ -307,10 +307,13 @@ the `obsidian` CLI (the vault's `CLAUDE.md` asks for it; needs Obsidian open):
 NOTEP="Reading List/My Note.md"          # path from the vault root
 NOTE_ABS="/abs/vault/$NOTEP"
 cp "$NOTE_ABS" /tmp/note_before_transcript.md        # for the byte-identical-prefix check below
-if rg -q "^## Transcript" "$NOTE_ABS"; then
+rg -q "^## Transcript" "$NOTE_ABS"; check=$?     # 0 = found, 1 = not found, 2 = error (missing/unreadable)
+if [ "$check" -eq 0 ]; then
   echo "ABORT: note already has a ## Transcript — not appending"
-else
+elif [ "$check" -eq 1 ]; then
   obsidian append path="$NOTEP" content="$(printf '## Transcript\n\n'; cat /tmp/transcript_body.md)" silent
+else
+  echo "ABORT: could not read $NOTE_ABS (rg exit $check) — not appending"
 fi
 ```
 
