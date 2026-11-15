@@ -333,11 +333,62 @@ class ApplyFailureTests(unittest.TestCase):
         self.assertEqual(self.run_main(RuntimeError("PUT /v1/dictionary/terms failed: HTTP 500")), 1)
 
 
+class NoWordListTests(unittest.TestCase):
+    """Without a system word list the ordinary-English filter cannot run, so corrections must be
+    skipped: with an empty list ~100 ordinary phrases leak through as global dictation fixes."""
+
+    def run_main(self, words):
+        pushed = {"terms": [], "corrections": {}}
+
+        class Recorder:
+            def terms(self):
+                return list(pushed["terms"])
+
+            def corrections(self):
+                return dict(pushed["corrections"])
+
+            def add_terms(self, terms):
+                pushed["terms"].extend(terms)
+
+            def put_correction(self, original, replacement):
+                pushed["corrections"][original] = replacement
+
+        orig_discover, orig_words = sync.TypeWhisperClient.discover, sync.load_system_words
+        sync.TypeWhisperClient.discover = classmethod(lambda cls: Recorder())
+        sync.load_system_words = lambda *a, **k: words
+        argv, sys.argv = sys.argv, ["sync_typewhisper.py", "--apply"]
+        err = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
+                code = sync.main()
+        finally:
+            sync.TypeWhisperClient.discover, sync.load_system_words, sys.argv = orig_discover, orig_words, argv
+        return code, pushed, err.getvalue()
+
+    def test_empty_word_list_skips_corrections_but_still_syncs_terms(self):
+        code, pushed, err = self.run_main(set())
+        self.assertEqual(code, 0)
+        self.assertEqual(pushed["corrections"], {})
+        self.assertGreater(len(pushed["terms"]), 0)
+        self.assertIn("no system word list", err)
+
+    def test_with_a_word_list_corrections_are_pushed(self):
+        code, pushed, err = self.run_main({"cynicism", "chip", "wars"})
+        self.assertEqual(code, 0)
+        self.assertGreater(len(pushed["corrections"]), 0)
+        self.assertNotIn("no system word list", err)
+        self.assertNotIn("cynicism", {k.lower() for k in pushed["corrections"]})   # filtered as ordinary English
+
+
 class RealProfileTests(unittest.TestCase):
     def test_real_profiles_keep_known_unsafe_rows_out(self):
         rows = sync.parse_profiles(sync.PROFILES_DIR)
         self.assertGreater(len(rows), 200)  # parser sanity: the real tables are large
-        accepted, _ = sync.safe_corrections(rows, sync.load_system_words(), sync.load_denylist())
+        # An explicit word list, not sync.load_system_words(): that reads /usr/share/dict/words, which
+        # macOS has and CI runners don't, so the test passed on a laptop and failed on Linux. These are
+        # the only words the listed rows need the dictionary for.
+        english = {"cynicism", "chip", "wars", "export", "curves", "marking", "videos"}
+        accepted, _ = sync.safe_corrections(rows, english, sync.load_denylist())
         for unsafe in ("she", "she's", "UN", "C", "Ram", "Huawei", "Holland", "cynicism",
                        "chip wars", "export curves", "marking videos", "kratos"):
             self.assertNotIn(unsafe.lower(), accepted)
