@@ -135,6 +135,10 @@ class Verify(unittest.TestCase):
         r = self.run_verify(note, srt=self.srt_of("Hello world yes indeed. Thanks for coming."))
         self.assertTrue(any("not '**Name:** text'" in m for m in self.msgs(r, "FAIL")))
 
+    def test_empty_srt_fails_instead_of_skipping_every_alignment_check(self):
+        r = self.run_verify(FRONT + "## Transcript\n\n" + GOOD_BODY, srt="")
+        self.assertTrue(any("no usable words" in m for m in self.msgs(r, "FAIL")))
+
     def test_adjacent_same_speaker_warns(self):
         body = GOOD_BODY.replace("**Bill:** Thanks", "**Andrew:** Thanks")
         r = self.run_verify(FRONT + "## Transcript\n\n" + body)

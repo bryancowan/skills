@@ -342,6 +342,12 @@ class ReviewRegressions(unittest.TestCase):
             self.assertEqual(clusters, [], rows)
             self.assertEqual([t[0] for t in turns], ["A", "B", "A"], rows)
 
+    def test_lowercase_reaction_is_not_a_continuation_either(self):
+        # CodeRabbit: "yeah." must not become "I think the board yeah." with B moved first
+        turns, clusters, _ = turns_of([("A", "I think the board"), ("B", "Right, and they know it."), ("A", "yeah.")])
+        self.assertEqual(clusters, [])
+        self.assertEqual([t[0] for t in turns], ["A", "B", "A"])
+
     def test_lowercase_resumption_still_regroups_across_a_reaction(self):
         turns, clusters, _ = turns_of([("A", "We should"), ("B", "No."), ("A", "go now.")])
         self.assertEqual(turns[0], ("A", "We should go now."))

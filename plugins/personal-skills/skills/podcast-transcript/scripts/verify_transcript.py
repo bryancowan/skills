@@ -145,7 +145,10 @@ def verify(note_path: str, srt_path: str | None, speakers: list[str] | None,
     words = [w for _, t, _ in turns for w in _norm_words(t)]
     if srt_path:
         texts, srt_words = srt_plain_text(srt_path)
-        if srt_words:
+        if not srt_words:
+            add("FAIL", f"the SRT {srt_path!r} has no usable words, so no alignment checks (truncation, "
+                        "coverage, head/tail) could run — wrong or empty file?")
+        else:
             ratio = len(words) / len(srt_words)
             add("PASS" if 0.75 <= ratio <= 1.03 else "WARN",
                 f"word count {len(words)} vs SRT {len(srt_words)} (ratio {ratio:.2f}; cleanup normally keeps ~0.85-0.99)")

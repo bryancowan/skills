@@ -548,7 +548,9 @@ def _find_clusters(frags: list[Frag], max_dist: int = 4, max_between_words: int 
         words = re.findall(r"[\w'-]+", f.text.lower())
         lowercase_start = not f.text[:1].isupper()
         short_cap = 0 < len(words) <= 2 and words[0] not in _BACKCHANNELS
-        if p is not None and p < k - 1 and k - p <= max_dist and (lowercase_start or short_cap):
+        # A bare reaction ("Yeah." / "yeah.") is never the rest of someone's sentence, whatever its case.
+        if p is not None and p < k - 1 and k - p <= max_dist and not _is_reaction_only(f.text) \
+                and (lowercase_start or short_cap):
             between = frags[p + 1:k]
             # A bare reaction ("No.") between a capitalized one-word cue and an unfinished one
             # means the speaker started a NEW utterance ("That's all" / "No." / "Go.").

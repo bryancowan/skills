@@ -384,7 +384,7 @@ any frontmatter field you can't determine — don't invent values.**
 **Run the automated checks first** on the file you wrote to:
 
 ```bash
-TARGET_MD="$NOTE_FILE"     # append mode; for new-file mode use TARGET_MD="$OUTPUT_FILE"
+if [ "$OUTPUT_MODE" = "new-file" ]; then TARGET_MD="$OUTPUT_FILE"; else TARGET_MD="$NOTE_FILE"; fi
 python3 -I scripts/verify_transcript.py "$TARGET_MD" --srt "$SRT_FILE" \
   --speakers Andrew Bill --forbid "Namibia" "Alice Wang"   # heard-as forms you fixed
 ```
